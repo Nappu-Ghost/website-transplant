@@ -2,11 +2,10 @@
 
 import type React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { CalendarCheck, Users, LineChart, Stethoscope } from 'lucide-react';
+import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 
@@ -33,27 +32,27 @@ export default function Home() {
   const features = [
     {
       icon: CalendarCheck,
-      title: 'Effortless Online Booking',
+      title: 'Easy Reservation Planning',
       description:
-        'Book your dental appointments anytime, anywhere. Select your preferred clinic, service, and doctor with just a few clicks.',
+        'Plan your stay with flexible dates, room options, and tailored add-ons.',
     },
     {
       icon: Users,
-      title: 'Seamless Doctor Management',
+      title: 'Guest-Centered Experiences',
       description:
-        'Admins can easily manage doctor rosters, shifts, and surgery room schedules to optimize clinic operations.',
+        'Curated activities, dining, and wellness experiences for every traveler.',
     },
     {
-      icon: LineChart,
-      title: 'Insightful Reporting',
+      icon: Umbrella,
+      title: 'Luxury Amenities',
       description:
-        'Generate comprehensive reports on appointments, revenue, and popular services to make data-driven decisions.',
+        'Private villas, ocean views, and personalized concierge support.',
     },
     {
-      icon: Stethoscope,
-      title: 'Comprehensive Care',
+      icon: Waves,
+      title: 'Island Transfers',
       description:
-        'Access a wide range of dental services, from preventive care to specialized treatments, all under one roof.',
+        'Seamless ferry schedules and transfers to get you to the resort with ease.',
     },
   ];
 
@@ -79,18 +78,18 @@ export default function Home() {
               className="mb-4 text-4xl font-extrabold tracking-tight text-primary md:text-5xl lg:text-6xl"
               variants={fadeIn}
             >
-              Island Dental Connect
+              Azure Lagoon Resort
             </motion.h1>
             <motion.p
               className="mx-auto mb-8 max-w-2xl text-lg text-foreground/80 md:text-xl"
               variants={fadeIn}
             >
-              Your smile, connected. Effortlessly manage appointments, schedules,
-              and clinic operations with our advanced dental service platform.
+              A modern resort experience is on the way. Explore stays, activities,
+              and island transfers built for effortless planning.
             </motion.p>
             <motion.div variants={fadeIn}>
               <Button asChild size="lg">
-                <Link href="/book-appointment">Book an Appointment</Link>
+                <Link href="/booking">Plan Your Stay</Link>
               </Button>
             </motion.div>
           </div>
@@ -115,7 +114,7 @@ export default function Home() {
               className="mb-12 text-center text-3xl font-bold text-primary md:text-4xl"
               variants={fadeIn}
             >
-              Why Choose Island Dental Connect?
+              Resort Highlights
             </motion.h2>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
               {features.map((feature, index) => (
@@ -152,21 +151,18 @@ export default function Home() {
               className="mb-6 text-3xl font-bold text-primary md:text-4xl"
               variants={fadeIn}
             >
-              Ready to Simplify Your Dental Experience?
+              Ready for Your Next Escape?
             </motion.h2>
             <motion.p
               className="mx-auto mb-8 max-w-xl text-lg text-foreground/80"
               variants={fadeIn}
             >
-              Join Island Dental Connect today. Patients, book your next visit
-              with ease. Clinics, streamline your management tasks.
+              Sign in to preview upcoming stays, activities, and curated offers
+              as the resort experience comes online.
             </motion.p>
             <motion.div className="space-x-4" variants={fadeIn}>
               <Button size="lg" variant="default" asChild>
-                <Link href="/book-appointment">Book Now</Link>
-              </Button>
-              <Button size="lg" variant="outline" asChild>
-                <Link href="/login">Clinic Login</Link>
+                <Link href="/booking">Start Booking</Link>
               </Button>
             </motion.div>
           </div>

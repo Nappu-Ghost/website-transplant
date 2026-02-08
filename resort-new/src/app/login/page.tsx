@@ -49,7 +49,7 @@ export default function LoginPage() {
       if (redirectPath) {
         router.push(redirectPath);
       } else if (user.role === 'ADMIN' || user.role === 'MANAGER') {
-        router.push('/admin/dashboard');
+        router.push('/admin');
       } else {
         router.push('/');
       }
@@ -145,7 +145,7 @@ export default function LoginPage() {
                     Welcome Back!
                   </CardTitle>
                   <CardDescription>
-                    Log in to access your Island Dental Connect account.
+                    Log in to access your resort account.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -179,7 +179,7 @@ export default function LoginPage() {
                     Create Account
                   </CardTitle>
                   <CardDescription>
-                    Register to book appointments at Island Dental Connect.
+                    Register to plan your next resort stay.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>

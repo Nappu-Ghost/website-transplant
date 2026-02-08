@@ -16,14 +16,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const filters: Record<string, any> = {};
-    ['role', 'includeUnassigned', 'status', 'clinicId', 'email', 'name'].forEach(param => {
+    ['role', 'status', 'email', 'name'].forEach(param => {
       const value = searchParams.get(param);
       if (value !== null) {
-        if (param === 'includeUnassigned') {
-          filters[param] = value.toLowerCase() === 'true';
-        } else {
-          filters[param] = value;
-        }
+        filters[param] = value;
       }
     });
 

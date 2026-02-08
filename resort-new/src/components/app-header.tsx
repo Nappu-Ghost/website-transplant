@@ -12,31 +12,17 @@ import { ThemeToggleButton } from './theme-toggle-button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 
-// Inline SVG for a Tooth icon
-const ToothIcon = ({ className }: { className?: string }) => (
-    <svg 
-        viewBox="0 0 24 24" 
-        xmlns="http://www.w3.org/2000/svg" 
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className={className}
-    >
-        <path d="M20 8.5C20 6 19 4 17 4C16.0557 4 15.4458 4.22291 14.8019 4.45825C14.082 4.72136 13.3197 5 12 5C10.6803 5 9.91796 4.72136 9.19807 4.45825C8.55418 4.22291 7.94427 4 7 4C5 4 4 6 4 8.5C4 10.0985 4.40885 11.0838 4.83441 12.1093C5.0744 12.6877 5.31971 13.2788 5.5 14C5.57034 14.2814 5.6209 14.6221 5.6614 15M19.1656 12.1093C18.9256 12.6877 18.6803 13.2788 18.5 14C18.351 14.596 18.2908 15.4584 18.2268 16.3755C18.076 18.536 17.904 21 16.5 21C15.601 21 15.2072 19.5857 14.7735 18.0285C14.2424 16.1214 13.6516 14 12 14C10.3485 14 9.75768 16.1214 9.22655 18.0285C8.79288 19.5857 8.39901 21 7.50003 21C6.67282 21 6.27328 20.1446 6.05377 19" />
-    </svg>
-);
-
 export function AppHeader() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
 
   const navItems = [
     { href: '/', label: 'Home' },
-    { href: '/book-appointment', label: 'Book Appointment' },
-    { href: '/services', label: 'Services' },
-    { href: '/clinics', label: 'Clinics' },
+    { href: '/about', label: 'About' },
+    { href: '/accommodations', label: 'Accommodations' },
+    { href: '/activities', label: 'Activities' },
+    { href: '/booking', label: 'Booking' },
+    { href: '/contact', label: 'Contact' },
   ];
 
   // Helper to check if a link is active
@@ -56,9 +42,7 @@ export function AppHeader() {
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <ToothIcon className="h-7 w-7 text-primary" />
-          <span className="text-xl font-bold text-primary"> Island Dental Connect
-          </span>
+          <span className="text-xl font-bold text-primary">Azure Lagoon Resort</span>
         </Link>
 
         {/* Desktop Navigation */}
@@ -80,9 +64,9 @@ export function AppHeader() {
           {user ? (
             <>
               {/* Admin link for admin and manager roles */}
-              {(user.role === 'ADMIN' || user.role === 'MANAGER' || user.role === 'ADMINISTRATIVE_OFFICER') && (
+              {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
                 <Button variant="secondary" size="sm" asChild>
-                  <Link href="/admin/dashboard">Dashboard</Link>
+                  <Link href="/admin">Admin</Link>
                 </Button>
               )}
               
@@ -132,10 +116,7 @@ export function AppHeader() {
               </SheetHeader>
               <nav className="mt-8 flex flex-col gap-4">
                 <Link href="/" className="flex items-center gap-2 mb-4">
-                  <ToothIcon className="h-6 w-6 text-primary" />
-                  <span className="text-lg font-bold text-primary">
-                    Island Dental
-                  </span>
+                  <span className="text-lg font-bold text-primary">Azure Lagoon Resort</span>
                 </Link>
                 {navItems.map((item) => (
                   <Link
@@ -154,9 +135,9 @@ export function AppHeader() {
                 {user ? (
                   <>
                     {/* Admin link for admin and manager roles */}
-                    {(user.role === 'ADMIN' || user.role === 'MANAGER' || user.role === 'ADMINISTRATIVE_OFFICER') && (
+                    {(user.role === 'ADMIN' || user.role === 'MANAGER') && (
                       <Button variant="secondary" className="mt-4" asChild>
-                        <Link href="/admin/dashboard">Dashboard</Link>
+                        <Link href="/admin">Admin</Link>
                       </Button>
                     )}
                     

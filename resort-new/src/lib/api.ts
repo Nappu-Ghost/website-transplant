@@ -133,46 +133,6 @@ export class ApiClient {
     return this.request('/users/me', {}, undefined, true, token);
   }
 
-  async getAppointments(filters?: Record<string, any>, token?: string | null) {
-    const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
-    return this.request(`/appointments${queryParams}`, {}, undefined, true, token);
-  }
-  async getAppointmentByRef(bookingReference: string, token?: string | null) {
-    return this.request(`/appointments/${bookingReference}`, {}, undefined, true, token);
-  }
-  async createAppointment(data: any, token?: string | null) {
-    return this.request('/appointments/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async updateAppointment(bookingReference: string, data: any, token?: string | null) {
-    return this.request(`/appointments/${bookingReference}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async deleteAppointment(bookingReference: string, token?: string | null) {
-    return this.request(`/appointments/${bookingReference}`, { method: 'DELETE' }, undefined, true, token);
-  }
-
-  async getClinics(token?: string | null) { return this.request('/clinics/', {}, undefined, false, token); }
-  async getClinicById(id: string, token?: string | null) { return this.request(`/clinics/${id}`, {}, undefined, false, token); }
-  async createClinic(data: any, token?: string | null) { return this.request('/clinics/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async updateClinic(id: string, data: any, token?: string | null) { return this.request(`/clinics/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async deleteClinic(id: string, token?: string | null) { return this.request(`/clinics/${id}`, { method: 'DELETE' }, undefined, true, token); }
-
-  async getServices(token?: string | null) { return this.request('/services/', {}, undefined, false, token); }
-  async getServiceById(id: string, token?: string | null) { return this.request(`/services/${id}`, {}, undefined, false, token); }
-  async createService(data: any, token?: string | null) { return this.request('/services/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async updateService(id: string, data: any, token?: string | null) { return this.request(`/services/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async deleteService(id: string, token?: string | null) { return this.request(`/services/${id}`, { method: 'DELETE' }, undefined, true, token); }
-
-  async getDoctors(filters?: Record<string, any>, token?: string | null) {
-    const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
-    return this.request(`/doctors${queryParams}`, {}, undefined, false, token);
-  }
-  async getDoctorById(id: string, token?: string | null) {
-    return this.request(`/doctors/${id}`, {}, undefined, false, token);
-  }
-  async createDoctor(data: any, token?: string | null) { return this.request('/doctors/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async updateDoctor(id: string, data: any, token?: string | null) { return this.request(`/doctors/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
-  async deleteDoctor(id: string, token?: string | null) { return this.request(`/doctors/${id}`, { method: 'DELETE' }, undefined, true, token); }
-
   async getUsers(filters?: Record<string, any>, token?: string | null) {
     const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
     return this.request(`/users${queryParams}`, {}, undefined, true, token);
@@ -183,34 +143,6 @@ export class ApiClient {
   }
   async updateUser(id: string, data: any, token?: string | null) { return this.request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteUser(id: string, token?: string | null) { return this.request(`/users/${id}`, { method: 'DELETE' }, undefined, true, token); }
-
-  async getShifts(filters?: Record<string, any>, token?: string | null) {
-    const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
-    return this.request(`/shifts${queryParams}`, {}, undefined, true, token);
-  }
-  async createShift(data: any, token?: string | null) {
-    return this.request('/shifts/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async updateShift(id: string, data: any, token?: string | null) {
-    return this.request(`/shifts/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async deleteShift(id: string, token?: string | null) {
-    return this.request(`/shifts/${id}`, { method: 'DELETE' }, undefined, true, token);
-  }
-
-  async getSurgeryBookings(filters?: Record<string, any>, token?: string | null) {
-    const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
-    return this.request(`/surgery-bookings${queryParams}`, {}, undefined, true, token);
-  }
-  async createSurgeryBooking(data: any, token?: string | null) {
-    return this.request('/surgery-bookings/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async updateSurgeryBooking(id: string, data: any, token?: string | null) {
-    return this.request(`/surgery-bookings/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
-  }
-  async deleteSurgeryBooking(id: string, token?: string | null) {
-    return this.request(`/surgery-bookings/${id}`, { method: 'DELETE' }, undefined, true, token);
-  }
 
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }

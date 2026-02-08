@@ -13,8 +13,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Island Dental Connect',
-  description: 'Advanced Dental Clinic Management System',
+  title: 'Azure Lagoon Resort',
+  description: 'Luxury resort stays, activities, and island transfers.',
 };
 
 export default function RootLayout({

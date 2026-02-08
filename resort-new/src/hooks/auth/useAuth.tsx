@@ -87,7 +87,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (redirectPath) {
           router.push(redirectPath);
         } else if (data.user.role === 'ADMIN' || data.user.role === 'MANAGER') {
-          router.push('/admin/dashboard');
+          router.push('/admin');
         } else {
           router.push('/');
         }
@@ -136,7 +136,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         authUtils.setUser(data.user);
         setUser(data.user);
         toast({ title: 'Registration Successful', description: 'You are now logged in.' });
-        if (data.user.role === 'ADMIN' || data.user.role === 'MANAGER') router.push('/admin/dashboard');
+        if (data.user.role === 'ADMIN' || data.user.role === 'MANAGER') router.push('/admin');
         else router.push('/');
       } else {
         toast({ title: 'Registration Successful', description: 'Please log in with your new account.' });

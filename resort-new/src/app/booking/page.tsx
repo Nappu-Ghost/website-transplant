@@ -1,0 +1,10 @@
+export default function BookingPage() {
+  return (
+    <div className="mx-auto max-w-4xl px-6 py-16">
+      <h1 className="text-3xl font-bold text-foreground">Plan Your Stay</h1>
+      <p className="mt-4 text-base text-muted-foreground">
+        Start your reservation here. Booking flow coming soon.
+      </p>
+    </div>
+  );
+}

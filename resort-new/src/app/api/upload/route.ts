@@ -21,14 +21,14 @@ export async function POST(request: NextRequest) {
 
     // Define the path where the file will be saved
     const publicPath = path.join(process.cwd(), 'public');
-    const clinicsImagePath = path.join(publicPath, 'images', 'clinics');
-    const filePath = path.join(clinicsImagePath, filename);
+    const uploadsPath = path.join(publicPath, 'images', 'uploads');
+    const filePath = path.join(uploadsPath, filename);
 
     // Save the file
     await writeFile(filePath, buffer);
 
     // Return the URL that can be used to access the file
-    const fileUrl = `/images/clinics/${filename}`;
+    const fileUrl = `/images/uploads/${filename}`;
 
     return NextResponse.json({ url: fileUrl });
   } catch (error) {
