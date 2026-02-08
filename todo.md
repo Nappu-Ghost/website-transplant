@@ -60,7 +60,7 @@
   - [x] Clean up unused imports and dependencies
   - [x] Keep reusable UI components
 
-- [ ] **3.2** Set up resort page structure
+- [x] **3.2** Set up resort page structure
   - [x] Create `app/page.tsx` (Home)
   - [x] Create `app/about/page.tsx`
   - [x] Create `app/accommodations/page.tsx`
@@ -339,7 +339,7 @@
 
 ## ✅ Progress Tracking
 - **Phase 1**: ✅ Completed
-- **Phase 2**: ⬜ Not Started
+- **Phase 2**: ✅ Completed
 - **Phase 3**: ⬜ Not Started
 - **Phase 4**: ⬜ Not Started
 - **Phase 5**: ⬜ Not Started
