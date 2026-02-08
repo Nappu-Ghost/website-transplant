@@ -68,7 +68,7 @@
   - [x] Create `app/booking/page.tsx`
   - [x] Create `app/contact/page.tsx`
   - [x] Create `app/my-bookings/page.tsx`
-  - [ ] Create `app/admin/*` pages
+  - [x] Create `app/admin/*` pages
   - [x] Create `app/login/page.tsx`
 
 - [ ] **3.3** Update root layout
