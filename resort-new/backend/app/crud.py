@@ -269,3 +269,88 @@ def delete_clinic_and_related_data(db: Session, clinic_to_delete: models.Clinic)
             detail=f"Cannot delete clinic. It might be referenced in other records: {e.orig}"
         )
     return clinic_to_delete
+
+
+def create_hotel(db: Session, hotel: schemas.HotelCreate) -> models.Hotel:
+    return create_db_obj_generic(db, model=models.Hotel, obj_in=hotel)
+
+
+def create_room(db: Session, room: schemas.RoomCreate) -> models.Room:
+    db_hotel = get_db_obj(db, models.Hotel, room.hotel_id)
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail=f"Hotel with id {room.hotel_id} not found")
+    return create_db_obj_generic(db, model=models.Room, obj_in=room)
+
+
+def create_activity(db: Session, activity: schemas.ActivityCreate) -> models.Activity:
+    return create_db_obj_generic(db, model=models.Activity, obj_in=activity)
+
+
+def create_event(db: Session, event: schemas.EventCreate) -> models.Event:
+    return create_db_obj_generic(db, model=models.Event, obj_in=event)
+
+
+def create_ferry(db: Session, ferry: schemas.FerryCreate) -> models.Ferry:
+    return create_db_obj_generic(db, model=models.Ferry, obj_in=ferry)
+
+
+def create_ferry_schedule(db: Session, schedule: schemas.FerryScheduleCreate) -> models.FerrySchedule:
+    db_ferry = get_db_obj(db, models.Ferry, schedule.ferry_id)
+    if not db_ferry:
+        raise HTTPException(status_code=404, detail=f"Ferry with id {schedule.ferry_id} not found")
+    return create_db_obj_generic(db, model=models.FerrySchedule, obj_in=schedule)
+
+
+def create_booking(db: Session, booking_in: schemas.BookingCreate) -> models.Booking:
+    db_user = get_db_obj(db, models.User, booking_in.user_id)
+    if not db_user:
+        raise HTTPException(status_code=404, detail=f"User with id {booking_in.user_id} not found")
+
+    if not booking_in.room_ids:
+        raise HTTPException(status_code=400, detail="At least one room is required for a booking")
+
+    rooms = db.query(models.Room).filter(models.Room.id.in_(booking_in.room_ids)).all()
+    if len(rooms) != len(set(booking_in.room_ids)):
+        raise HTTPException(status_code=404, detail="One or more rooms were not found")
+
+    activities = []
+    if booking_in.activity_ids:
+        activities = db.query(models.Activity).filter(models.Activity.id.in_(booking_in.activity_ids)).all()
+        if len(activities) != len(set(booking_in.activity_ids)):
+            raise HTTPException(status_code=404, detail="One or more activities were not found")
+
+    booking_data = booking_in.model_dump(exclude={"room_ids", "activity_ids", "ferry_ticket"})
+    db_booking = models.Booking(**booking_data, status=models.BookingStatusEnum.CONFIRMED)
+
+    try:
+        db.add(db_booking)
+        db.flush()
+
+        booking_rooms = [
+            models.BookingRoom(booking_id=db_booking.id, room_id=room_id)
+            for room_id in booking_in.room_ids
+        ]
+        db.add_all(booking_rooms)
+
+        if booking_in.activity_ids:
+            booking_activities = [
+                models.BookingActivity(booking_id=db_booking.id, activity_id=activity_id)
+                for activity_id in booking_in.activity_ids
+            ]
+            db.add_all(booking_activities)
+
+        if booking_in.ferry_ticket:
+            db_ferry_ticket = models.FerryTicket(
+                booking_id=db_booking.id,
+                number_of_tickets=booking_in.ferry_ticket.number_of_tickets,
+                price=booking_in.ferry_ticket.price,
+            )
+            db.add(db_ferry_ticket)
+
+        db.commit()
+        db.refresh(db_booking)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
+
+    return db_booking

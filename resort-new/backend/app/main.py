@@ -10,6 +10,14 @@ from .routers import (
     shifts,
     surgery_bookings,
     auth as auth_router,
+    hotels,
+    rooms,
+    activities,
+    bookings,
+    events,
+    ferries,
+    ferry_schedules,
+    ferry_tickets,
 )
 from .db import engine, Base
 
@@ -49,6 +57,22 @@ app.include_router(
     surgery_bookings.router,
     prefix=f"{API_PREFIX}/surgery-bookings",
     tags=["Surgery Bookings"],
+)
+app.include_router(hotels.router, prefix=f"{API_PREFIX}/hotels", tags=["Hotels"])
+app.include_router(rooms.router, prefix=f"{API_PREFIX}/rooms", tags=["Rooms"])
+app.include_router(activities.router, prefix=f"{API_PREFIX}/activities", tags=["Activities"])
+app.include_router(bookings.router, prefix=f"{API_PREFIX}/bookings", tags=["Bookings"])
+app.include_router(events.router, prefix=f"{API_PREFIX}/events", tags=["Events"])
+app.include_router(ferries.router, prefix=f"{API_PREFIX}/ferries", tags=["Ferries"])
+app.include_router(
+    ferry_schedules.router,
+    prefix=f"{API_PREFIX}/ferry-schedules",
+    tags=["Ferry Schedules"],
+)
+app.include_router(
+    ferry_tickets.router,
+    prefix=f"{API_PREFIX}/ferry-tickets",
+    tags=["Ferry Tickets"],
 )
 
 

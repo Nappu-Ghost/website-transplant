@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime, date
-from app.models import RoleEnum, StatusEnum, AppointmentStatusEnum, ShiftTimeEnum
+from app.models import RoleEnum, StatusEnum, AppointmentStatusEnum, ShiftTimeEnum, BookingStatusEnum
 
 
 class Token(BaseModel):
@@ -18,6 +18,7 @@ class UserBase(BaseModel):
     name: Optional[str] = None
     role: RoleEnum = RoleEnum.CUSTOMER
     status: StatusEnum = StatusEnum.ACTIVE
+    profileImage: Optional[str] = None
 
 
 class UserCreate(UserBase):
@@ -223,4 +224,257 @@ class SurgeryBookingResponse(SurgeryBookingBase):
     updatedAt: datetime
     clinic: ClinicResponse
     doctor: DoctorResponse
+    model_config = ConfigDict(from_attributes=True)
+
+
+class HotelBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    location: str
+    image_url: Optional[str] = None
+    floors: int = Field(1, ge=1)
+
+
+class HotelCreate(HotelBase):
+    pass
+
+
+class HotelUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    location: Optional[str] = None
+    image_url: Optional[str] = None
+    floors: Optional[int] = Field(None, ge=1)
+
+
+class HotelResponse(HotelBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class RoomBase(BaseModel):
+    hotel_id: int
+    name: str
+    type: str
+    price: float = Field(..., ge=0)
+    capacity: int = Field(..., ge=1)
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    floor_number: int = Field(1, ge=1)
+    available: bool = True
+    is_premium: bool = False
+
+
+class RoomCreate(RoomBase):
+    pass
+
+
+class RoomUpdate(BaseModel):
+    hotel_id: Optional[int] = None
+    name: Optional[str] = None
+    type: Optional[str] = None
+    price: Optional[float] = Field(None, ge=0)
+    capacity: Optional[int] = Field(None, ge=1)
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    floor_number: Optional[int] = Field(None, ge=1)
+    available: Optional[bool] = None
+    is_premium: Optional[bool] = None
+
+
+class RoomResponse(RoomBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ActivityBase(BaseModel):
+    name: str
+    activity_type: str
+    price: float = Field(..., ge=0)
+    capacity: Optional[int] = Field(None, ge=0)
+    image_url: Optional[str] = None
+    is_premium: bool = False
+
+
+class ActivityCreate(ActivityBase):
+    pass
+
+
+class ActivityUpdate(BaseModel):
+    name: Optional[str] = None
+    activity_type: Optional[str] = None
+    price: Optional[float] = Field(None, ge=0)
+    capacity: Optional[int] = Field(None, ge=0)
+    image_url: Optional[str] = None
+    is_premium: Optional[bool] = None
+
+
+class ActivityResponse(ActivityBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class EventBase(BaseModel):
+    name: str
+    start_date: datetime
+    end_date: datetime
+    is_premium: bool = False
+
+
+class EventCreate(EventBase):
+    pass
+
+
+class EventUpdate(BaseModel):
+    name: Optional[str] = None
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_premium: Optional[bool] = None
+
+
+class EventResponse(EventBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FerryBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+    capacity: int = Field(..., ge=1)
+    price: float = Field(..., ge=0)
+    schedule: str
+    image_url: Optional[str] = None
+
+
+class FerryCreate(FerryBase):
+    pass
+
+
+class FerryUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
+    capacity: Optional[int] = Field(None, ge=1)
+    price: Optional[float] = Field(None, ge=0)
+    schedule: Optional[str] = None
+    image_url: Optional[str] = None
+
+
+class FerryResponse(FerryBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FerryScheduleBase(BaseModel):
+    ferry_id: int
+    departure: datetime
+    arrival: datetime
+    route: str
+    price: float = Field(..., ge=0)
+    available: bool = True
+
+
+class FerryScheduleCreate(FerryScheduleBase):
+    pass
+
+
+class FerryScheduleUpdate(BaseModel):
+    ferry_id: Optional[int] = None
+    departure: Optional[datetime] = None
+    arrival: Optional[datetime] = None
+    route: Optional[str] = None
+    price: Optional[float] = Field(None, ge=0)
+    available: Optional[bool] = None
+
+
+class FerryScheduleResponse(FerryScheduleBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class FerryTicketBase(BaseModel):
+    booking_id: int
+    number_of_tickets: int = Field(..., ge=0)
+    price: float = Field(..., ge=0)
+
+
+class FerryTicketCreate(FerryTicketBase):
+    pass
+
+
+class FerryTicketCreateIn(BaseModel):
+    number_of_tickets: int = Field(..., ge=0)
+    price: float = Field(..., ge=0)
+
+
+class FerryTicketResponse(FerryTicketBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingRoomResponse(BaseModel):
+    id: int
+    room: RoomResponse
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingActivityResponse(BaseModel):
+    id: int
+    activity: ActivityResponse
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
+class BookingCreate(BaseModel):
+    user_id: int
+    number_of_guests: int = Field(..., ge=1)
+    total_price: float = Field(..., ge=0)
+    start_date: datetime
+    end_date: datetime
+    is_premium: bool = False
+    room_ids: List[int]
+    activity_ids: Optional[List[int]] = None
+    ferry_ticket: Optional[FerryTicketCreateIn] = None
+
+
+class BookingUpdate(BaseModel):
+    number_of_guests: Optional[int] = Field(None, ge=1)
+    status: Optional[BookingStatusEnum] = None
+    total_price: Optional[float] = Field(None, ge=0)
+    start_date: Optional[datetime] = None
+    end_date: Optional[datetime] = None
+    is_premium: Optional[bool] = None
+
+
+class BookingResponse(BaseModel):
+    id: int
+    user_id: int
+    number_of_guests: int
+    status: BookingStatusEnum
+    total_price: float
+    start_date: datetime
+    end_date: datetime
+    is_premium: bool
+    createdAt: datetime
+    updatedAt: datetime
+    user: UserResponse
+    rooms: List[BookingRoomResponse]
+    activities: List[BookingActivityResponse]
+    ferry_ticket: Optional[FerryTicketResponse] = None
     model_config = ConfigDict(from_attributes=True)

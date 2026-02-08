@@ -7,3 +7,11 @@ from . import appointments
 from . import shifts
 from . import surgery_bookings
 from . import auth
+from . import hotels
+from . import rooms
+from . import activities
+from . import bookings
+from . import events
+from . import ferries
+from . import ferry_schedules
+from . import ferry_tickets

@@ -28,19 +28,19 @@
 
 ## 🗄️ Phase 2: Backend Setup
 - [ ] **2.1** Database Schema Design
-  - [ ] Design Users table/model
-  - [ ] Design Accommodations table/model
-  - [ ] Design Activities table/model
-  - [ ] Design Bookings table/model
+  - [x] Design Users table/model
+  - [x] Design Accommodations table/model
+  - [x] Design Activities table/model
+  - [x] Design Bookings table/model
   - [ ] Design Payments table/model
-  - [ ] Design any additional tables needed
+  - [x] Design any additional tables needed
   
 - [ ] **2.2** Backend Implementation
-  - [ ] Set up FastAPI routes for resort (or adapt existing backend)
+  - [x] Set up FastAPI routes for resort (or adapt existing backend)
   - [ ] Implement User authentication endpoints
-  - [ ] Implement Accommodations CRUD endpoints
-  - [ ] Implement Activities CRUD endpoints
-  - [ ] Implement Bookings CRUD endpoints
+  - [x] Implement Accommodations CRUD endpoints
+  - [x] Implement Activities CRUD endpoints
+  - [x] Implement Bookings CRUD endpoints
   - [ ] Implement Payment processing endpoints
   - [ ] Implement Admin-specific endpoints
   
