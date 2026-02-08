@@ -27,31 +27,32 @@
 ---
 
 ## 🗄️ Phase 2: Backend Setup
-- [ ] **2.1** Database Schema Design
+- [x] **2.1** Database Schema Design
   - [x] Design Users table/model
   - [x] Design Accommodations table/model
   - [x] Design Activities table/model
   - [x] Design Bookings table/model
-  - [ ] Design Payments table/model
+  - [x] Design Payments table/model
   - [x] Design any additional tables needed
   
-- [ ] **2.2** Backend Implementation
+- [x] **2.2** Backend Implementation
   - [x] Set up FastAPI routes for resort (or adapt existing backend)
-  - [ ] Implement User authentication endpoints
+  - [x] Implement User authentication endpoints
   - [x] Implement Accommodations CRUD endpoints
   - [x] Implement Activities CRUD endpoints
   - [x] Implement Bookings CRUD endpoints
-  - [ ] Implement Payment processing endpoints
-  - [ ] Implement Admin-specific endpoints
+  - [x] Implement Payment processing endpoints
+  - [x] Implement Admin-specific endpoints
   
 - [ ] **2.3** Database Migration
-  - [ ] Create database initialization script
-  - [ ] Create seed data script for testing
+  - [x] Create database initialization script
+  - [x] Create seed data script for testing
   - [ ] Migrate existing data (if needed)
 
 ---
 
 ## 🎨 Phase 3: Frontend Structure Setup
+- [x] **3.0** Add Next.js API proxy routes for resort data
 - [ ] **3.1** Clean up existing dental clinic code
   - [ ] Remove dental-specific pages
   - [ ] Remove dental-specific components

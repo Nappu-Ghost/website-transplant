@@ -354,3 +354,51 @@ def create_booking(db: Session, booking_in: schemas.BookingCreate) -> models.Boo
         raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
 
     return db_booking
+
+
+def create_payment(db: Session, payment_in: schemas.PaymentCreate) -> models.Payment:
+    db_booking = get_db_obj(db, models.Booking, payment_in.booking_id)
+    if not db_booking:
+        raise HTTPException(status_code=404, detail=f"Booking with id {payment_in.booking_id} not found")
+
+    db_payment = models.Payment(**payment_in.model_dump())
+    try:
+        db.add(db_payment)
+        if payment_in.status in [
+            models.PaymentStatusEnum.AUTHORIZED,
+            models.PaymentStatusEnum.CAPTURED,
+        ]:
+            db_booking.status = models.BookingStatusEnum.PAYMENT_COMPLETED
+            db.add(db_booking)
+        db.commit()
+        db.refresh(db_payment)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
+
+    return db_payment
+
+
+def update_payment(db: Session, db_payment: models.Payment, payment_in: schemas.PaymentUpdate) -> models.Payment:
+    update_data = payment_in.model_dump(exclude_unset=True)
+    for field_name, value in update_data.items():
+        if hasattr(db_payment, field_name):
+            setattr(db_payment, field_name, value)
+
+    try:
+        db.add(db_payment)
+        if "status" in update_data and db_payment.booking_id:
+            db_booking = get_db_obj(db, models.Booking, db_payment.booking_id)
+            if db_booking and db_payment.status in [
+                models.PaymentStatusEnum.AUTHORIZED,
+                models.PaymentStatusEnum.CAPTURED,
+            ]:
+                db_booking.status = models.BookingStatusEnum.PAYMENT_COMPLETED
+                db.add(db_booking)
+        db.commit()
+        db.refresh(db_payment)
+    except IntegrityError as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
+
+    return db_payment

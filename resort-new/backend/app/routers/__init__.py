@@ -15,3 +15,5 @@ from . import events
 from . import ferries
 from . import ferry_schedules
 from . import ferry_tickets
+from . import payments
+from . import admin

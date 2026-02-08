@@ -18,6 +18,8 @@ from .routers import (
     ferries,
     ferry_schedules,
     ferry_tickets,
+    payments,
+    admin,
 )
 from .db import engine, Base
 
@@ -74,6 +76,8 @@ app.include_router(
     prefix=f"{API_PREFIX}/ferry-tickets",
     tags=["Ferry Tickets"],
 )
+app.include_router(payments.router, prefix=f"{API_PREFIX}/payments", tags=["Payments"])
+app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Admin"])
 
 
 @app.get(f"{API_PREFIX}/health", tags=["Health Check"])

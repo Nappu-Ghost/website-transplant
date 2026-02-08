@@ -1,7 +1,15 @@
 from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from datetime import datetime, date
-from app.models import RoleEnum, StatusEnum, AppointmentStatusEnum, ShiftTimeEnum, BookingStatusEnum
+from app.models import (
+    RoleEnum,
+    StatusEnum,
+    AppointmentStatusEnum,
+    ShiftTimeEnum,
+    BookingStatusEnum,
+    PaymentStatusEnum,
+    PaymentMethodEnum,
+)
 
 
 class Token(BaseModel):
@@ -425,6 +433,38 @@ class FerryTicketResponse(FerryTicketBase):
     model_config = ConfigDict(from_attributes=True)
 
 
+class PaymentBase(BaseModel):
+    booking_id: int
+    amount: float = Field(..., ge=0)
+    currency: str = Field("USD", min_length=3, max_length=3)
+    status: PaymentStatusEnum = PaymentStatusEnum.PENDING
+    method: PaymentMethodEnum = PaymentMethodEnum.CARD
+    provider: Optional[str] = None
+    provider_reference: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+
+class PaymentCreate(PaymentBase):
+    pass
+
+
+class PaymentUpdate(BaseModel):
+    amount: Optional[float] = Field(None, ge=0)
+    currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    status: Optional[PaymentStatusEnum] = None
+    method: Optional[PaymentMethodEnum] = None
+    provider: Optional[str] = None
+    provider_reference: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+
+class PaymentResponse(PaymentBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+
 class BookingRoomResponse(BaseModel):
     id: int
     room: RoomResponse
@@ -477,4 +517,5 @@ class BookingResponse(BaseModel):
     rooms: List[BookingRoomResponse]
     activities: List[BookingActivityResponse]
     ferry_ticket: Optional[FerryTicketResponse] = None
+    payments: List[PaymentResponse] = []
     model_config = ConfigDict(from_attributes=True)

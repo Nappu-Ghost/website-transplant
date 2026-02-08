@@ -209,6 +209,20 @@ class BookingStatusEnum(str, enum.Enum):
     CANCELLED = "CANCELLED"
 
 
+class PaymentStatusEnum(str, enum.Enum):
+    PENDING = "PENDING"
+    AUTHORIZED = "AUTHORIZED"
+    CAPTURED = "CAPTURED"
+    FAILED = "FAILED"
+    REFUNDED = "REFUNDED"
+
+
+class PaymentMethodEnum(str, enum.Enum):
+    CARD = "CARD"
+    BANK_TRANSFER = "BANK_TRANSFER"
+    CASH = "CASH"
+
+
 class Hotel(Base):
     __tablename__ = "hotels"
     id = Column(Integer, primary_key=True, index=True)
@@ -292,6 +306,25 @@ class Booking(Base):
     rooms = relationship("BookingRoom", back_populates="booking", cascade="all, delete-orphan")
     activities = relationship("BookingActivity", back_populates="booking", cascade="all, delete-orphan")
     ferry_ticket = relationship("FerryTicket", back_populates="booking", uselist=False, cascade="all, delete-orphan")
+    payments = relationship("Payment", back_populates="booking", cascade="all, delete-orphan")
+
+
+class Payment(Base):
+    __tablename__ = "payments"
+    id = Column(Integer, primary_key=True, index=True)
+    booking_id = Column(Integer, ForeignKey("bookings.id"), nullable=False)
+    amount = Column(Float, nullable=False)
+    currency = Column(String, default="USD", nullable=False)
+    status = Column(SQLAlchemyEnum(PaymentStatusEnum), default=PaymentStatusEnum.PENDING, nullable=False)
+    method = Column(SQLAlchemyEnum(PaymentMethodEnum), default=PaymentMethodEnum.CARD, nullable=False)
+    provider = Column(String, nullable=True)
+    provider_reference = Column(String, nullable=True)
+    paid_at = Column(DateTime, nullable=True)
+    createdAt = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updatedAt = Column(
+        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+    )
+    booking = relationship("Booking", back_populates="payments")
 
 
 class BookingRoom(Base):

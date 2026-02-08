@@ -26,6 +26,7 @@ def create_booking(
             joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
             joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
             joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
         )
         .filter(models.Booking.id == db_booking.id)
         .first()
@@ -50,6 +51,7 @@ def read_bookings(
             joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
             joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
             joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
         )
     )
     if status:
@@ -76,6 +78,7 @@ def read_user_bookings(
             joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
             joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
             joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
         )
         .filter(models.Booking.user_id == target_user_id)
         .order_by(models.Booking.createdAt.desc())
@@ -96,6 +99,7 @@ def read_booking(
             joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
             joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
             joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
         )
         .filter(models.Booking.id == booking_id)
         .first()
@@ -129,6 +133,7 @@ def update_booking_full(
             joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
             joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
             joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
         )
         .filter(models.Booking.id == updated.id)
         .first()

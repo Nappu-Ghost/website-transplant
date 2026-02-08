@@ -10,6 +10,15 @@ from app.db import get_db
 router = APIRouter(tags=["Authentication"])
 
 
+@router.post("/register", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
+def register_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    user_data = user.model_dump()
+    user_data["role"] = models.RoleEnum.CUSTOMER
+    user_data["status"] = models.StatusEnum.ACTIVE
+    sanitized_user = schemas.UserCreate(**user_data)
+    return crud.create_user(db=db, user_in=sanitized_user)
+
+
 @router.post("/token", response_model=schemas.Token)
 async def login_for_access_token(
     db: Session = Depends(get_db), form_data: OAuth2PasswordRequestForm = Depends()
