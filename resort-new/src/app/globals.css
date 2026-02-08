@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: var(--font-inter), Arial, Helvetica, sans-serif; /* Use Inter font variable */
+}
+
+@layer base {
+  :root {
+    --background: 60 56% 91%; /* Light Beige */
+    --foreground: 180 25% 15%; /* Dark Teal/Grey */
+    --card: 60 56% 95%; /* Slightly lighter Beige */
+    --card-foreground: 180 25% 15%;
+    --popover: 60 56% 93%;
+    --popover-foreground: 180 25% 15%;
+    --primary: 180 100% 25%; /* Teal */
+    --primary-foreground: 60 56% 95%; /* Near Beige */
+    --secondary: 180 15% 88%; /* Lighter Teal/Grey */
+    --secondary-foreground: 180 50% 20%; /* Darker Teal */
+    --muted: 180 15% 92%; /* Very Light Teal/Grey */
+    --muted-foreground: 180 10% 45%; /* Muted Teal/Grey */
+    --accent: 16 100% 66%; /* Coral */
+    --accent-foreground: 0 0% 100%; /* White for contrast on Coral */
+    --destructive: 0 84.2% 60.2%; /* Default Red */
+    --destructive-foreground: 0 0% 98%; /* Default Light */
+    --border: 180 15% 80%; /* Teal/Grey Border */
+    --input: 180 15% 85%; /* Slightly lighter input border */
+    --ring: 16 100% 66%; /* Coral for focus rings */
+    --radius: 0.8rem; /* Slightly larger radius */
+    --chart-1: 180 70% 50%; /* Teal shades */
+    --chart-2: 180 50% 60%;
+    --chart-3: 16 80% 70%; /* Coral shades */
+    --chart-4: 16 60% 80%;
+    --chart-5: 60 40% 80%; /* Beige shades */
+    --sidebar-background: 180 10% 96%; /* Off-white/very light grey */
+    --sidebar-foreground: 180 25% 20%; /* Dark Teal */
+    --sidebar-primary: 180 100% 25%; /* Teal */
+    --sidebar-primary-foreground: 60 56% 95%; /* Near Beige */
+    --sidebar-accent: 180 10% 90%; /* Light Grey/Teal */
+    --sidebar-accent-foreground: 180 50% 20%; /* Dark Teal */
+    --sidebar-border: 180 10% 85%; /* Grey/Teal Border */
+    --sidebar-ring: 16 100% 66%; /* Coral */
+  }
+
+  /* Dark mode can be adjusted later if needed */
+  .dark {
+    --background: 180 15% 10%; /* Dark Teal/Grey */
+    --foreground: 60 56% 91%; /* Light Beige */
+    --card: 180 15% 15%;
+    --card-foreground: 60 56% 91%;
+    --popover: 180 15% 12%;
+    --popover-foreground: 60 56% 91%;
+    --primary: 180 80% 50%; /* Brighter Teal */
+    --primary-foreground: 180 25% 10%; /* Dark Teal/Grey */
+    --secondary: 180 10% 25%; /* Darker Teal/Grey */
+    --secondary-foreground: 60 56% 91%; /* Light Beige */
+    --muted: 180 10% 20%;
+    --muted-foreground: 180 10% 65%;
+    --accent: 16 100% 70%; /* Brighter Coral */
+    --accent-foreground: 0 0% 5%; /* Dark */
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 180 10% 30%;
+    --input: 180 10% 35%;
+    --ring: 16 100% 70%; /* Brighter Coral */
+    --chart-1: 180 70% 60%;
+    --chart-2: 180 50% 70%;
+    --chart-3: 16 80% 75%;
+    --chart-4: 16 60% 85%;
+    --chart-5: 60 40% 85%;
+    --sidebar-background: 180 15% 12%; /* Dark Teal/Grey */
+    --sidebar-foreground: 180 10% 90%; /* Light Grey/Teal */
+    --sidebar-primary: 180 80% 50%; /* Brighter Teal */
+    --sidebar-primary-foreground: 180 25% 10%; /* Dark Teal/Grey */
+    --sidebar-accent: 180 10% 25%; /* Darker Teal/Grey */
+    --sidebar-accent-foreground: 180 10% 90%; /* Light Grey/Teal */
+    --sidebar-border: 180 10% 30%;
+    --sidebar-ring: 16 100% 70%; /* Brighter Coral */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-size: 16px; /* Slightly larger base font size */
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight; /* Modern typography touch */
+  }
+  h1 { @apply text-4xl; }
+  h2 { @apply text-3xl; }
+  h3 { @apply text-2xl; }
+  p { @apply leading-relaxed; } /* Improved readability */
+}

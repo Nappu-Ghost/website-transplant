@@ -1,0 +1,356 @@
+# 📋 Resort Website Transplant - TODO List
+
+## 🔍 Phase 1: Analysis & Planning
+- [ ] **1.1** Deep dive into `resort-old` codebase structure
+  - [ ] Map all pages and routes
+  - [ ] Document all components
+  - [ ] List all features and functionality
+  - [ ] Identify all data models (Prisma schema)
+  - [ ] Review API endpoints
+  - [ ] Catalog all assets (images, videos)
+  
+- [ ] **1.2** Deep dive into `resort-new` codebase structure
+  - [ ] Understand component architecture
+  - [ ] Review Shadcn/ui component usage
+  - [ ] Understand FastAPI backend structure
+  - [ ] Review authentication flow
+  - [ ] Understand state management patterns
+  - [ ] Review routing structure
+
+- [ ] **1.3** Create migration mapping document
+  - [ ] Map old pages → new pages
+  - [ ] Map old components → new components
+  - [ ] Map old data models → new data models
+  - [ ] Map old API routes → new API routes
+  - [ ] Identify reusable components from both projects
+
+---
+
+## 🗄️ Phase 2: Backend Setup
+- [ ] **2.1** Database Schema Design
+  - [ ] Design Users table/model
+  - [ ] Design Accommodations table/model
+  - [ ] Design Activities table/model
+  - [ ] Design Bookings table/model
+  - [ ] Design Payments table/model
+  - [ ] Design any additional tables needed
+  
+- [ ] **2.2** Backend Implementation
+  - [ ] Set up FastAPI routes for resort (or adapt existing backend)
+  - [ ] Implement User authentication endpoints
+  - [ ] Implement Accommodations CRUD endpoints
+  - [ ] Implement Activities CRUD endpoints
+  - [ ] Implement Bookings CRUD endpoints
+  - [ ] Implement Payment processing endpoints
+  - [ ] Implement Admin-specific endpoints
+  
+- [ ] **2.3** Database Migration
+  - [ ] Create database initialization script
+  - [ ] Create seed data script for testing
+  - [ ] Migrate existing data (if needed)
+
+---
+
+## 🎨 Phase 3: Frontend Structure Setup
+- [ ] **3.1** Clean up existing dental clinic code
+  - [ ] Remove dental-specific pages
+  - [ ] Remove dental-specific components
+  - [ ] Remove dental-specific API calls
+  - [ ] Clean up unused imports and dependencies
+  - [ ] Keep reusable UI components
+
+- [ ] **3.2** Set up resort page structure
+  - [ ] Create `app/page.tsx` (Home)
+  - [ ] Create `app/about/page.tsx`
+  - [ ] Create `app/accommodations/page.tsx`
+  - [ ] Create `app/activities/page.tsx`
+  - [ ] Create `app/booking/page.tsx`
+  - [ ] Create `app/contact/page.tsx`
+  - [ ] Create `app/my-bookings/page.tsx`
+  - [ ] Create `app/admin/*` pages
+  - [ ] Create `app/login/page.tsx`
+
+- [ ] **3.3** Update root layout
+  - [ ] Update metadata (title, description)
+  - [ ] Update navigation menu
+  - [ ] Update footer
+  - [ ] Update theme/branding
+
+---
+
+## 🧩 Phase 4: Component Migration
+- [ ] **4.1** Migrate resort-specific components
+  - [ ] AccommodationCard
+  - [ ] ActivityCard
+  - [ ] BookingForm
+  - [ ] Payment components
+  - [ ] Hero sections
+  - [ ] Image galleries
+  - [ ] Video players
+  - [ ] Map components
+  - [ ] Other custom components
+
+- [ ] **4.2** Adapt components to new structure
+  - [ ] Convert to Shadcn/ui patterns
+  - [ ] Implement proper TypeScript types
+  - [ ] Add form validation with Zod
+  - [ ] Integrate with react-hook-form
+  - [ ] Add proper error handling
+  - [ ] Implement loading states
+
+- [ ] **4.3** Create shared/reusable components
+  - [ ] Layout components
+  - [ ] Navigation components
+  - [ ] Card components
+  - [ ] Form components
+  - [ ] Modal/Dialog components
+  - [ ] Toast notifications
+
+---
+
+## 📄 Phase 5: Page Implementation
+- [ ] **5.1** Home Page
+  - [ ] Hero section with video/image
+  - [ ] Featured accommodations
+  - [ ] Featured activities
+  - [ ] Call-to-action sections
+  - [ ] Animations and transitions
+
+- [ ] **5.2** About Page
+  - [ ] Resort information
+  - [ ] Team section
+  - [ ] Features/amenities
+  - [ ] Image gallery
+
+- [ ] **5.3** Accommodations Page
+  - [ ] List all accommodations
+  - [ ] Filter and search functionality
+  - [ ] Accommodation detail view
+  - [ ] Booking integration
+  - [ ] Image galleries
+
+- [ ] **5.4** Activities Page
+  - [ ] List all activities
+  - [ ] Activity categories
+  - [ ] Activity detail view
+  - [ ] Booking integration
+  - [ ] Image/video content
+
+- [ ] **5.5** Booking System
+  - [ ] Booking form with validation
+  - [ ] Date selection
+  - [ ] Guest information
+  - [ ] Room/activity selection
+  - [ ] Price calculation
+  - [ ] Payment integration
+  - [ ] Booking confirmation
+
+- [ ] **5.6** Contact Page
+  - [ ] Contact form
+  - [ ] Location map
+  - [ ] Contact information
+  - [ ] Form submission handling
+
+- [ ] **5.7** My Bookings Page
+  - [ ] User's booking history
+  - [ ] Booking details view
+  - [ ] Cancellation functionality
+  - [ ] Booking status tracking
+
+- [ ] **5.8** Admin Dashboard
+  - [ ] Dashboard overview
+  - [ ] Manage accommodations
+  - [ ] Manage activities
+  - [ ] Manage bookings
+  - [ ] Manage users
+  - [ ] Analytics and reports
+  - [ ] Settings
+
+- [ ] **5.9** Authentication Pages
+  - [ ] Login page
+  - [ ] Registration page (if needed)
+  - [ ] Password reset (if needed)
+  - [ ] Profile management
+
+---
+
+## 🔐 Phase 6: Authentication & Authorization
+- [ ] **6.1** Implement authentication
+  - [ ] Set up auth context/provider
+  - [ ] Implement login functionality
+  - [ ] Implement logout functionality
+  - [ ] Implement session management
+  - [ ] Add protected routes
+
+- [ ] **6.2** Implement authorization
+  - [ ] User roles (Customer, Admin)
+  - [ ] Role-based access control
+  - [ ] Admin-only pages protection
+  - [ ] User-specific data access
+
+---
+
+## 🎨 Phase 7: Assets & Content Migration
+- [ ] **7.1** Transfer media assets
+  - [ ] Copy images from `resort-old/public`
+  - [ ] Copy videos from `resort-old/public`
+  - [ ] Optimize images for web
+  - [ ] Optimize videos for web
+  - [ ] Update all asset references
+
+- [ ] **7.2** Content migration
+  - [ ] Replace all dental terminology with resort terminology
+  - [ ] Update page titles and descriptions
+  - [ ] Update SEO metadata
+  - [ ] Update navigation labels
+  - [ ] Update form labels and placeholders
+  - [ ] Update error messages
+  - [ ] Update success messages
+
+- [ ] **7.3** Branding
+  - [ ] Update favicon
+  - [ ] Update logo
+  - [ ] Update color scheme
+  - [ ] Update fonts (if needed)
+  - [ ] Update theme configuration
+
+---
+
+## 🔧 Phase 8: API Integration
+- [ ] **8.1** Set up API client
+  - [ ] Configure TanStack Query
+  - [ ] Create API service functions
+  - [ ] Set up authentication headers
+  - [ ] Handle error responses
+
+- [ ] **8.2** Implement queries
+  - [ ] Fetch accommodations
+  - [ ] Fetch activities
+  - [ ] Fetch bookings
+  - [ ] Fetch user data
+  - [ ] Fetch admin data
+
+- [ ] **8.3** Implement mutations
+  - [ ] Create bookings
+  - [ ] Update bookings
+  - [ ] Cancel bookings
+  - [ ] Create/update accommodations (admin)
+  - [ ] Create/update activities (admin)
+  - [ ] Process payments
+
+---
+
+## 🧪 Phase 9: Testing & Quality Assurance
+- [ ] **9.1** Feature testing
+  - [ ] Test user registration/login
+  - [ ] Test accommodation browsing
+  - [ ] Test activity browsing
+  - [ ] Test booking flow (end-to-end)
+  - [ ] Test payment processing
+  - [ ] Test user dashboard
+  - [ ] Test admin dashboard
+  - [ ] Test all CRUD operations
+
+- [ ] **9.2** Cross-browser testing
+  - [ ] Chrome
+  - [ ] Firefox
+  - [ ] Safari
+  - [ ] Edge
+
+- [ ] **9.3** Responsive design testing
+  - [ ] Mobile devices
+  - [ ] Tablets
+  - [ ] Desktop
+  - [ ] Large screens
+
+- [ ] **9.4** Performance testing
+  - [ ] Page load times
+  - [ ] Image optimization
+  - [ ] Code splitting
+  - [ ] Lazy loading
+
+---
+
+## ✨ Phase 10: Polish & Optimization
+- [ ] **10.1** UI/UX improvements
+  - [ ] Smooth animations
+  - [ ] Loading states
+  - [ ] Error states
+  - [ ] Empty states
+  - [ ] Success feedback
+  - [ ] Accessibility improvements
+
+- [ ] **10.2** Code quality
+  - [ ] Remove console.logs
+  - [ ] Clean up commented code
+  - [ ] Fix ESLint warnings
+  - [ ] Add TypeScript types where missing
+  - [ ] Add comments for complex logic
+  - [ ] Optimize imports
+
+- [ ] **10.3** Performance optimization
+  - [ ] Implement image lazy loading
+  - [ ] Optimize bundle size
+  - [ ] Add caching strategies
+  - [ ] Optimize database queries
+  - [ ] Add loading skeletons
+
+- [ ] **10.4** Documentation
+  - [ ] Update README.md
+  - [ ] Document API endpoints
+  - [ ] Document component usage
+  - [ ] Add setup instructions
+  - [ ] Add deployment guide
+
+---
+
+## 🚀 Phase 11: Final Steps
+- [ ] **11.1** Final review
+  - [ ] Review all pages
+  - [ ] Review all functionality
+  - [ ] Check for any remaining dental references
+  - [ ] Verify all links work
+  - [ ] Test all forms
+
+- [ ] **11.2** Deployment preparation
+  - [ ] Environment variables setup
+  - [ ] Production build test
+  - [ ] Database migration scripts
+  - [ ] Backup strategy
+
+- [ ] **11.3** Launch
+  - [ ] Deploy backend
+  - [ ] Deploy frontend
+  - [ ] DNS configuration
+  - [ ] SSL certificate
+  - [ ] Final smoke tests
+
+---
+
+## 📝 Notes
+- Keep the `resort-old` project intact as reference
+- Document any issues or blockers as they arise
+- Test frequently during development
+- Commit changes regularly with clear messages
+- Ask for help when stuck!
+
+---
+
+## ✅ Progress Tracking
+- **Phase 1**: ⬜ Not Started
+- **Phase 2**: ⬜ Not Started
+- **Phase 3**: ⬜ Not Started
+- **Phase 4**: ⬜ Not Started
+- **Phase 5**: ⬜ Not Started
+- **Phase 6**: ⬜ Not Started
+- **Phase 7**: ⬜ Not Started
+- **Phase 8**: ⬜ Not Started
+- **Phase 9**: ⬜ Not Started
+- **Phase 10**: ⬜ Not Started
+- **Phase 11**: ⬜ Not Started
+
+**Overall Progress**: 0% Complete
+
+---
+
+*Last Updated: 2026-02-08*

@@ -1,0 +1,15 @@
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+sqlalchemy>=2.0.0
+pydantic>=2.0.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.5
+pytest>=7.0.0
+requests>=2.25.0
+Faker>=15.0.0
+httpx>=0.24.0 
+passlib[bcrypt]
+bcrypt==4.0.1
+pydantic[email]
+python-jose[cryptography]
+cryptography

@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma-client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  password     String
+  name         String
+  role         String    @default("USER")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  profileImage String?
+  bookings     Booking[]
+}
+
+model Hotel {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String
+  location    String
+  imageUrl    String
+  floors      Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  rooms       Room[]
+}
+
+model Room {
+  id          Int       @id @default(autoincrement())
+  name        String
+  hotelId     Int
+  type        String
+  price       Float
+  capacity    Int
+  description String
+  imageUrl    String
+  floorNumber Int       @default(1)
+  available   Boolean   @default(true)
+  isPremium   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  bookings    BookingRoom[]
+  hotel       Hotel     @relation(fields: [hotelId], references: [id])
+}
+
+model FerryTickets {
+  id             Int      @id @default(autoincrement())
+  numberOfTickets Int
+  price          Float
+  bookingId      Int      @unique
+  booking        Booking  @relation(fields: [bookingId], references: [id])
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Activity {
+  id           Int       @id @default(autoincrement())
+  name         String
+  activityType String
+  price        Float
+  capacity     Int?
+  imageUrl     String
+  isPremium    Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  bookings     BookingActivity[]
+}
+
+model Event {
+  id        Int      @id @default(autoincrement())
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isPremium Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BookingStatus {
+  PENDING
+  PAYMENT_COMPLETED
+  CONFIRMED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+model BookingRoom {
+  id        Int      @id @default(autoincrement())
+  bookingId Int
+  roomId    Int
+  booking   Booking  @relation(fields: [bookingId], references: [id])
+  room      Room     @relation(fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookingId, roomId])
+}
+
+model BookingActivity {
+  id         Int      @id @default(autoincrement())
+  bookingId  Int
+  activityId Int
+  booking    Booking  @relation(fields: [bookingId], references: [id])
+  activity   Activity @relation(fields: [activityId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([bookingId, activityId])
+}
+
+model Booking {
+  id             Int              @id @default(autoincrement())
+  userId         Int
+  numberOfGuests Int
+  status         BookingStatus    @default(PENDING)
+  totalPrice     Float
+  startDate      DateTime
+  endDate        DateTime
+  isPremium      Boolean          @default(false)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  user           User             @relation(fields: [userId], references: [id])
+  rooms          BookingRoom[]
+  activities     BookingActivity[]
+  ferryTicket    FerryTickets?
+}
