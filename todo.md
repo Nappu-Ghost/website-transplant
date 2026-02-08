@@ -53,12 +53,12 @@
 
 ## 🎨 Phase 3: Frontend Structure Setup
 - [x] **3.0** Add Next.js API proxy routes for resort data
-- [ ] **3.1** Clean up existing dental clinic code
+- [x] **3.1** Clean up existing dental clinic code
   - [x] Remove dental-specific pages
   - [x] Remove dental-specific components
   - [x] Remove dental-specific API calls
-  - [ ] Clean up unused imports and dependencies
-  - [ ] Keep reusable UI components
+  - [x] Clean up unused imports and dependencies
+  - [x] Keep reusable UI components
 
 - [ ] **3.2** Set up resort page structure
   - [x] Create `app/page.tsx` (Home)
