@@ -1,4 +1,5 @@
 import { BookingForm } from '@/components/booking-form';
+import { PaymentSection } from '@/components/payment-section';
 
 export default function BookingPage() {
   return (
@@ -10,6 +11,13 @@ export default function BookingPage() {
         </p>
       </div>
       <BookingForm />
+      <div className="mt-16 space-y-4">
+        <h2 className="text-2xl font-semibold text-foreground">Payment preview</h2>
+        <p className="text-sm text-muted-foreground">
+          Select your preferred payment method. Final totals will update after availability is confirmed.
+        </p>
+        <PaymentSection />
+      </div>
     </div>
   );
 }

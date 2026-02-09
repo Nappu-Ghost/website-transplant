@@ -84,7 +84,7 @@
   - [x] AccommodationCard
   - [x] ActivityCard
   - [x] BookingForm
-  - [ ] Payment components
+  - [x] Payment components
   - [x] Hero sections
   - [ ] Image galleries
   - [ ] Video players
