@@ -81,8 +81,8 @@
 
 ## 🧩 Phase 4: Component Migration
 - [ ] **4.1** Migrate resort-specific components
-  - [ ] AccommodationCard
-  - [ ] ActivityCard
+  - [x] AccommodationCard
+  - [x] ActivityCard
   - [ ] BookingForm
   - [ ] Payment components
   - [x] Hero sections
