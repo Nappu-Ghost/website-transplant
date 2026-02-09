@@ -9,7 +9,6 @@ import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 
-// Animation variants
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
   visible: {
@@ -46,10 +45,35 @@ export default function Home() {
       tag: 'Arrival',
     },
   ];
+
   const features = [
     {
       icon: CalendarCheck,
       title: 'Easy Reservation Planning',
+      description: 'Plan your stay in minutes with tailored dates and room picks.',
+    },
+    {
+      icon: Users,
+      title: 'Curated Experiences',
+      description: 'Wellness, adventure, and dining itineraries built around you.',
+    },
+    {
+      icon: Umbrella,
+      title: 'Elevated Comfort',
+      description: 'Quiet suites, private decks, and attentive hosts throughout.',
+    },
+    {
+      icon: Waves,
+      title: 'Island Transfers',
+      description: 'Seamless ferry scheduling aligned with arrival windows.',
+    },
+  ];
+
+  return (
+    <div className="min-h-screen bg-background">
+      <AppHeader />
+
+      <main>
         <motion.section
           className="relative overflow-hidden bg-background pt-16 md:pt-20"
           initial="hidden"
@@ -112,37 +136,7 @@ export default function Home() {
             </motion.div>
           </div>
         </motion.section>
-              <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"><defs><pattern id="p" width="100" height="100" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><path d="M0 50A50 50 0 0050 100 50 50 0 00100 50 50 50 0 0050 0 50 50 0 000 50z" fill="hsl(var(--primary)/0.05)"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>
-           </div>
-          <div className="container relative z-10 mx-auto px-4">
-            <motion.h1
-              className="mb-4 text-4xl font-extrabold tracking-tight text-primary md:text-5xl lg:text-6xl"
-              variants={fadeIn}
-            >
-              Azure Lagoon Resort
-            </motion.h1>
-            <motion.p
-              className="mx-auto mb-8 max-w-2xl text-lg text-foreground/80 md:text-xl"
-              variants={fadeIn}
-            >
-              A modern resort experience is on the way. Explore stays, activities,
-              and island transfers built for effortless planning.
-            </motion.p>
-            <motion.div variants={fadeIn}>
-              <Button asChild size="lg">
-                <Link href="/booking">Plan Your Stay</Link>
-              </Button>
-            </motion.div>
-          </div>
-          <motion.div
-            className="absolute -bottom-1 left-0 w-full h-16 bg-background"
-            style={{ clipPath: 'polygon(0 100%, 100% 0, 100% 100%)' }}
-            initial={{ y: 50, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { delay: 0.4, duration: 0.5 }}}
-          />
-        </motion.section>
 
-        {/* Features Section */}
         <motion.section
           className="bg-background py-16 md:py-24"
           initial="hidden"
@@ -158,8 +152,8 @@ export default function Home() {
               Resort Highlights
             </motion.h2>
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
-              {features.map((feature, index) => (
-                <motion.div key={index} variants={fadeIn}>
+              {features.map((feature) => (
+                <motion.div key={feature.title} variants={fadeIn}>
                   <Card className="h-full border-border/70 bg-card/80 transition duration-300 hover:-translate-y-2 hover:shadow-lg">
                     <CardHeader className="items-center text-center">
                       <div className="mb-4 rounded-full bg-primary/10 p-3 text-primary">
@@ -179,7 +173,6 @@ export default function Home() {
           </div>
         </motion.section>
 
-        {/* Call to Action Section */}
         <motion.section
           className="bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--secondary))_100%)] py-16 text-center md:py-24"
           initial="hidden"
