@@ -1,7 +1,7 @@
-import { AccommodationCard } from '@/components/accommodation-card';
+import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
 import { ImageGallery } from '@/components/image-gallery';
 
-const accommodations = [
+const accommodations: AccommodationCardProps[] = [
   {
     name: 'Lagoon Suite 201',
     location: 'Oceanfront Wing',

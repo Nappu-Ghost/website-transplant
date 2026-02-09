@@ -4,17 +4,19 @@ import { useState } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface GalleryImage {
+export interface GalleryImage {
   src: string;
   alt: string;
   label?: string;
 }
 
-interface ImageGalleryProps {
+export interface ImageGalleryProps {
   title: string;
   subtitle?: string;
   images: GalleryImage[];
+  isLoading?: boolean;
 }
 
 const fade = {
@@ -22,9 +24,37 @@ const fade = {
   visible: { opacity: 1, scale: 1, transition: { duration: 0.4 } },
 };
 
-export function ImageGallery({ title, subtitle, images }: ImageGalleryProps) {
+export function ImageGallery({ title, subtitle, images, isLoading }: ImageGalleryProps) {
   const [activeIndex, setActiveIndex] = useState(0);
   const active = images[activeIndex];
+
+  if (isLoading) {
+    return (
+      <section className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+          <Skeleton className="aspect-[16/10] w-full rounded-2xl" />
+          <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <Skeleton key={`thumb-${index}`} className="aspect-[4/3] w-full rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (images.length === 0) {
+    return (
+      <section className="space-y-4 rounded-2xl border border-border/70 bg-card/70 p-6 text-sm text-muted-foreground">
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        <p>Gallery content is being curated.</p>
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-6">

@@ -6,8 +6,9 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface ActivityCardProps {
+export interface ActivityCardProps {
   name: string;
   activityType: string;
   price: number;
@@ -16,6 +17,7 @@ interface ActivityCardProps {
   imageUrl?: string;
   isPremium?: boolean;
   href?: string;
+  isLoading?: boolean;
 }
 
 export function ActivityCard({
@@ -27,7 +29,27 @@ export function ActivityCard({
   imageUrl,
   isPremium,
   href = '/booking',
+  isLoading,
 }: ActivityCardProps) {
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
+        <Skeleton className="aspect-[4/3] w-full" />
+        <CardHeader className="space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/3" />
+          </div>
+          <Skeleton className="h-6 w-24" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-3 w-1/2" />
+          <Skeleton className="h-9 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <motion.div whileHover={{ y: -6 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">

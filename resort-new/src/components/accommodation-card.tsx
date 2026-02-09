@@ -6,8 +6,9 @@ import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
-interface AccommodationCardProps {
+export interface AccommodationCardProps {
   name: string;
   location: string;
   pricePerNight: number;
@@ -18,6 +19,7 @@ interface AccommodationCardProps {
   isPremium?: boolean;
   tags?: string[];
   href?: string;
+  isLoading?: boolean;
 }
 
 export function AccommodationCard({
@@ -31,7 +33,28 @@ export function AccommodationCard({
   isPremium,
   tags,
   href = '/booking',
+  isLoading,
 }: AccommodationCardProps) {
+  if (isLoading) {
+    return (
+      <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
+        <Skeleton className="aspect-[4/3] w-full" />
+        <CardHeader className="space-y-3">
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-3 w-1/2" />
+          </div>
+          <Skeleton className="h-6 w-24" />
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-2/3" />
+          <Skeleton className="h-9 w-full" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <motion.div whileHover={{ y: -6 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">

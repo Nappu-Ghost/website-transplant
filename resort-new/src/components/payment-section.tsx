@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 
 interface PaymentSectionProps {
   subtotal?: number;
@@ -14,6 +15,7 @@ interface PaymentSectionProps {
   serviceFee?: number;
   currency?: string;
   depositNote?: string;
+  isLoading?: boolean;
 }
 
 const fadeUp = {
@@ -27,10 +29,38 @@ export function PaymentSection({
   serviceFee = 45,
   currency = 'USD',
   depositNote = 'We only capture a 20% deposit today. Balance due on arrival.',
+  isLoading,
 }: PaymentSectionProps) {
   const [method, setMethod] = useState<'card' | 'bank' | 'arrival'>('card');
 
   const total = useMemo(() => subtotal + taxes + serviceFee, [subtotal, taxes, serviceFee]);
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="border-border/70 bg-card/90 shadow-sm">
+          <CardHeader>
+            <Skeleton className="h-6 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+            <Skeleton className="h-10 w-full" />
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-secondary/60">
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">

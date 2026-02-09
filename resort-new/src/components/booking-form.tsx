@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const formSchema = z
   .object({
@@ -36,20 +38,25 @@ const formSchema = z
 
 type BookingFormValues = z.infer<typeof formSchema>;
 
+export interface BookingFormProps {
+  isLoading?: boolean;
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export function BookingForm() {
+export function BookingForm({ isLoading }: BookingFormProps) {
   const [preview, setPreview] = useState<BookingFormValues | null>(null);
   const {
     handleSubmit,
     register,
     control,
-    formState: { errors, isSubmitting },
+    formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
+    mode: 'onChange',
     defaultValues: {
       guests: 2,
       roomType: 'Lagoon Suite',
@@ -57,9 +64,49 @@ export function BookingForm() {
     },
   });
 
+  const hasErrors = isSubmitted && Object.keys(errors).length > 0;
+
   const onSubmit = async (data: BookingFormValues) => {
     setPreview(data);
   };
+
+  if (isLoading) {
+    return (
+      <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="border-border/70 bg-card/90 shadow-sm">
+          <CardHeader>
+            <Skeleton className="h-7 w-40" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-10 w-40" />
+          </CardContent>
+        </Card>
+        <Card className="border-border/70 bg-secondary/60">
+          <CardHeader>
+            <Skeleton className="h-5 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-2/3" />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
@@ -70,17 +117,24 @@ export function BookingForm() {
           </CardHeader>
           <CardContent>
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              {hasErrors && (
+                <Alert variant="destructive">
+                  <AlertDescription>
+                    Please review the highlighted fields before continuing.
+                  </AlertDescription>
+                </Alert>
+              )}
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="checkIn">Check-in</Label>
-                  <Input id="checkIn" type="date" {...register('checkIn')} />
+                  <Input id="checkIn" type="date" aria-invalid={!!errors.checkIn} {...register('checkIn')} />
                   {errors.checkIn && (
                     <p className="text-xs text-destructive">{errors.checkIn.message}</p>
                   )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="checkOut">Check-out</Label>
-                  <Input id="checkOut" type="date" {...register('checkOut')} />
+                  <Input id="checkOut" type="date" aria-invalid={!!errors.checkOut} {...register('checkOut')} />
                   {errors.checkOut && (
                     <p className="text-xs text-destructive">{errors.checkOut.message}</p>
                   )}
@@ -90,7 +144,7 @@ export function BookingForm() {
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="guests">Guests</Label>
-                  <Input id="guests" type="number" min={1} max={10} {...register('guests')} />
+                  <Input id="guests" type="number" min={1} max={10} aria-invalid={!!errors.guests} {...register('guests')} />
                   {errors.guests && (
                     <p className="text-xs text-destructive">{errors.guests.message}</p>
                   )}
@@ -102,7 +156,7 @@ export function BookingForm() {
                     name="roomType"
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-invalid={!!errors.roomType}>
                           <SelectValue placeholder="Select a room" />
                         </SelectTrigger>
                         <SelectContent>
@@ -127,7 +181,7 @@ export function BookingForm() {
                     name="activityFocus"
                     render={({ field }) => (
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
+                        <SelectTrigger aria-invalid={!!errors.activityFocus}>
                           <SelectValue placeholder="Select a focus" />
                         </SelectTrigger>
                         <SelectContent>
@@ -142,7 +196,7 @@ export function BookingForm() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Contact email</Label>
-                  <Input id="email" type="email" placeholder="you@example.com" {...register('email')} />
+                  <Input id="email" type="email" placeholder="you@example.com" aria-invalid={!!errors.email} {...register('email')} />
                   {errors.email && (
                     <p className="text-xs text-destructive">{errors.email.message}</p>
                   )}
@@ -155,11 +209,12 @@ export function BookingForm() {
                   id="notes"
                   rows={4}
                   placeholder="Dietary needs, arrival times, or other details."
+                  aria-invalid={!!errors.notes}
                   {...register('notes')}
                 />
               </div>
 
-              <Button type="submit" size="lg" disabled={isSubmitting}>
+              <Button type="submit" size="lg" disabled={!isValid || isSubmitting}>
                 {isSubmitting ? 'Submitting...' : 'Request availability'}
               </Button>
             </form>

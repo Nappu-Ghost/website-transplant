@@ -1,7 +1,7 @@
-import { ActivityCard } from '@/components/activity-card';
+import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
 import { ImageGallery } from '@/components/image-gallery';
 
-const activities = [
+const activities: ActivityCardProps[] = [
   {
     name: 'Reef Snorkeling',
     activityType: 'Adventure',
