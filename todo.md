@@ -75,7 +75,7 @@
   - [x] Update metadata (title, description)
   - [x] Update navigation menu
   - [x] Update footer
-  - [ ] Update theme/branding
+  - [x] Update theme/branding
 
 ---
 
