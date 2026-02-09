@@ -83,7 +83,7 @@
 - [ ] **4.1** Migrate resort-specific components
   - [x] AccommodationCard
   - [x] ActivityCard
-  - [ ] BookingForm
+  - [x] BookingForm
   - [ ] Payment components
   - [x] Hero sections
   - [ ] Image galleries

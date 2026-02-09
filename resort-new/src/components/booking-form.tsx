@@ -1,0 +1,220 @@
+"use client";
+
+import { useState } from 'react';
+import { useForm, Controller } from 'react-hook-form';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+
+const formSchema = z
+  .object({
+    checkIn: z.string().min(1, 'Select a check-in date.'),
+    checkOut: z.string().min(1, 'Select a check-out date.'),
+    guests: z.coerce.number().min(1, 'At least one guest.').max(10, 'Up to 10 guests.'),
+    roomType: z.string().min(1, 'Select a room type.'),
+    activityFocus: z.string().optional(),
+    email: z.string().email('Enter a valid email address.'),
+    notes: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      const start = new Date(data.checkIn).getTime();
+      const end = new Date(data.checkOut).getTime();
+      return !Number.isNaN(start) && !Number.isNaN(end) && end > start;
+    },
+    {
+      message: 'Check-out must be after check-in.',
+      path: ['checkOut'],
+    }
+  );
+
+type BookingFormValues = z.infer<typeof formSchema>;
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+};
+
+export function BookingForm() {
+  const [preview, setPreview] = useState<BookingFormValues | null>(null);
+  const {
+    handleSubmit,
+    register,
+    control,
+    formState: { errors, isSubmitting },
+  } = useForm<BookingFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      guests: 2,
+      roomType: 'Lagoon Suite',
+      activityFocus: 'Wellness',
+    },
+  });
+
+  const onSubmit = async (data: BookingFormValues) => {
+    setPreview(data);
+  };
+
+  return (
+    <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+      <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+        <Card className="border-border/70 bg-card/90 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-2xl font-semibold text-foreground">Plan your stay</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="checkIn">Check-in</Label>
+                  <Input id="checkIn" type="date" {...register('checkIn')} />
+                  {errors.checkIn && (
+                    <p className="text-xs text-destructive">{errors.checkIn.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="checkOut">Check-out</Label>
+                  <Input id="checkOut" type="date" {...register('checkOut')} />
+                  {errors.checkOut && (
+                    <p className="text-xs text-destructive">{errors.checkOut.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="guests">Guests</Label>
+                  <Input id="guests" type="number" min={1} max={10} {...register('guests')} />
+                  {errors.guests && (
+                    <p className="text-xs text-destructive">{errors.guests.message}</p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label>Room type</Label>
+                  <Controller
+                    control={control}
+                    name="roomType"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a room" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Lagoon Suite">Lagoon Suite</SelectItem>
+                          <SelectItem value="Garden Villa">Garden Villa</SelectItem>
+                          <SelectItem value="Harbor Residence">Harbor Residence</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                  {errors.roomType && (
+                    <p className="text-xs text-destructive">{errors.roomType.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label>Activity focus</Label>
+                  <Controller
+                    control={control}
+                    name="activityFocus"
+                    render={({ field }) => (
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a focus" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Wellness">Wellness</SelectItem>
+                          <SelectItem value="Adventure">Adventure</SelectItem>
+                          <SelectItem value="Dining">Dining</SelectItem>
+                          <SelectItem value="Family">Family</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    )}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Contact email</Label>
+                  <Input id="email" type="email" placeholder="you@example.com" {...register('email')} />
+                  {errors.email && (
+                    <p className="text-xs text-destructive">{errors.email.message}</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Special requests</Label>
+                <Textarea
+                  id="notes"
+                  rows={4}
+                  placeholder="Dietary needs, arrival times, or other details."
+                  {...register('notes')}
+                />
+              </div>
+
+              <Button type="submit" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? 'Submitting...' : 'Request availability'}
+              </Button>
+            </form>
+          </CardContent>
+        </Card>
+      </motion.div>
+
+      <motion.div initial="hidden" animate="visible" variants={fadeUp}>
+        <Card className="border-border/70 bg-secondary/60">
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold text-foreground">Preview</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            {preview ? (
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em]">Dates</p>
+                  <p className="text-foreground">
+                    {preview.checkIn} → {preview.checkOut}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em]">Guests</p>
+                  <p className="text-foreground">{preview.guests}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em]">Room</p>
+                  <p className="text-foreground">{preview.roomType}</p>
+                </div>
+                {preview.activityFocus && (
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em]">Focus</p>
+                    <p className="text-foreground">{preview.activityFocus}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em]">Contact</p>
+                  <p className="text-foreground">{preview.email}</p>
+                </div>
+                {preview.notes && (
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.2em]">Notes</p>
+                    <p className="text-foreground">{preview.notes}</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p>
+                Complete the form to preview your request details. We will follow
+                up with availability and tailored suggestions.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      </motion.div>
+    </div>
+  );
+}
