@@ -71,7 +71,7 @@
   - [x] Create `app/admin/*` pages
   - [x] Create `app/login/page.tsx`
 
-- [ ] **3.3** Update root layout
+- [x] **3.3** Update root layout
   - [x] Update metadata (title, description)
   - [x] Update navigation menu
   - [x] Update footer
@@ -85,7 +85,7 @@
   - [ ] ActivityCard
   - [ ] BookingForm
   - [ ] Payment components
-  - [ ] Hero sections
+  - [x] Hero sections
   - [ ] Image galleries
   - [ ] Video players
   - [ ] Map components
