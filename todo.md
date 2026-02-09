@@ -86,7 +86,7 @@
   - [x] BookingForm
   - [x] Payment components
   - [x] Hero sections
-  - [ ] Image galleries
+  - [x] Image galleries
   - [ ] Video players
   - [ ] Map components
   - [ ] Other custom components

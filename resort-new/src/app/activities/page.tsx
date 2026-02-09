@@ -1,4 +1,5 @@
 import { ActivityCard } from '@/components/activity-card';
+import { ImageGallery } from '@/components/image-gallery';
 
 const activities = [
   {
@@ -25,6 +26,39 @@ const activities = [
   },
 ];
 
+const activitiesGallery = [
+  {
+    src: '/images/gallery/activities/snorkel.svg',
+    alt: 'Reef snorkeling',
+    label: 'Adventure',
+  },
+  {
+    src: '/images/gallery/activities/swimming.svg',
+    alt: 'Lagoon swim',
+    label: 'Wellness',
+  },
+  {
+    src: '/images/gallery/activities/submarine.svg',
+    alt: 'Submarine tour',
+    label: 'Explore',
+  },
+  {
+    src: '/images/gallery/activities/volleyball.svg',
+    alt: 'Beach volleyball',
+    label: 'Social',
+  },
+  {
+    src: '/images/gallery/activities/roller-coaster.svg',
+    alt: 'Island thrills',
+    label: 'Energy',
+  },
+  {
+    src: '/images/gallery/activities/skydiving.svg',
+    alt: 'Sky view',
+    label: 'Premium',
+  },
+];
+
 export default function ActivitiesPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
@@ -38,6 +72,13 @@ export default function ActivitiesPage() {
         {activities.map((activity) => (
           <ActivityCard key={activity.name} {...activity} />
         ))}
+      </div>
+      <div className="mt-16">
+        <ImageGallery
+          title="Curated Experiences"
+          subtitle="Designed to balance adventure, wellness, and quiet moments."
+          images={activitiesGallery}
+        />
       </div>
     </div>
   );

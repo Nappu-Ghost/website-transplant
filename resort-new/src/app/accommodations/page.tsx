@@ -1,4 +1,5 @@
 import { AccommodationCard } from '@/components/accommodation-card';
+import { ImageGallery } from '@/components/image-gallery';
 
 const accommodations = [
   {
@@ -32,6 +33,29 @@ const accommodations = [
   },
 ];
 
+const accommodationGallery = [
+  {
+    src: '/images/gallery/hotels/hotel1.jpg',
+    alt: 'Lagoon-facing suites',
+    label: 'Suites',
+  },
+  {
+    src: '/images/gallery/hotels/hotel2.jpg',
+    alt: 'Oceanfront villas',
+    label: 'Villas',
+  },
+  {
+    src: '/images/gallery/hotels/hotel3.jpg',
+    alt: 'Private terrace dining',
+    label: 'Dining',
+  },
+  {
+    src: '/images/gallery/rooms/room1.jpg',
+    alt: 'Serene interiors',
+    label: 'Rooms',
+  },
+];
+
 export default function AccommodationsPage() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-16">
@@ -45,6 +69,13 @@ export default function AccommodationsPage() {
         {accommodations.map((accommodation) => (
           <AccommodationCard key={accommodation.name} {...accommodation} />
         ))}
+      </div>
+      <div className="mt-16">
+        <ImageGallery
+          title="Inside Azure Lagoon"
+          subtitle="A quiet palette of light, texture, and open space."
+          images={accommodationGallery}
+        />
       </div>
     </div>
   );
