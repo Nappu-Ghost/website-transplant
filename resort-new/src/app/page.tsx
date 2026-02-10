@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
-import { FeatureCard } from '@/components/shared';
+import { AccommodationCard } from '@/components/accommodation-card';
+import { FeatureCard, PageShell, SectionHeader } from '@/components/shared';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -69,6 +70,38 @@ export default function Home() {
     },
   ];
 
+  const featuredAccommodations = [
+    {
+      name: 'Lagoon Suite 201',
+      location: 'Oceanfront Wing',
+      pricePerNight: 480,
+      capacity: 2,
+      description: 'Private deck, floating breakfast service, and sunset views.',
+      rating: 4.9,
+      isPremium: true,
+      tags: ['King bed', 'Deck access'],
+    },
+    {
+      name: 'Garden Villa 102',
+      location: 'Palm Grove',
+      pricePerNight: 280,
+      capacity: 2,
+      description: 'Quiet garden path, minimalist interior, morning light.',
+      rating: 4.7,
+      tags: ['Patio', 'Outdoor shower'],
+    },
+    {
+      name: 'Harbor Residence',
+      location: 'Lighthouse Point',
+      pricePerNight: 620,
+      capacity: 4,
+      description: 'Two-bedroom residence with lounge and private dining.',
+      rating: 4.8,
+      isPremium: true,
+      tags: ['Two bedrooms', 'Concierge'],
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-background">
       <AppHeader />
@@ -80,8 +113,20 @@ export default function Home() {
           animate="visible"
           variants={fadeIn}
         >
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_55%)]" />
-          <div className="absolute right-0 top-20 h-72 w-72 rounded-full bg-[radial-gradient(circle,_hsl(var(--primary)/0.18),_transparent_70%)] blur-3xl" />
+          <div className="absolute inset-0">
+            <video
+              className="h-full w-full object-cover"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="metadata"
+            >
+              <source src="/videos/hero.mp4" type="video/mp4" />
+            </video>
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,_hsl(var(--background))_8%,_hsl(var(--background)/0.75)_55%,_transparent_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
+          </div>
           <div className="container relative z-10 mx-auto grid gap-12 px-4 pb-20 md:grid-cols-[1.1fr_0.9fr] md:items-center">
             <div className="space-y-6">
               <motion.p
@@ -136,6 +181,25 @@ export default function Home() {
             </motion.div>
           </div>
         </motion.section>
+
+        <PageShell>
+          <div className="flex flex-col gap-10">
+            <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+              <SectionHeader
+                title="Featured stays"
+                description="A trio of suites designed for water views, quiet mornings, and effortless arrival."
+              />
+              <Button asChild variant="outline">
+                <Link href="/accommodations">View all accommodations</Link>
+              </Button>
+            </div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredAccommodations.map((accommodation) => (
+                <AccommodationCard key={accommodation.name} {...accommodation} />
+              ))}
+            </div>
+          </div>
+        </PageShell>
 
         <motion.section
           className="bg-background py-16 md:py-24"
