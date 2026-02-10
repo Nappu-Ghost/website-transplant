@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { BookingForm } from '@/components/booking-form';
 import { PaymentSection } from '@/components/payment-section';
@@ -48,6 +48,10 @@ export default function BookingPage() {
   const taxes = subtotal * 0.12;
   const serviceFee = subtotal > 0 ? 45 : 0;
 
+  const handleEstimateChange = useCallback((values: Record<string, string | number>) => {
+    setEstimate(values);
+  }, []);
+
   return (
     <PageShell>
       <PageHeader
@@ -59,7 +63,7 @@ export default function BookingPage() {
           ...(selectedRoom ? { roomType: selectedRoom } : {}),
           ...(selectedActivity ? { activitySelection: selectedActivity } : {}),
         }}
-        onEstimateChange={(values) => setEstimate(values)}
+        onEstimateChange={handleEstimateChange}
       />
       <div className="mt-16 space-y-4">
         <SectionHeader

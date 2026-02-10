@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -55,6 +55,7 @@ const fadeUp = {
 export function BookingForm({ isLoading, defaultValues, onEstimateChange }: BookingFormProps) {
   const [preview, setPreview] = useState<BookingFormValues | null>(null);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
+  const lastEstimateRef = useRef<Partial<BookingFormValues> | null>(null);
   const notify = useNotify();
   const {
     handleSubmit,
@@ -101,7 +102,7 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
 
   useEffect(() => {
     if (onEstimateChange) {
-      onEstimateChange({
+      const nextEstimate: Partial<BookingFormValues> = {
         fullName: watchedFullName,
         phone: watchedPhone,
         checkIn: watchedCheckIn,
@@ -111,7 +112,19 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
         activitySelection: watchedActivitySelection,
         email: watchedEmail,
         notes: watchedNotes,
-      });
+      };
+
+      const previous = lastEstimateRef.current;
+      const hasChanged =
+        !previous ||
+        Object.keys(nextEstimate).some(
+          (key) => previous[key as keyof BookingFormValues] !== nextEstimate[key as keyof BookingFormValues]
+        );
+
+      if (hasChanged) {
+        lastEstimateRef.current = nextEstimate;
+        onEstimateChange(nextEstimate);
+      }
     }
   }, [
     onEstimateChange,

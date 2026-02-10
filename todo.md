@@ -152,7 +152,7 @@
   - [x] Contact information
   - [x] Form submission handling
 
-- [ ] **5.7** My Bookings Page
+- [x] **5.7** My Bookings Page
   - [x] User's booking history
   - [x] Booking details view
   - [x] Cancellation functionality
