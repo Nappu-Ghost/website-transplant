@@ -130,14 +130,14 @@
   - [x] Booking integration
   - [x] Image galleries
 
-- [ ] **5.4** Activities Page
+- [x] **5.4** Activities Page
   - [x] List all activities
   - [x] Activity categories
   - [x] Activity detail view
   - [x] Booking integration
   - [x] Image/video content
 
-- [ ] **5.5** Booking System
+- [x] **5.5** Booking System
   - [x] Booking form with validation
   - [x] Date selection
   - [x] Guest information
@@ -146,11 +146,11 @@
   - [x] Payment integration
   - [x] Booking confirmation
 
-- [ ] **5.6** Contact Page
-  - [ ] Contact form
-  - [ ] Location map
-  - [ ] Contact information
-  - [ ] Form submission handling
+- [x] **5.6** Contact Page
+  - [x] Contact form
+  - [x] Location map
+  - [x] Contact information
+  - [x] Form submission handling
 
 - [ ] **5.7** My Bookings Page
   - [ ] User's booking history

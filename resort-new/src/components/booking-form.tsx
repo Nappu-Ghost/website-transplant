@@ -70,7 +70,7 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
       phone: '',
       guests: 2,
       roomType: 'Lagoon Suite',
-      activitySelection: '',
+      activitySelection: 'none',
       ...defaultValues,
     },
   });
@@ -222,7 +222,7 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
                         <SelectValue placeholder="Optional activity" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">No activity</SelectItem>
+                        <SelectItem value="none">No activity</SelectItem>
                         <SelectItem value="Reef Snorkeling">Reef Snorkeling</SelectItem>
                         <SelectItem value="Sunset Chef Table">Sunset Chef Table</SelectItem>
                         <SelectItem value="Lagoon Meditation">Lagoon Meditation</SelectItem>
@@ -294,7 +294,7 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
                 <p className="text-xs uppercase tracking-[0.2em]">Room</p>
                 <p className="text-foreground">{preview.roomType}</p>
               </div>
-              {preview.activitySelection && (
+              {preview.activitySelection && preview.activitySelection !== 'none' && (
                 <div>
                   <p className="text-xs uppercase tracking-[0.2em]">Activity</p>
                   <p className="text-foreground">{preview.activitySelection}</p>
