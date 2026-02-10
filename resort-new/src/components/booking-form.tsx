@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,11 +17,13 @@ import { FormCard, useNotify } from '@/components/shared';
 
 const formSchema = z
   .object({
+    fullName: z.string().min(2, 'Enter a full name.'),
+    phone: z.string().min(7, 'Enter a contact number.'),
     checkIn: z.string().min(1, 'Select a check-in date.'),
     checkOut: z.string().min(1, 'Select a check-out date.'),
     guests: z.coerce.number().min(1, 'At least one guest.').max(10, 'Up to 10 guests.'),
     roomType: z.string().min(1, 'Select a room type.'),
-    activityFocus: z.string().optional(),
+    activitySelection: z.string().optional(),
     email: z.string().email('Enter a valid email address.'),
     notes: z.string().optional(),
   })
@@ -41,6 +43,8 @@ type BookingFormValues = z.infer<typeof formSchema>;
 
 export interface BookingFormProps {
   isLoading?: boolean;
+  defaultValues?: Partial<BookingFormValues>;
+  onEstimateChange?: (values: Partial<BookingFormValues>) => void;
 }
 
 const fadeUp = {
@@ -48,28 +52,42 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export function BookingForm({ isLoading }: BookingFormProps) {
+export function BookingForm({ isLoading, defaultValues, onEstimateChange }: BookingFormProps) {
   const [preview, setPreview] = useState<BookingFormValues | null>(null);
+  const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const notify = useNotify();
   const {
     handleSubmit,
     register,
     control,
+    watch,
     formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
     defaultValues: {
+      fullName: '',
+      phone: '',
       guests: 2,
       roomType: 'Lagoon Suite',
-      activityFocus: 'Wellness',
+      activitySelection: '',
+      ...defaultValues,
     },
   });
+
+  const watchedValues = watch();
+
+  useEffect(() => {
+    if (onEstimateChange) {
+      onEstimateChange(watchedValues);
+    }
+  }, [onEstimateChange, watchedValues]);
 
   const hasErrors = isSubmitted && Object.keys(errors).length > 0;
 
   const onSubmit = async (data: BookingFormValues) => {
     setPreview(data);
+    setConfirmationCode(`ALR-${Math.floor(100000 + Math.random() * 900000)}`);
     notify.success({
       title: 'Request received',
       description: 'Our concierge will confirm availability shortly.',
@@ -128,6 +146,23 @@ export function BookingForm({ isLoading }: BookingFormProps) {
             )}
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
+                <Label htmlFor="fullName">Full name</Label>
+                <Input id="fullName" placeholder="Avery Jordan" aria-invalid={!!errors.fullName} {...register('fullName')} />
+                {errors.fullName && (
+                  <p className="text-xs text-destructive">{errors.fullName.message}</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" placeholder="+1 (555) 000-0000" aria-invalid={!!errors.phone} {...register('phone')} />
+                {errors.phone && (
+                  <p className="text-xs text-destructive">{errors.phone.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
                 <Label htmlFor="checkIn">Check-in</Label>
                 <Input id="checkIn" type="date" aria-invalid={!!errors.checkIn} {...register('checkIn')} />
                 {errors.checkIn && (
@@ -177,20 +212,23 @@ export function BookingForm({ isLoading }: BookingFormProps) {
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Activity focus</Label>
+                <Label>Activity selection</Label>
                 <Controller
                   control={control}
-                  name="activityFocus"
+                  name="activitySelection"
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger aria-invalid={!!errors.activityFocus}>
-                        <SelectValue placeholder="Select a focus" />
+                      <SelectTrigger aria-invalid={!!errors.activitySelection}>
+                        <SelectValue placeholder="Optional activity" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Wellness">Wellness</SelectItem>
-                        <SelectItem value="Adventure">Adventure</SelectItem>
-                        <SelectItem value="Dining">Dining</SelectItem>
-                        <SelectItem value="Family">Family</SelectItem>
+                        <SelectItem value="">No activity</SelectItem>
+                        <SelectItem value="Reef Snorkeling">Reef Snorkeling</SelectItem>
+                        <SelectItem value="Sunset Chef Table">Sunset Chef Table</SelectItem>
+                        <SelectItem value="Lagoon Meditation">Lagoon Meditation</SelectItem>
+                        <SelectItem value="Lagoon Kayak Circuit">Lagoon Kayak Circuit</SelectItem>
+                        <SelectItem value="Family Lagoon Walk">Family Lagoon Walk</SelectItem>
+                        <SelectItem value="Island Discovery">Island Discovery</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -231,6 +269,17 @@ export function BookingForm({ isLoading }: BookingFormProps) {
         >
           {preview ? (
             <div className="space-y-3">
+              {confirmationCode && (
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em]">Confirmation</p>
+                  <p className="text-foreground">{confirmationCode}</p>
+                </div>
+              )}
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em]">Guest</p>
+                <p className="text-foreground">{preview.fullName}</p>
+                <p className="text-sm text-muted-foreground">{preview.phone}</p>
+              </div>
               <div>
                 <p className="text-xs uppercase tracking-[0.2em]">Dates</p>
                 <p className="text-foreground">
@@ -245,10 +294,10 @@ export function BookingForm({ isLoading }: BookingFormProps) {
                 <p className="text-xs uppercase tracking-[0.2em]">Room</p>
                 <p className="text-foreground">{preview.roomType}</p>
               </div>
-              {preview.activityFocus && (
+              {preview.activitySelection && (
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em]">Focus</p>
-                  <p className="text-foreground">{preview.activityFocus}</p>
+                  <p className="text-xs uppercase tracking-[0.2em]">Activity</p>
+                  <p className="text-foreground">{preview.activitySelection}</p>
                 </div>
               )}
               <div>

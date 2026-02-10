@@ -138,13 +138,13 @@
   - [x] Image/video content
 
 - [ ] **5.5** Booking System
-  - [ ] Booking form with validation
-  - [ ] Date selection
-  - [ ] Guest information
-  - [ ] Room/activity selection
-  - [ ] Price calculation
-  - [ ] Payment integration
-  - [ ] Booking confirmation
+  - [x] Booking form with validation
+  - [x] Date selection
+  - [x] Guest information
+  - [x] Room/activity selection
+  - [x] Price calculation
+  - [x] Payment integration
+  - [x] Booking confirmation
 
 - [ ] **5.6** Contact Page
   - [ ] Contact form
