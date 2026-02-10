@@ -110,14 +110,14 @@
 ---
 
 ## 📄 Phase 5: Page Implementation
-- [ ] **5.1** Home Page
-  - [ ] Hero section with video/image
-  - [ ] Featured accommodations
-  - [ ] Featured activities
-  - [ ] Call-to-action sections
-  - [ ] Animations and transitions
+- [x] **5.1** Home Page
+  - [x] Hero section with video/image
+  - [x] Featured accommodations
+  - [x] Featured activities
+  - [x] Call-to-action sections
+  - [x] Animations and transitions
 
-- [ ] **5.2** About Page
+- [x] **5.2** About Page
   - [ ] Resort information
   - [ ] Team section
   - [ ] Features/amenities

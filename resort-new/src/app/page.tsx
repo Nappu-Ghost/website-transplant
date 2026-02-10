@@ -8,6 +8,7 @@ import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
 import { AccommodationCard } from '@/components/accommodation-card';
+import { ActivityCard } from '@/components/activity-card';
 import { FeatureCard, PageShell, SectionHeader } from '@/components/shared';
 
 const fadeIn = {
@@ -99,6 +100,31 @@ export default function Home() {
       rating: 4.8,
       isPremium: true,
       tags: ['Two bedrooms', 'Concierge'],
+    },
+  ];
+
+  const featuredActivities = [
+    {
+      name: 'Reef Snorkeling',
+      activityType: 'Adventure',
+      price: 120,
+      duration: '2 hours',
+      capacity: 12,
+    },
+    {
+      name: 'Sunset Chef Table',
+      activityType: 'Dining',
+      price: 180,
+      duration: '3 hours',
+      capacity: 8,
+      isPremium: true,
+    },
+    {
+      name: 'Lagoon Meditation',
+      activityType: 'Wellness',
+      price: 95,
+      duration: '90 minutes',
+      capacity: 10,
     },
   ];
 
@@ -228,6 +254,36 @@ export default function Home() {
             </div>
           </div>
         </motion.section>
+
+        <PageShell>
+          <motion.div
+            className="flex flex-col gap-10"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.2 }}
+            variants={staggerContainer}
+          >
+            <motion.div
+              className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between"
+              variants={fadeIn}
+            >
+              <SectionHeader
+                title="Featured experiences"
+                description="Wellness, culinary, and ocean adventures curated to match your pace."
+              />
+              <Button asChild variant="outline">
+                <Link href="/activities">View all activities</Link>
+              </Button>
+            </motion.div>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {featuredActivities.map((activity) => (
+                <motion.div key={activity.name} variants={fadeIn}>
+                  <ActivityCard {...activity} />
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </PageShell>
 
         <motion.section
           className="bg-[linear-gradient(180deg,_hsl(var(--background))_0%,_hsl(var(--secondary))_100%)] py-16 text-center md:py-24"
