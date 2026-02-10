@@ -104,7 +104,7 @@
   - [x] Navigation components
   - [x] Card components
   - [x] Form components
-  - [ ] Modal/Dialog components
+  - [x] Modal/Dialog components
   - [ ] Toast notifications
 
 ---
