@@ -101,7 +101,7 @@
 
 - [ ] **4.3** Create shared/reusable components
   - [x] Layout components
-  - [ ] Navigation components
+  - [x] Navigation components
   - [x] Card components
   - [x] Form components
   - [ ] Modal/Dialog components

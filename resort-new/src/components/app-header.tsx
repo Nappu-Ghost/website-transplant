@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Menu, LogOut, UserCircle } from 'lucide-react';
 import { usePathname } from 'next/navigation';
-import { cn } from '@/lib/utils';
 import { ThemeToggleButton } from './theme-toggle-button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { NavLink } from '@/components/shared';
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -46,18 +46,14 @@ export function AppHeader() {
         </Link>
 
         {/* Desktop Navigation */}
-        <nav className="hidden items-center gap-4 md:flex"> 
+        <nav className="hidden items-center gap-4 md:flex">
           {navItems.map((item) => (
-            <Link
+            <NavLink
               key={item.href}
               href={item.href}
-               className={cn(
-                  'text-sm font-medium transition-colors hover:text-primary',
-                  isActive(item.href) ? 'text-primary font-semibold' : 'text-foreground/70'
-               )}
-            >
-              {item.label}
-            </Link>
+              label={item.label}
+              isActive={isActive(item.href)}
+            />
           ))}
           
           {/* Show different links based on authentication status */}
@@ -119,16 +115,13 @@ export function AppHeader() {
                   <span className="text-lg font-bold text-primary">Azure Lagoon Resort</span>
                 </Link>
                 {navItems.map((item) => (
-                  <Link
+                  <NavLink
                     key={item.href}
                     href={item.href}
-                    className={cn(
-                      'text-lg font-medium transition-colors hover:text-primary',
-                       isActive(item.href) ? 'text-primary font-semibold' : 'text-foreground/80'
-                    )}
-                  >
-                    {item.label}
-                  </Link>
+                    label={item.label}
+                    isActive={isActive(item.href)}
+                    size="lg"
+                  />
                 ))}
                 
                 {/* Show different links based on authentication status for mobile */}
