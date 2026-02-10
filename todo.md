@@ -91,7 +91,7 @@
   - [ ] Map components
   - [ ] Other custom components
 
-- [ ] **4.2** Adapt components to new structure
+- [x] **4.2** Adapt components to new structure
   - [x] Convert to Shadcn/ui patterns
   - [x] Implement proper TypeScript types
   - [x] Add form validation with Zod
@@ -105,7 +105,7 @@
   - [x] Card components
   - [x] Form components
   - [x] Modal/Dialog components
-  - [ ] Toast notifications
+  - [x] Toast notifications
 
 ---
 
