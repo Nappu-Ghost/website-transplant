@@ -100,10 +100,10 @@
   - [x] Implement loading states
 
 - [ ] **4.3** Create shared/reusable components
-  - [ ] Layout components
+  - [x] Layout components
   - [ ] Navigation components
-  - [ ] Card components
-  - [ ] Form components
+  - [x] Card components
+  - [x] Form components
   - [ ] Modal/Dialog components
   - [ ] Toast notifications
 

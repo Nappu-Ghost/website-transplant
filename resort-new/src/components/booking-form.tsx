@@ -5,7 +5,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FormCard } from '@/components/shared';
 
 const formSchema = z
   .object({
@@ -111,11 +112,7 @@ export function BookingForm({ isLoading }: BookingFormProps) {
   return (
     <div className="grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
       <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-        <Card className="border-border/70 bg-card/90 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold text-foreground">Plan your stay</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <FormCard title="Plan your stay" className="border-border/70 bg-card/90 shadow-sm">
             <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
               {hasErrors && (
                 <Alert variant="destructive">
@@ -218,16 +215,11 @@ export function BookingForm({ isLoading }: BookingFormProps) {
                 {isSubmitting ? 'Submitting...' : 'Request availability'}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+        </FormCard>
       </motion.div>
 
       <motion.div initial="hidden" animate="visible" variants={fadeUp}>
-        <Card className="border-border/70 bg-secondary/60">
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold text-foreground">Preview</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 text-sm text-muted-foreground">
+        <FormCard title="Preview" className="border-border/70 bg-secondary/60" contentClassName="space-y-4 text-sm text-muted-foreground">
             {preview ? (
               <div className="space-y-3">
                 <div>
@@ -267,8 +259,7 @@ export function BookingForm({ isLoading }: BookingFormProps) {
                 up with availability and tailored suggestions.
               </p>
             )}
-          </CardContent>
-        </Card>
+        </FormCard>
       </motion.div>
     </div>
   );

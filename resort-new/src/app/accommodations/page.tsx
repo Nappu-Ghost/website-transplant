@@ -1,5 +1,6 @@
 import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
 import { ImageGallery } from '@/components/image-gallery';
+import { PageHeader, PageShell } from '@/components/shared';
 
 const accommodations: AccommodationCardProps[] = [
   {
@@ -58,13 +59,11 @@ const accommodationGallery = [
 
 export default function AccommodationsPage() {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <div className="mb-10 flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-foreground">Accommodations</h1>
-        <p className="text-base text-muted-foreground">
-          A calm selection of suites and villas designed for effortless stays.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Accommodations"
+        description="A calm selection of suites and villas designed for effortless stays."
+      />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {accommodations.map((accommodation) => (
           <AccommodationCard key={accommodation.name} {...accommodation} />
@@ -77,6 +76,6 @@ export default function AccommodationsPage() {
           images={accommodationGallery}
         />
       </div>
-    </div>
+    </PageShell>
   );
 }

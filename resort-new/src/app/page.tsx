@@ -4,10 +4,10 @@ import type React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
 import { AppHeader } from '@/components/app-header';
 import { AppFooter } from '@/components/app-footer';
+import { FeatureCard } from '@/components/shared';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -154,19 +154,11 @@ export default function Home() {
             <div className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
               {features.map((feature) => (
                 <motion.div key={feature.title} variants={fadeIn}>
-                  <Card className="h-full border-border/70 bg-card/80 transition duration-300 hover:-translate-y-2 hover:shadow-lg">
-                    <CardHeader className="items-center text-center">
-                      <div className="mb-4 rounded-full bg-primary/10 p-3 text-primary">
-                        <feature.icon className="h-8 w-8" />
-                      </div>
-                      <CardTitle className="text-xl text-foreground">
-                        {feature.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="text-center text-foreground/80">
-                      {feature.description}
-                    </CardContent>
-                  </Card>
+                  <FeatureCard
+                    icon={feature.icon}
+                    title={feature.title}
+                    description={feature.description}
+                  />
                 </motion.div>
               ))}
             </div>

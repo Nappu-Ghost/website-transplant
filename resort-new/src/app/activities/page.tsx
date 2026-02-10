@@ -1,5 +1,6 @@
 import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
 import { ImageGallery } from '@/components/image-gallery';
+import { PageHeader, PageShell } from '@/components/shared';
 
 const activities: ActivityCardProps[] = [
   {
@@ -61,13 +62,11 @@ const activitiesGallery = [
 
 export default function ActivitiesPage() {
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <div className="mb-10 flex flex-col gap-3">
-        <h1 className="text-3xl font-semibold text-foreground">Activities</h1>
-        <p className="text-base text-muted-foreground">
-          Curated experiences designed for calm, connection, and discovery.
-        </p>
-      </div>
+    <PageShell>
+      <PageHeader
+        title="Activities"
+        description="Curated experiences designed for calm, connection, and discovery."
+      />
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {activities.map((activity) => (
           <ActivityCard key={activity.name} {...activity} />
@@ -80,6 +79,6 @@ export default function ActivitiesPage() {
           images={activitiesGallery}
         />
       </div>
-    </div>
+    </PageShell>
   );
 }
