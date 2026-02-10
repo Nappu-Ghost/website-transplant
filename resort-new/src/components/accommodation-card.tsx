@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -20,6 +21,7 @@ export interface AccommodationCardProps {
   tags?: string[];
   href?: string;
   isLoading?: boolean;
+  action?: ReactNode;
 }
 
 export function AccommodationCard({
@@ -34,6 +36,7 @@ export function AccommodationCard({
   tags,
   href = '/booking',
   isLoading,
+  action,
 }: AccommodationCardProps) {
   if (isLoading) {
     return (
@@ -102,9 +105,11 @@ export function AccommodationCard({
               </Badge>
             ))}
           </div>
-          <Button asChild variant="outline" className="w-full">
-            <Link href={href}>View details</Link>
-          </Button>
+          {action ?? (
+            <Button asChild variant="outline" className="w-full">
+              <Link href={href}>View details</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </motion.div>

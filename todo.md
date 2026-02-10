@@ -118,17 +118,17 @@
   - [x] Animations and transitions
 
 - [x] **5.2** About Page
-  - [ ] Resort information
-  - [ ] Team section
-  - [ ] Features/amenities
-  - [ ] Image gallery
+  - [x] Resort information
+  - [x] Team section
+  - [x] Features/amenities
+  - [x] Image gallery
 
-- [ ] **5.3** Accommodations Page
-  - [ ] List all accommodations
-  - [ ] Filter and search functionality
-  - [ ] Accommodation detail view
-  - [ ] Booking integration
-  - [ ] Image galleries
+- [x] **5.3** Accommodations Page
+  - [x] List all accommodations
+  - [x] Filter and search functionality
+  - [x] Accommodation detail view
+  - [x] Booking integration
+  - [x] Image galleries
 
 - [ ] **5.4** Activities Page
   - [ ] List all activities
