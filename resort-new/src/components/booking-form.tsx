@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm, useWatch, Controller } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -60,7 +60,6 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
     handleSubmit,
     register,
     control,
-    watch,
     formState: { errors, isSubmitting, isValid, isSubmitted },
   } = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
@@ -75,13 +74,57 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
     },
   });
 
-  const watchedValues = watch();
+  const [
+    watchedFullName,
+    watchedPhone,
+    watchedCheckIn,
+    watchedCheckOut,
+    watchedGuests,
+    watchedRoomType,
+    watchedActivitySelection,
+    watchedEmail,
+    watchedNotes,
+  ] = useWatch({
+    control,
+    name: [
+      'fullName',
+      'phone',
+      'checkIn',
+      'checkOut',
+      'guests',
+      'roomType',
+      'activitySelection',
+      'email',
+      'notes',
+    ],
+  });
 
   useEffect(() => {
     if (onEstimateChange) {
-      onEstimateChange(watchedValues);
+      onEstimateChange({
+        fullName: watchedFullName,
+        phone: watchedPhone,
+        checkIn: watchedCheckIn,
+        checkOut: watchedCheckOut,
+        guests: watchedGuests,
+        roomType: watchedRoomType,
+        activitySelection: watchedActivitySelection,
+        email: watchedEmail,
+        notes: watchedNotes,
+      });
     }
-  }, [onEstimateChange, watchedValues]);
+  }, [
+    onEstimateChange,
+    watchedFullName,
+    watchedPhone,
+    watchedCheckIn,
+    watchedCheckOut,
+    watchedGuests,
+    watchedRoomType,
+    watchedActivitySelection,
+    watchedEmail,
+    watchedNotes,
+  ]);
 
   const hasErrors = isSubmitted && Object.keys(errors).length > 0;
 

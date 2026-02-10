@@ -153,10 +153,10 @@
   - [x] Form submission handling
 
 - [ ] **5.7** My Bookings Page
-  - [ ] User's booking history
-  - [ ] Booking details view
-  - [ ] Cancellation functionality
-  - [ ] Booking status tracking
+  - [x] User's booking history
+  - [x] Booking details view
+  - [x] Cancellation functionality
+  - [x] Booking status tracking
 
 - [ ] **5.8** Admin Dashboard
   - [ ] Dashboard overview
