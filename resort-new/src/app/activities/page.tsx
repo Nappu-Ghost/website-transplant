@@ -1,29 +1,100 @@
+"use client";
+
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
 import { ImageGallery } from '@/components/image-gallery';
-import { PageHeader, PageShell } from '@/components/shared';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
 
-const activities: ActivityCardProps[] = [
+type ActivityCategory = 'Adventure' | 'Wellness' | 'Dining' | 'Family';
+type ActivityDuration = '60-90 min' | '2-3 hours' | 'Half day';
+
+interface ActivityDetail extends ActivityCardProps {
+  category: ActivityCategory;
+  intensity: 'Low' | 'Moderate' | 'High';
+  meetingPoint: string;
+  highlights: string[];
+  imageUrl: string;
+  duration: ActivityDuration;
+}
+
+const activities: ActivityDetail[] = [
   {
     name: 'Reef Snorkeling',
     activityType: 'Adventure',
     price: 120,
-    duration: '2 hours',
+    duration: '2-3 hours',
     capacity: 12,
+    category: 'Adventure',
+    intensity: 'Moderate',
+    meetingPoint: 'Lagoon Dock',
+    highlights: ['Guided reef tour', 'Gear included', 'Marine biologist guide'],
+    imageUrl: '/images/gallery/activities/snorkel.svg',
   },
   {
     name: 'Sunset Chef Table',
     activityType: 'Dining',
     price: 180,
-    duration: '3 hours',
+    duration: '2-3 hours',
     capacity: 8,
     isPremium: true,
+    category: 'Dining',
+    intensity: 'Low',
+    meetingPoint: 'Azure Kitchen Studio',
+    highlights: ['Five-course tasting', 'Wine pairing', 'Chef storytelling'],
+    imageUrl: '/images/gallery/activities/skydiving.svg',
   },
   {
     name: 'Lagoon Meditation',
     activityType: 'Wellness',
     price: 95,
-    duration: '90 minutes',
+    duration: '60-90 min',
     capacity: 10,
+    category: 'Wellness',
+    intensity: 'Low',
+    meetingPoint: 'Sunrise Pavilion',
+    highlights: ['Sound bath', 'Breathwork guide', 'Herbal tea service'],
+    imageUrl: '/images/gallery/activities/swimming.svg',
+  },
+  {
+    name: 'Lagoon Kayak Circuit',
+    activityType: 'Adventure',
+    price: 110,
+    duration: '2-3 hours',
+    capacity: 10,
+    category: 'Adventure',
+    intensity: 'Moderate',
+    meetingPoint: 'Lagoon Dock',
+    highlights: ['Guided route', 'Waterproof gear', 'Photography stops'],
+    imageUrl: '/images/gallery/activities/submarine.svg',
+  },
+  {
+    name: 'Family Lagoon Walk',
+    activityType: 'Family',
+    price: 80,
+    duration: '60-90 min',
+    capacity: 14,
+    category: 'Family',
+    intensity: 'Low',
+    meetingPoint: 'Garden Gate',
+    highlights: ['Tidepool discovery', 'Kids guide', 'Nature journal'],
+    imageUrl: '/images/gallery/activities/volleyball.svg',
+  },
+  {
+    name: 'Island Discovery',
+    activityType: 'Adventure',
+    price: 210,
+    duration: 'Half day',
+    capacity: 6,
+    category: 'Adventure',
+    intensity: 'High',
+    meetingPoint: 'Harbor Lounge',
+    highlights: ['Private guide', 'Hidden coves', 'Picnic stop'],
+    imageUrl: '/images/gallery/activities/roller-coaster.svg',
   },
 ];
 
@@ -61,17 +132,218 @@ const activitiesGallery = [
 ];
 
 export default function ActivitiesPage() {
+  const [search, setSearch] = useState('');
+  const [category, setCategory] = useState<ActivityCategory | 'All'>('All');
+  const [duration, setDuration] = useState<ActivityDuration | 'All'>('All');
+  const [priceRange, setPriceRange] = useState<'All' | 'Under 100' | '100-150' | '150+'>('All');
+
+  const filtered = useMemo(() => {
+    return activities.filter((activity) => {
+      const matchesSearch = [
+        activity.name,
+        activity.activityType,
+        activity.highlights.join(' '),
+        activity.meetingPoint,
+      ]
+        .join(' ')
+        .toLowerCase()
+        .includes(search.toLowerCase().trim());
+
+      const matchesCategory = category === 'All' || activity.category === category;
+      const matchesDuration = duration === 'All' || activity.duration === duration;
+      const matchesPrice =
+        priceRange === 'All' ||
+        (priceRange === 'Under 100' && activity.price < 100) ||
+        (priceRange === '100-150' && activity.price >= 100 && activity.price <= 150) ||
+        (priceRange === '150+' && activity.price > 150);
+
+      return matchesSearch && matchesCategory && matchesDuration && matchesPrice;
+    });
+  }, [search, category, duration, priceRange]);
+
   return (
     <PageShell>
       <PageHeader
         title="Activities"
         description="Curated experiences designed for calm, connection, and discovery."
       />
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {activities.map((activity) => (
-          <ActivityCard key={activity.name} {...activity} />
-        ))}
+      <div className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm">
+        <SectionHeader
+          title="Plan your experience"
+          description="Filter by category, duration, or ideal pace."
+        />
+        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Input
+            value={search}
+            onChange={(event) => setSearch(event.target.value)}
+            placeholder="Search wellness, dining, adventure"
+          />
+          <Select value={category} onValueChange={(value) => setCategory(value as ActivityCategory | 'All')}>
+            <SelectTrigger>
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">All categories</SelectItem>
+              <SelectItem value="Adventure">Adventure</SelectItem>
+              <SelectItem value="Wellness">Wellness</SelectItem>
+              <SelectItem value="Dining">Dining</SelectItem>
+              <SelectItem value="Family">Family</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={duration} onValueChange={(value) => setDuration(value as ActivityDuration | 'All')}>
+            <SelectTrigger>
+              <SelectValue placeholder="Duration" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">Any duration</SelectItem>
+              <SelectItem value="60-90 min">60-90 min</SelectItem>
+              <SelectItem value="2-3 hours">2-3 hours</SelectItem>
+              <SelectItem value="Half day">Half day</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={priceRange} onValueChange={(value) => setPriceRange(value as 'All' | 'Under 100' | '100-150' | '150+')}>
+            <SelectTrigger>
+              <SelectValue placeholder="Price" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="All">Any price</SelectItem>
+              <SelectItem value="Under 100">Under $100</SelectItem>
+              <SelectItem value="100-150">$100-$150</SelectItem>
+              <SelectItem value="150+">$150+</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
+
+      <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
+        <p>{filtered.length} experiences available</p>
+        <Button asChild variant="ghost" size="sm">
+          <Link href="/booking">Plan a stay</Link>
+        </Button>
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {filtered.length === 0 ? (
+          <Card className="col-span-full border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="text-lg">No activities found</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Adjust your filters or explore another pace of travel.
+            </CardContent>
+          </Card>
+        ) : (
+          filtered.map((activity) => (
+            <ActivityCard
+              key={activity.name}
+              {...activity}
+              action={
+                <div className="flex flex-col gap-3">
+                  <ModalDialog
+                    title={activity.name}
+                    description={`${activity.category} • ${activity.duration} • ${activity.intensity} intensity`}
+                    trigger={
+                      <Button variant="outline" className="w-full">
+                        View details
+                      </Button>
+                    }
+                    footer={
+                      <Button asChild>
+                        <Link href={`/booking?activity=${encodeURIComponent(activity.name)}`}>
+                          Reserve this experience
+                        </Link>
+                      </Button>
+                    }
+                  >
+                    <div className="grid gap-4 text-sm text-muted-foreground">
+                      <div className="grid gap-2">
+                        <p className="text-xs uppercase tracking-[0.2em]">Overview</p>
+                        <p>{activity.activityType}</p>
+                      </div>
+                      <div className="grid gap-2">
+                        <p className="text-xs uppercase tracking-[0.2em]">Details</p>
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div>
+                            <p className="text-foreground">{activity.meetingPoint}</p>
+                            <p className="text-xs text-muted-foreground">Meeting point</p>
+                          </div>
+                          <div>
+                            <p className="text-foreground">{activity.capacity} guests</p>
+                            <p className="text-xs text-muted-foreground">Capacity</p>
+                          </div>
+                          <div>
+                            <p className="text-foreground">{activity.duration}</p>
+                            <p className="text-xs text-muted-foreground">Duration</p>
+                          </div>
+                          <div>
+                            <p className="text-foreground">${activity.price}/guest</p>
+                            <p className="text-xs text-muted-foreground">Rate</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="grid gap-2">
+                        <p className="text-xs uppercase tracking-[0.2em]">Highlights</p>
+                        <ul className="grid gap-1">
+                          {activity.highlights.map((highlight) => (
+                            <li key={highlight}>• {highlight}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </ModalDialog>
+                  <Button asChild className="w-full">
+                    <Link href={`/booking?activity=${encodeURIComponent(activity.name)}`}>
+                      Reserve now
+                    </Link>
+                  </Button>
+                </div>
+              }
+            />
+          ))
+        )}
+      </div>
+
+      <section className="mt-16 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+        <Card className="relative overflow-hidden border-border/70 bg-card/90 shadow-sm">
+          <div className="absolute inset-0 bg-[linear-gradient(160deg,_hsl(var(--background))_10%,_transparent_70%)]" />
+          <div className="relative p-6">
+            <SectionHeader
+              title="Immersive previews"
+              description="A glimpse into the calm, adventure, and culinary rituals awaiting you."
+            />
+            <div className="mt-6 aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
+              <video
+                className="h-full w-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline
+                preload="metadata"
+              >
+                <source src="/videos/hero.mp4" type="video/mp4" />
+              </video>
+            </div>
+          </div>
+        </Card>
+        <Card className="border-border/70 bg-secondary/60">
+          <CardHeader>
+            <CardTitle className="text-lg">Your pace, curated</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-muted-foreground">
+            <p>
+              Choose from sunrise rituals, chef-led dining, or ocean-focused exploration.
+              Our hosts align every detail with your energy and schedule.
+            </p>
+            <p>
+              Every experience includes a dedicated guide, curated refreshment, and a
+              recovery ritual to close the day with ease.
+            </p>
+            <Button asChild variant="outline">
+              <Link href="/booking">Design my itinerary</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
       <div className="mt-16">
         <ImageGallery
           title="Curated Experiences"

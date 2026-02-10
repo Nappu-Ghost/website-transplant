@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -18,6 +19,7 @@ export interface ActivityCardProps {
   isPremium?: boolean;
   href?: string;
   isLoading?: boolean;
+  action?: ReactNode;
 }
 
 export function ActivityCard({
@@ -30,6 +32,7 @@ export function ActivityCard({
   isPremium,
   href = '/booking',
   isLoading,
+  action,
 }: ActivityCardProps) {
   if (isLoading) {
     return (
@@ -85,9 +88,11 @@ export function ActivityCard({
             {duration && <span>{duration}</span>}
             {capacity && <span>{capacity} guests max</span>}
           </div>
-          <Button asChild variant="outline" className="w-full">
-            <Link href={href}>Reserve activity</Link>
-          </Button>
+          {action ?? (
+            <Button asChild variant="outline" className="w-full">
+              <Link href={href}>Reserve activity</Link>
+            </Button>
+          )}
         </CardContent>
       </Card>
     </motion.div>

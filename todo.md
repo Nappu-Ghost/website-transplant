@@ -131,11 +131,11 @@
   - [x] Image galleries
 
 - [ ] **5.4** Activities Page
-  - [ ] List all activities
-  - [ ] Activity categories
-  - [ ] Activity detail view
-  - [ ] Booking integration
-  - [ ] Image/video content
+  - [x] List all activities
+  - [x] Activity categories
+  - [x] Activity detail view
+  - [x] Booking integration
+  - [x] Image/video content
 
 - [ ] **5.5** Booking System
   - [ ] Booking form with validation
