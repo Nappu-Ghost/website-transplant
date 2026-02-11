@@ -183,11 +183,11 @@
   - [x] Implement session management
   - [x] Add protected routes
 
-- [ ] **6.2** Implement authorization
-  - [ ] User roles (Customer, Admin)
-  - [ ] Role-based access control
-  - [ ] Admin-only pages protection
-  - [ ] User-specific data access
+- [x] **6.2** Implement authorization
+  - [x] User roles (Customer, Admin)
+  - [x] Role-based access control
+  - [x] Admin-only pages protection
+  - [x] User-specific data access
 
 ---
 

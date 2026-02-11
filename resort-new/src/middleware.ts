@@ -12,12 +12,24 @@ export function middleware(request: NextRequest) {
   // Check if the requested path is protected
   const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route));
     // If the route is protected and no session exists, redirect to login
-  if (isProtectedRoute && !userSession) {
+    if (isProtectedRoute && !userSession) {
     const redirectUrl = new URL('/login', request.url);
     // Preserve the original URL for redirection after login
     redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
     return NextResponse.redirect(redirectUrl);
   }
+
+    if (path.startsWith('/admin') && userSession?.value) {
+      try {
+        const user = JSON.parse(userSession.value);
+        const role = user?.role;
+        if (role !== 'ADMIN' && role !== 'MANAGER') {
+          return NextResponse.redirect(new URL('/', request.url));
+        }
+      } catch (error) {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    }
 
   return NextResponse.next();
 }

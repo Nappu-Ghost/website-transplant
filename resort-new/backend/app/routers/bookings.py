@@ -15,7 +15,9 @@ def create_booking(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(get_current_active_user),
 ):
-    if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER] and booking.user_id != current_user.id:
+    if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER]:
+        booking = booking.model_copy(update={"user_id": current_user.id})
+    elif booking.user_id != current_user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create a booking for another user")
 
     db_booking = crud.create_booking(db=db, booking_in=booking)
