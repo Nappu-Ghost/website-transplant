@@ -159,13 +159,13 @@
   - [x] Booking status tracking
 
 - [ ] **5.8** Admin Dashboard
-  - [ ] Dashboard overview
-  - [ ] Manage accommodations
-  - [ ] Manage activities
-  - [ ] Manage bookings
-  - [ ] Manage users
-  - [ ] Analytics and reports
-  - [ ] Settings
+  - [x] Dashboard overview
+  - [x] Manage accommodations
+  - [x] Manage activities
+  - [x] Manage bookings
+  - [x] Manage users
+  - [x] Analytics and reports
+  - [x] Settings
 
 - [ ] **5.9** Authentication Pages
   - [ ] Login page
