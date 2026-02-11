@@ -46,7 +46,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setUser(null);
       }
     } else {
-      setUser(null);
+      try {
+        const response = await fetch('/api/auth/check-session');
+        const data = await response.json();
+        if (data?.authenticated && data.user) {
+          authUtils.setUser(data.user);
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.warn('Session check failed:', error);
+        setUser(null);
+      }
     }
     setIsLoading(false);
   }, []); // No dependencies, should run once on mount
