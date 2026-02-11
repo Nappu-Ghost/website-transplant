@@ -1,12 +1,45 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog, ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
+import api from '@/lib/api';
 
 type BookingStatus = 'Upcoming' | 'Completed' | 'Cancelled';
+
+type ApiBookingStatus =
+  | 'PENDING'
+  | 'PAYMENT_COMPLETED'
+  | 'CONFIRMED'
+  | 'CHECKED_IN'
+  | 'CHECKED_OUT'
+  | 'CANCELLED';
+
+interface ApiPayment {
+  id: number;
+  bookingId: number;
+  amount: number;
+  currency: string;
+  status: string;
+  method: string;
+  paidAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ApiBooking {
+  id: number;
+  numberOfGuests: number;
+  totalPrice: number;
+  startDate: string;
+  endDate: string;
+  status: ApiBookingStatus;
+  rooms?: { room?: { name?: string } }[];
+  activities?: { activity?: { name?: string } }[];
+  payments?: ApiPayment[];
+}
 
 interface BookingSummary {
   id: string;
@@ -18,41 +51,9 @@ interface BookingSummary {
   status: BookingStatus;
   activity?: string;
   notes?: string;
+  amountPaid?: string;
+  paymentStatus?: string;
 }
-
-const initialBookings: BookingSummary[] = [
-  {
-    id: 'booking-1',
-    code: 'ALR-512483',
-    room: 'Lagoon Suite 201',
-    dates: 'Apr 12-15, 2026',
-    guests: 2,
-    total: '$1,640',
-    status: 'Upcoming',
-    activity: 'Sunset Chef Table',
-    notes: 'Anniversary dinner on arrival night.',
-  },
-  {
-    id: 'booking-2',
-    code: 'ALR-398210',
-    room: 'Garden Villa 102',
-    dates: 'Jan 21-24, 2026',
-    guests: 2,
-    total: '$980',
-    status: 'Completed',
-    activity: 'Lagoon Meditation',
-  },
-  {
-    id: 'booking-3',
-    code: 'ALR-126540',
-    room: 'Harbor Residence',
-    dates: 'Dec 03-07, 2025',
-    guests: 4,
-    total: '$3,120',
-    status: 'Cancelled',
-    activity: 'Island Discovery',
-  },
-];
 
 const statusStyles: Record<BookingStatus, string> = {
   Upcoming: 'bg-emerald-100 text-emerald-700',
@@ -60,9 +61,120 @@ const statusStyles: Record<BookingStatus, string> = {
   Cancelled: 'bg-rose-100 text-rose-700',
 };
 
+const formatCurrency = (amount: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+
+const formatDateRange = (startDate?: string, endDate?: string) => {
+  if (!startDate || !endDate) return 'Dates pending';
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 'Dates pending';
+  const startLabel = start.toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+  const endLabel = end.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' });
+  return `${startLabel} - ${endLabel}`;
+};
+
+const mapBookingStatus = (status: ApiBookingStatus): BookingStatus => {
+  if (status === 'CHECKED_OUT') return 'Completed';
+  if (status === 'CANCELLED') return 'Cancelled';
+  return 'Upcoming';
+};
+
+const getBookingCode = (id: number) => `ALR-${String(id).padStart(6, '0')}`;
+
+const getLatestPayment = (payments: ApiPayment[]) =>
+  payments
+    .slice()
+    .sort((a, b) => {
+      const aTime = new Date(a.paidAt ?? a.createdAt ?? 0).getTime();
+      const bTime = new Date(b.paidAt ?? b.createdAt ?? 0).getTime();
+      return bTime - aTime;
+    })[0];
+
+const calculatePaidTotal = (payments: ApiPayment[]) =>
+  payments
+    .filter((payment) => ['CAPTURED', 'AUTHORIZED'].includes(payment.status))
+    .reduce((sum, payment) => sum + (payment.amount || 0), 0);
+
 export default function MyBookingsPage() {
   const [filter, setFilter] = useState<'All' | BookingStatus>('All');
-  const [bookings, setBookings] = useState<BookingSummary[]>(initialBookings);
+  const [bookings, setBookings] = useState<BookingSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let isActive = true;
+
+    const loadBookings = async () => {
+      setIsLoading(true);
+      setError(null);
+
+      const [bookingsResult, paymentsResult] = await Promise.allSettled([
+        api.getUserBookings(),
+        api.getUserPayments(),
+      ]);
+
+      if (!isActive) return;
+
+      if (bookingsResult.status === 'rejected') {
+        const message = bookingsResult.reason instanceof Error
+          ? bookingsResult.reason.message
+          : 'Unable to load bookings right now.';
+        setError(message);
+        setBookings([]);
+        setIsLoading(false);
+        return;
+      }
+
+      const bookingData = (bookingsResult.value ?? []) as ApiBooking[];
+      const paymentData = paymentsResult.status === 'fulfilled'
+        ? ((paymentsResult.value ?? []) as ApiPayment[])
+        : [];
+      const paymentsByBookingId = new Map<number, ApiPayment[]>();
+
+      paymentData.forEach((payment) => {
+        if (!paymentsByBookingId.has(payment.bookingId)) {
+          paymentsByBookingId.set(payment.bookingId, []);
+        }
+        paymentsByBookingId.get(payment.bookingId)?.push(payment);
+      });
+
+      const summaries = bookingData.map((booking) => {
+        const roomName = booking.rooms?.[0]?.room?.name ?? 'Room pending';
+        const activityName = booking.activities?.[0]?.activity?.name;
+        const bookingPayments = paymentsByBookingId.get(booking.id)
+          ?? booking.payments
+          ?? [];
+        const latestPayment = getLatestPayment(bookingPayments);
+        const paidTotal = calculatePaidTotal(bookingPayments);
+        const paymentCurrency = latestPayment?.currency ?? 'USD';
+
+        return {
+          id: String(booking.id),
+          code: getBookingCode(booking.id),
+          room: roomName,
+          dates: formatDateRange(booking.startDate, booking.endDate),
+          guests: booking.numberOfGuests ?? 1,
+          total: formatCurrency(booking.totalPrice ?? 0, paymentCurrency),
+          status: mapBookingStatus(booking.status),
+          activity: activityName,
+          amountPaid: bookingPayments.length > 0
+            ? formatCurrency(paidTotal, paymentCurrency)
+            : undefined,
+          paymentStatus: latestPayment?.status,
+        } as BookingSummary;
+      });
+
+      setBookings(summaries);
+      setIsLoading(false);
+    };
+
+    loadBookings();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
 
   const filtered = useMemo(() => {
     if (filter === 'All') return bookings;
@@ -140,7 +252,25 @@ export default function MyBookingsPage() {
       </div>
 
       <div className="mt-6 grid gap-6">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <Card className="border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="text-lg">Loading bookings</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              Fetching your latest reservation details.
+            </CardContent>
+          </Card>
+        ) : error ? (
+          <Card className="border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="text-lg">Unable to load bookings</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              {error}
+            </CardContent>
+          </Card>
+        ) : filtered.length === 0 ? (
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">No bookings found</CardTitle>
@@ -164,6 +294,9 @@ export default function MyBookingsPage() {
                   <p>Confirmation: <span className="text-foreground">{booking.code}</span></p>
                   <p>Guests: <span className="text-foreground">{booking.guests}</span></p>
                   <p>Total: <span className="text-foreground">{booking.total}</span></p>
+                  {booking.amountPaid ? (
+                    <p>Paid: <span className="text-foreground">{booking.amountPaid}</span></p>
+                  ) : null}
                   {booking.activity && (
                     <p>Activity: <span className="text-foreground">{booking.activity}</span></p>
                   )}
@@ -181,7 +314,10 @@ export default function MyBookingsPage() {
                       <p>Guests: <span className="text-foreground">{booking.guests}</span></p>
                       <p>Activity: <span className="text-foreground">{booking.activity ?? 'None selected'}</span></p>
                       <p>Notes: <span className="text-foreground">{booking.notes ?? 'No additional notes'}</span></p>
-                      <p>Total paid: <span className="text-foreground">{booking.total}</span></p>
+                      <p>Total paid: <span className="text-foreground">{booking.amountPaid ?? booking.total}</span></p>
+                      {booking.paymentStatus ? (
+                        <p>Payment status: <span className="text-foreground">{booking.paymentStatus}</span></p>
+                      ) : null}
                     </div>
                   </ModalDialog>
                   {booking.status === 'Upcoming' ? (
