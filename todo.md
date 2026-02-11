@@ -158,7 +158,7 @@
   - [x] Cancellation functionality
   - [x] Booking status tracking
 
-- [ ] **5.8** Admin Dashboard
+- [x] **5.8** Admin Dashboard
   - [x] Dashboard overview
   - [x] Manage accommodations
   - [x] Manage activities
@@ -167,11 +167,11 @@
   - [x] Analytics and reports
   - [x] Settings
 
-- [ ] **5.9** Authentication Pages
-  - [ ] Login page
-  - [ ] Registration page (if needed)
-  - [ ] Password reset (if needed)
-  - [ ] Profile management
+- [x] **5.9** Authentication Pages
+  - [x] Login page
+  - [x] Registration page (if needed)
+  - [x] Password reset (if needed)
+  - [x] Profile management
 
 ---
 
