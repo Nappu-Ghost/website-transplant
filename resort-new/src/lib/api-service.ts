@@ -1,0 +1,44 @@
+import api from './api';
+
+export const hotelService = {
+  list: (token?: string | null) => api.getHotels(token),
+  getById: (id: string, token?: string | null) => api.getHotelById(id, token),
+  create: (data: any, token?: string | null) => api.createHotel(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateHotel(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteHotel(id, token),
+};
+
+export const roomService = {
+  list: (filters?: Record<string, any>, token?: string | null) => api.getRooms(filters, token),
+  getById: (id: string, token?: string | null) => api.getRoomById(id, token),
+  create: (data: any, token?: string | null) => api.createRoom(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateRoom(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteRoom(id, token),
+};
+
+export const activityService = {
+  list: (token?: string | null) => api.getActivities(token),
+  getById: (id: string, token?: string | null) => api.getActivityById(id, token),
+  create: (data: any, token?: string | null) => api.createActivity(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateActivity(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteActivity(id, token),
+};
+
+export const bookingService = {
+  list: (filters?: Record<string, any>, token?: string | null) => api.getBookings(filters, token),
+  getById: (id: string, token?: string | null) => api.getBookingById(id, token),
+  listForUser: (userId?: string, token?: string | null) => api.getUserBookings(userId, token),
+  create: (data: any, token?: string | null) => api.createBooking(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateBooking(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteBooking(id, token),
+  listPaymentsForUser: (token?: string | null) => api.getUserPayments(token),
+};
+
+export const userService = {
+  getCurrent: (token?: string | null) => api.getCurrentUser(token),
+  list: (filters?: Record<string, any>, token?: string | null) => api.getUsers(filters, token),
+  getById: (id: string, token?: string | null) => api.getUserById(id, token),
+  create: (data: any, token?: string | null) => api.createUser(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateUser(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteUser(id, token),
+};

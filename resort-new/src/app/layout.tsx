@@ -5,6 +5,7 @@ import { MotionProvider } from '@/components/providers/motion-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Providers as AuthProviders } from '@/components/providers/auth-provider';
+import { QueryProvider } from '@/components/providers/query-provider';
 
 // Initialize Inter font
 const inter = Inter({
@@ -35,7 +36,9 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProviders>
-            <MotionProvider>{children}</MotionProvider>
+            <QueryProvider>
+              <MotionProvider>{children}</MotionProvider>
+            </QueryProvider>
           </AuthProviders>
           <Toaster />
         </ThemeProvider>

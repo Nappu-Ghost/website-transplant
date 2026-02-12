@@ -219,8 +219,8 @@
 
 ## 🔧 Phase 8: API Integration
 - [ ] **8.1** Set up API client
-  - [ ] Configure TanStack Query
-  - [ ] Create API service functions
+  - [x] Configure TanStack Query
+  - [x] Create API service functions
   - [ ] Set up authentication headers
   - [ ] Handle error responses
 
