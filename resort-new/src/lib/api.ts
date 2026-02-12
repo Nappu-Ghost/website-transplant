@@ -181,6 +181,10 @@ export class ApiClient {
   async updateBooking(id: string, data: any, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteBooking(id: string, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'DELETE' }, undefined, true, token); }
 
+  async getAdminOverview(token?: string | null) {
+    return this.request('/admin/overview', {}, undefined, true, token);
+  }
+
   async getEvents(token?: string | null) { return this.request('/events/', {}, undefined, false, token); }
   async getEventById(id: string, token?: string | null) { return this.request(`/events/${id}`, {}, undefined, false, token); }
   async createEvent(data: any, token?: string | null) { return this.request('/events/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }

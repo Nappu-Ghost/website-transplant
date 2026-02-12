@@ -1,15 +1,25 @@
+"use client";
+
+import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader, SectionHeader } from '@/components/shared';
+import { adminService } from '@/lib/api-service';
 
-const metrics = [
-  { label: 'Occupancy', value: '82%', delta: '+6% week' },
-  { label: 'Upcoming arrivals', value: '18', delta: 'Next 7 days' },
-  { label: 'Active experiences', value: '12', delta: 'Today' },
-  { label: 'Deposit collected', value: '$18.4k', delta: 'This week' },
-];
+interface AdminOverview {
+  totals: {
+    users: number;
+    bookings: number;
+    hotels: number;
+    rooms: number;
+    activities: number;
+    payments: number;
+  };
+  revenueCollected: number;
+}
 
 const recentBookings = [
   { code: 'ALR-512483', guest: 'Avery Jordan', room: 'Lagoon Suite 201', status: 'Confirmed' },
@@ -24,13 +34,60 @@ const occupancySegments = [
   { label: 'Residences', value: 69 },
 ];
 
+const formatCurrency = (amount: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
 export default function AdminDashboardPage() {
+  const overviewQuery = useQuery<AdminOverview>({
+    queryKey: ['admin', 'overview'],
+    queryFn: () => adminService.getOverview(),
+  });
+
+  const metrics = useMemo(() => {
+    const totals = overviewQuery.data?.totals;
+    return [
+      {
+        label: 'Total bookings',
+        value: totals ? String(totals.bookings) : '—',
+        delta: 'All time',
+      },
+      {
+        label: 'Available rooms',
+        value: totals ? String(totals.rooms) : '—',
+        delta: 'Across properties',
+      },
+      {
+        label: 'Active experiences',
+        value: totals ? String(totals.activities) : '—',
+        delta: 'Current catalog',
+      },
+      {
+        label: 'Revenue collected',
+        value: overviewQuery.data ? formatCurrency(overviewQuery.data.revenueCollected) : '—',
+        delta: 'Captured payments',
+      },
+    ];
+  }, [overviewQuery.data]);
+
   return (
     <div className="space-y-8">
       <PageHeader
         title="Dashboard"
         description="Operational snapshot, arrivals, and performance indicators."
       />
+
+      {overviewQuery.isError ? (
+        <Card className="border-border/70 bg-card/90">
+          <CardHeader>
+            <CardTitle className="text-lg">Unable to load overview</CardTitle>
+          </CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {overviewQuery.error instanceof Error
+              ? overviewQuery.error.message
+              : 'Please try again shortly.'}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {metrics.map((metric) => (

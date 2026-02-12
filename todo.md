@@ -228,8 +228,8 @@
   - [x] Fetch accommodations
   - [x] Fetch activities
   - [x] Fetch bookings
-  - [ ] Fetch user data
-  - [ ] Fetch admin data
+  - [x] Fetch user data
+  - [x] Fetch admin data
 
 - [ ] **8.3** Implement mutations
   - [ ] Create bookings

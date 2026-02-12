@@ -42,3 +42,7 @@ export const userService = {
   update: (id: string, data: any, token?: string | null) => api.updateUser(id, data, token),
   remove: (id: string, token?: string | null) => api.deleteUser(id, token),
 };
+
+export const adminService = {
+  getOverview: (token?: string | null) => api.getAdminOverview(token),
+};

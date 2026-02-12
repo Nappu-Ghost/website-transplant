@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/auth/useAuth';
+import { userService } from '@/lib/api-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,9 +14,19 @@ import { PageHeader, PageShell, SectionHeader, useNotify } from '@/components/sh
 export default function ProfilePage() {
   const { user } = useAuth();
   const notify = useNotify();
-  const [name, setName] = useState(user?.name || '');
+  const userQuery = useQuery({
+    queryKey: ['user', 'me'],
+    queryFn: () => userService.getCurrent(),
+    enabled: Boolean(user?.id),
+  });
+  const resolvedUser = useMemo(() => userQuery.data ?? user, [userQuery.data, user]);
+  const [name, setName] = useState(resolvedUser?.name || '');
   const [phone, setPhone] = useState('');
   const [preference, setPreference] = useState('');
+
+  useEffect(() => {
+    setName(resolvedUser?.name || '');
+  }, [resolvedUser?.name]);
 
   const handleSave = () => {
     notify.success({
@@ -57,13 +69,19 @@ export default function ProfilePage() {
             <CardTitle className="text-lg">Guest details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {userQuery.isLoading ? (
+              <p className="text-sm text-muted-foreground">Loading profile details...</p>
+            ) : null}
+            {userQuery.isError ? (
+              <p className="text-sm text-destructive">Unable to refresh profile details.</p>
+            ) : null}
             <div className="space-y-2">
               <Label htmlFor="name">Full name</Label>
               <Input id="name" value={name} onChange={(event) => setName(event.target.value)} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
-              <Input id="email" value={user.email} readOnly />
+              <Input id="email" value={resolvedUser?.email ?? user.email} readOnly />
             </div>
             <div className="space-y-2">
               <Label htmlFor="phone">Phone</Label>
