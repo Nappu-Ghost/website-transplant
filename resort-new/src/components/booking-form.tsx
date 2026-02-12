@@ -39,12 +39,21 @@ const formSchema = z
     }
   );
 
-type BookingFormValues = z.infer<typeof formSchema>;
+export type BookingFormValues = z.infer<typeof formSchema>;
+
+type BookingOption = {
+  id: number;
+  name: string;
+};
 
 export interface BookingFormProps {
   isLoading?: boolean;
+  isSubmitting?: boolean;
   defaultValues?: Partial<BookingFormValues>;
   onEstimateChange?: (values: Partial<BookingFormValues>) => void;
+  roomOptions?: BookingOption[];
+  activityOptions?: BookingOption[];
+  onCreateBooking?: (values: BookingFormValues) => Promise<{ id?: number } | null>;
 }
 
 const fadeUp = {
@@ -52,7 +61,15 @@ const fadeUp = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
 };
 
-export function BookingForm({ isLoading, defaultValues, onEstimateChange }: BookingFormProps) {
+export function BookingForm({
+  isLoading,
+  isSubmitting: isSubmittingExternal,
+  defaultValues,
+  onEstimateChange,
+  roomOptions,
+  activityOptions,
+  onCreateBooking,
+}: BookingFormProps) {
   const [preview, setPreview] = useState<BookingFormValues | null>(null);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
   const lastEstimateRef = useRef<Partial<BookingFormValues> | null>(null);
@@ -143,12 +160,44 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
 
   const onSubmit = async (data: BookingFormValues) => {
     setPreview(data);
-    setConfirmationCode(`ALR-${Math.floor(100000 + Math.random() * 900000)}`);
-    notify.success({
-      title: 'Request received',
-      description: 'Our concierge will confirm availability shortly.',
-    });
+    try {
+      const result = onCreateBooking ? await onCreateBooking(data) : null;
+      const bookingId = result?.id;
+      const nextCode = bookingId
+        ? `ALR-${String(bookingId).padStart(6, '0')}`
+        : `ALR-${Math.floor(100000 + Math.random() * 900000)}`;
+      setConfirmationCode(nextCode);
+      notify.success({
+        title: 'Request received',
+        description: 'Our concierge will confirm availability shortly.',
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to create booking right now.';
+      notify.error({
+        title: 'Booking failed',
+        description: message,
+      });
+    }
   };
+
+  const resolvedRoomOptions = roomOptions?.length
+    ? roomOptions
+    : [
+      { id: 1, name: 'Lagoon Suite' },
+      { id: 2, name: 'Garden Villa' },
+      { id: 3, name: 'Harbor Residence' },
+    ];
+
+  const resolvedActivityOptions = activityOptions?.length
+    ? activityOptions
+    : [
+      { id: 1, name: 'Reef Snorkeling' },
+      { id: 2, name: 'Sunset Chef Table' },
+      { id: 3, name: 'Lagoon Meditation' },
+      { id: 4, name: 'Lagoon Kayak Circuit' },
+      { id: 5, name: 'Family Lagoon Walk' },
+      { id: 6, name: 'Island Discovery' },
+    ];
 
   if (isLoading) {
     return (
@@ -253,9 +302,11 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
                         <SelectValue placeholder="Select a room" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Lagoon Suite">Lagoon Suite</SelectItem>
-                        <SelectItem value="Garden Villa">Garden Villa</SelectItem>
-                        <SelectItem value="Harbor Residence">Harbor Residence</SelectItem>
+                        {resolvedRoomOptions.map((option) => (
+                          <SelectItem key={option.id} value={option.name}>
+                            {option.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}
@@ -279,12 +330,11 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="none">No activity</SelectItem>
-                        <SelectItem value="Reef Snorkeling">Reef Snorkeling</SelectItem>
-                        <SelectItem value="Sunset Chef Table">Sunset Chef Table</SelectItem>
-                        <SelectItem value="Lagoon Meditation">Lagoon Meditation</SelectItem>
-                        <SelectItem value="Lagoon Kayak Circuit">Lagoon Kayak Circuit</SelectItem>
-                        <SelectItem value="Family Lagoon Walk">Family Lagoon Walk</SelectItem>
-                        <SelectItem value="Island Discovery">Island Discovery</SelectItem>
+                        {resolvedActivityOptions.map((option) => (
+                          <SelectItem key={option.id} value={option.name}>
+                            {option.name}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   )}
@@ -310,8 +360,12 @@ export function BookingForm({ isLoading, defaultValues, onEstimateChange }: Book
               />
             </div>
 
-            <Button type="submit" size="lg" disabled={!isValid || isSubmitting}>
-              {isSubmitting ? 'Submitting...' : 'Request availability'}
+            <Button
+              type="submit"
+              size="lg"
+              disabled={!isValid || isSubmitting || isSubmittingExternal}
+            >
+              {isSubmitting || isSubmittingExternal ? 'Submitting...' : 'Request availability'}
             </Button>
           </form>
         </FormCard>

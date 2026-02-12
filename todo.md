@@ -232,7 +232,7 @@
   - [x] Fetch admin data
 
 - [ ] **8.3** Implement mutations
-  - [ ] Create bookings
+  - [x] Create bookings
   - [ ] Update bookings
   - [ ] Cancel bookings
   - [ ] Create/update accommodations (admin)
