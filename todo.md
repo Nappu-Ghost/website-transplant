@@ -218,14 +218,14 @@
 ---
 
 ## 🔧 Phase 8: API Integration
-- [ ] **8.1** Set up API client
+- [x] **8.1** Set up API client
   - [x] Configure TanStack Query
   - [x] Create API service functions
   - [x] Set up authentication headers
   - [x] Handle error responses
 
 - [ ] **8.2** Implement queries
-  - [ ] Fetch accommodations
+  - [x] Fetch accommodations
   - [ ] Fetch activities
   - [ ] Fetch bookings
   - [ ] Fetch user data

@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
 import { ImageGallery } from '@/components/image-gallery';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
+import { hotelService, roomService } from '@/lib/api-service';
 
 type AccommodationCategory = 'Suite' | 'Villa' | 'Residence';
 
@@ -21,100 +23,54 @@ interface AccommodationDetail extends AccommodationCardProps {
   imageUrl: string;
 }
 
-const accommodations: AccommodationDetail[] = [
-  {
-    name: 'Lagoon Suite 201',
-    location: 'Oceanfront Wing',
-    pricePerNight: 480,
-    capacity: 2,
-    description: 'Private deck, floating breakfast service, and sunset views.',
-    rating: 4.9,
-    isPremium: true,
-    tags: ['King bed', 'Deck access'],
-    category: 'Suite',
-    size: '640 sq ft',
-    bed: 'King bed',
-    view: 'Lagoon view',
-    highlights: ['Private deck', 'Floating breakfast', 'Concierge service'],
-    imageUrl: '/images/gallery/hotels/hotel1.jpg',
-  },
-  {
-    name: 'Garden Villa 102',
-    location: 'Palm Grove',
-    pricePerNight: 280,
-    capacity: 2,
-    description: 'Quiet garden path, minimalist interior, morning light.',
-    rating: 4.7,
-    tags: ['Patio', 'Outdoor shower'],
-    category: 'Villa',
-    size: '520 sq ft',
-    bed: 'Queen bed',
-    view: 'Garden view',
-    highlights: ['Outdoor shower', 'Private patio', 'Morning tea service'],
-    imageUrl: '/images/gallery/rooms/room1.jpg',
-  },
-  {
-    name: 'Harbor Residence',
-    location: 'Lighthouse Point',
-    pricePerNight: 620,
-    capacity: 4,
-    description: 'Two-bedroom residence with lounge and private dining.',
-    rating: 4.8,
-    isPremium: true,
-    tags: ['Two bedrooms', 'Concierge'],
-    category: 'Residence',
-    size: '1,050 sq ft',
-    bed: 'Two king beds',
-    view: 'Harbor view',
-    highlights: ['Private lounge', 'In-suite dining', 'Dedicated host'],
-    imageUrl: '/images/gallery/hotels/hotel3.jpg',
-  },
-  {
-    name: 'Ocean Breeze Suite',
-    location: 'Coral Terrace',
-    pricePerNight: 360,
-    capacity: 2,
-    description: 'Light-filled suite with coastal textures and open views.',
-    rating: 4.6,
-    tags: ['Balcony', 'Soaking tub'],
-    category: 'Suite',
-    size: '560 sq ft',
-    bed: 'King bed',
-    view: 'Ocean view',
-    highlights: ['Soaking tub', 'Balcony seating', 'Sunrise rituals'],
-    imageUrl: '/images/gallery/hotels/hotel2.jpg',
-  },
-  {
-    name: 'Palm Grove Villa',
-    location: 'Garden Walk',
-    pricePerNight: 320,
-    capacity: 3,
-    description: 'Villa with garden entry, outdoor lounge, and quiet finishes.',
-    rating: 4.5,
-    tags: ['Outdoor lounge', 'Daybed'],
-    category: 'Villa',
-    size: '600 sq ft',
-    bed: 'King + daybed',
-    view: 'Garden view',
-    highlights: ['Outdoor lounge', 'Daybed alcove', 'Personal host'],
-    imageUrl: '/images/gallery/rooms/room1.jpg',
-  },
-  {
-    name: 'Harbor Loft',
-    location: 'Marina Deck',
-    pricePerNight: 520,
-    capacity: 3,
-    description: 'Loft-style residence with double-height windows.',
-    rating: 4.7,
-    tags: ['Loft', 'Workspace'],
-    category: 'Residence',
-    size: '780 sq ft',
-    bed: 'King bed',
-    view: 'Marina view',
-    highlights: ['Workspace nook', 'Lounge corner', 'Twilight service'],
-    imageUrl: '/images/gallery/hotels/hotel1.jpg',
-  },
-];
+interface HotelSummary {
+  id: number;
+  name: string;
+  location: string;
+  imageUrl?: string | null;
+}
+
+interface RoomSummary {
+  id: number;
+  hotelId: number;
+  name: string;
+  type: string;
+  price: number;
+  capacity: number;
+  description?: string | null;
+  imageUrl?: string | null;
+  floorNumber?: number;
+  available?: boolean;
+  isPremium?: boolean;
+}
+
+const FALLBACK_BED_OPTIONS = ['King bed', 'Queen bed', 'King + daybed'];
+
+const defaultHighlights = (isPremium?: boolean) =>
+  isPremium
+    ? ['Private deck', 'Concierge service', 'Twilight service']
+    : ['Private patio', 'Morning tea service', 'Lagoon views'];
+
+const resolveCategory = (roomType: string): AccommodationCategory => {
+  const normalized = roomType.toLowerCase();
+  if (normalized.includes('villa')) return 'Villa';
+  if (normalized.includes('residence') || normalized.includes('loft')) return 'Residence';
+  return 'Suite';
+};
+
+const resolveSize = (capacity: number, isPremium?: boolean) => {
+  if (capacity >= 4) return '1,050 sq ft';
+  if (isPremium) return '720 sq ft';
+  if (capacity >= 3) return '600 sq ft';
+  return '520 sq ft';
+};
+
+const resolveView = (location?: string) => {
+  if (!location) return 'Lagoon view';
+  if (location.toLowerCase().includes('atoll')) return 'Atoll view';
+  if (location.toLowerCase().includes('harbor')) return 'Harbor view';
+  return 'Ocean view';
+};
 
 const accommodationGallery = [
   {
@@ -144,6 +100,45 @@ export default function AccommodationsPage() {
   const [category, setCategory] = useState<AccommodationCategory | 'All'>('All');
   const [capacity, setCapacity] = useState<'All' | '2' | '3' | '4+'>('All');
   const [priceRange, setPriceRange] = useState<'All' | 'Under 350' | '350-500' | '500+'>('All');
+
+  const { data: rooms = [], isLoading, isError, error } = useQuery<RoomSummary[]>({
+    queryKey: ['rooms'],
+    queryFn: () => roomService.list(),
+  });
+
+  const { data: hotels = [] } = useQuery<HotelSummary[]>({
+    queryKey: ['hotels'],
+    queryFn: () => hotelService.list(),
+  });
+
+  const hotelById = useMemo(() => {
+    return new Map(hotels.map((hotel) => [hotel.id, hotel]));
+  }, [hotels]);
+
+  const accommodations = useMemo<AccommodationDetail[]>(() => {
+    return rooms
+      .filter((room) => room.available !== false)
+      .map((room) => {
+        const hotel = hotelById.get(room.hotelId);
+        const size = resolveSize(room.capacity, room.isPremium);
+        return {
+          name: room.name,
+          location: hotel?.name ?? 'Azure Lagoon Resort',
+          pricePerNight: room.price,
+          capacity: room.capacity,
+          description: room.description || 'Refined suite styling with open-air comfort.',
+          rating: room.isPremium ? 4.9 : 4.6,
+          isPremium: room.isPremium,
+          tags: [room.type, `${room.capacity} guests`],
+          category: resolveCategory(room.type),
+          size,
+          bed: FALLBACK_BED_OPTIONS[room.id % FALLBACK_BED_OPTIONS.length],
+          view: resolveView(hotel?.location),
+          highlights: defaultHighlights(room.isPremium),
+          imageUrl: room.imageUrl || hotel?.imageUrl || '/images/gallery/hotels/hotel1.jpg',
+        };
+      });
+  }, [rooms, hotelById]);
 
   const filtered = useMemo(() => {
     return accommodations.filter((accommodation) => {
@@ -229,14 +224,34 @@ export default function AccommodationsPage() {
       </div>
 
       <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
-        <p>{filtered.length} stays available</p>
+        <p>{isLoading ? 'Loading stays...' : `${filtered.length} stays available`}</p>
         <Button asChild variant="ghost" size="sm">
           <Link href="/booking">Plan a stay</Link>
         </Button>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, index) => (
+            <AccommodationCard
+              key={`accommodation-skeleton-${index}`}
+              name="Loading"
+              location=""
+              pricePerNight={0}
+              capacity={0}
+              isLoading
+            />
+          ))
+        ) : isError ? (
+          <Card className="col-span-full border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="text-lg">Unable to load stays</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please try again shortly.'}
+            </CardContent>
+          </Card>
+        ) : filtered.length === 0 ? (
           <Card className="col-span-full border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">No stays found</CardTitle>
