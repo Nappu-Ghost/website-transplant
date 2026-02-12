@@ -176,7 +176,7 @@
 ---
 
 ## 🔐 Phase 6: Authentication & Authorization
-- [ ] **6.1** Implement authentication
+- [x] **6.1** Implement authentication
   - [x] Set up auth context/provider
   - [x] Implement login functionality
   - [x] Implement logout functionality
@@ -193,10 +193,10 @@
 
 ## 🎨 Phase 7: Assets & Content Migration
 - [ ] **7.1** Transfer media assets
-  - [ ] Copy images from `resort-old/public`
-  - [ ] Copy videos from `resort-old/public`
-  - [ ] Optimize images for web
-  - [ ] Optimize videos for web
+  - [x] Copy images from `resort-old/public`
+  - [x] Copy videos from `resort-old/public`
+  - [x] Optimize images for web
+  - [x] Optimize videos for web
   - [ ] Update all asset references
 
 - [ ] **7.2** Content migration
