@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConfirmDialog, ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
-import api from '@/lib/api';
+import { bookingService } from '@/lib/api-service';
 
 type BookingStatus = 'Upcoming' | 'Completed' | 'Cancelled';
 
@@ -98,83 +99,58 @@ const calculatePaidTotal = (payments: ApiPayment[]) =>
 
 export default function MyBookingsPage() {
   const [filter, setFilter] = useState<'All' | BookingStatus>('All');
-  const [bookings, setBookings] = useState<BookingSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [cancelledIds, setCancelledIds] = useState<string[]>([]);
 
-  useEffect(() => {
-    let isActive = true;
+  const bookingsQuery = useQuery<ApiBooking[]>({
+    queryKey: ['bookings', 'user'],
+    queryFn: () => bookingService.listForUser(),
+  });
 
-    const loadBookings = async () => {
-      setIsLoading(true);
-      setError(null);
+  const paymentsQuery = useQuery<ApiPayment[]>({
+    queryKey: ['payments', 'user'],
+    queryFn: () => bookingService.listPaymentsForUser(),
+  });
 
-      const [bookingsResult, paymentsResult] = await Promise.allSettled([
-        api.getUserBookings(),
-        api.getUserPayments(),
-      ]);
+  const bookings = useMemo(() => {
+    const bookingData = bookingsQuery.data ?? [];
+    const paymentData = paymentsQuery.isSuccess ? (paymentsQuery.data ?? []) : [];
+    const paymentsByBookingId = new Map<number, ApiPayment[]>();
 
-      if (!isActive) return;
-
-      if (bookingsResult.status === 'rejected') {
-        const message = bookingsResult.reason instanceof Error
-          ? bookingsResult.reason.message
-          : 'Unable to load bookings right now.';
-        setError(message);
-        setBookings([]);
-        setIsLoading(false);
-        return;
+    paymentData.forEach((payment) => {
+      if (!paymentsByBookingId.has(payment.bookingId)) {
+        paymentsByBookingId.set(payment.bookingId, []);
       }
+      paymentsByBookingId.get(payment.bookingId)?.push(payment);
+    });
 
-      const bookingData = (bookingsResult.value ?? []) as ApiBooking[];
-      const paymentData = paymentsResult.status === 'fulfilled'
-        ? ((paymentsResult.value ?? []) as ApiPayment[])
-        : [];
-      const paymentsByBookingId = new Map<number, ApiPayment[]>();
+    return bookingData.map((booking) => {
+      const roomName = booking.rooms?.[0]?.room?.name ?? 'Room pending';
+      const activityName = booking.activities?.[0]?.activity?.name;
+      const bookingPayments = paymentsByBookingId.get(booking.id)
+        ?? booking.payments
+        ?? [];
+      const latestPayment = getLatestPayment(bookingPayments);
+      const paidTotal = calculatePaidTotal(bookingPayments);
+      const paymentCurrency = latestPayment?.currency ?? 'USD';
+      const baseStatus = mapBookingStatus(booking.status);
+      const status = cancelledIds.includes(String(booking.id)) ? 'Cancelled' : baseStatus;
 
-      paymentData.forEach((payment) => {
-        if (!paymentsByBookingId.has(payment.bookingId)) {
-          paymentsByBookingId.set(payment.bookingId, []);
-        }
-        paymentsByBookingId.get(payment.bookingId)?.push(payment);
-      });
-
-      const summaries = bookingData.map((booking) => {
-        const roomName = booking.rooms?.[0]?.room?.name ?? 'Room pending';
-        const activityName = booking.activities?.[0]?.activity?.name;
-        const bookingPayments = paymentsByBookingId.get(booking.id)
-          ?? booking.payments
-          ?? [];
-        const latestPayment = getLatestPayment(bookingPayments);
-        const paidTotal = calculatePaidTotal(bookingPayments);
-        const paymentCurrency = latestPayment?.currency ?? 'USD';
-
-        return {
-          id: String(booking.id),
-          code: getBookingCode(booking.id),
-          room: roomName,
-          dates: formatDateRange(booking.startDate, booking.endDate),
-          guests: booking.numberOfGuests ?? 1,
-          total: formatCurrency(booking.totalPrice ?? 0, paymentCurrency),
-          status: mapBookingStatus(booking.status),
-          activity: activityName,
-          amountPaid: bookingPayments.length > 0
-            ? formatCurrency(paidTotal, paymentCurrency)
-            : undefined,
-          paymentStatus: latestPayment?.status,
-        } as BookingSummary;
-      });
-
-      setBookings(summaries);
-      setIsLoading(false);
-    };
-
-    loadBookings();
-
-    return () => {
-      isActive = false;
-    };
-  }, []);
+      return {
+        id: String(booking.id),
+        code: getBookingCode(booking.id),
+        room: roomName,
+        dates: formatDateRange(booking.startDate, booking.endDate),
+        guests: booking.numberOfGuests ?? 1,
+        total: formatCurrency(booking.totalPrice ?? 0, paymentCurrency),
+        status,
+        activity: activityName,
+        amountPaid: bookingPayments.length > 0
+          ? formatCurrency(paidTotal, paymentCurrency)
+          : undefined,
+        paymentStatus: latestPayment?.status,
+      } as BookingSummary;
+    });
+  }, [bookingsQuery.data, paymentsQuery.data, paymentsQuery.isSuccess, cancelledIds]);
 
   const filtered = useMemo(() => {
     if (filter === 'All') return bookings;
@@ -185,11 +161,7 @@ export default function MyBookingsPage() {
   const completedCount = bookings.filter((booking) => booking.status === 'Completed').length;
 
   const handleCancel = (id: string) => {
-    setBookings((current) =>
-      current.map((booking) =>
-        booking.id === id ? { ...booking, status: 'Cancelled' } : booking
-      )
-    );
+    setCancelledIds((current) => (current.includes(id) ? current : [...current, id]));
   };
 
   return (
@@ -252,7 +224,7 @@ export default function MyBookingsPage() {
       </div>
 
       <div className="mt-6 grid gap-6">
-        {isLoading ? (
+        {bookingsQuery.isLoading ? (
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">Loading bookings</CardTitle>
@@ -261,13 +233,15 @@ export default function MyBookingsPage() {
               Fetching your latest reservation details.
             </CardContent>
           </Card>
-        ) : error ? (
+        ) : bookingsQuery.isError ? (
           <Card className="border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">Unable to load bookings</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              {error}
+              {bookingsQuery.error instanceof Error
+                ? bookingsQuery.error.message
+                : 'Unable to load bookings right now.'}
             </CardContent>
           </Card>
         ) : filtered.length === 0 ? (
