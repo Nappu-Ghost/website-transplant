@@ -192,12 +192,12 @@
 ---
 
 ## 🎨 Phase 7: Assets & Content Migration
-- [ ] **7.1** Transfer media assets
+- [x] **7.1** Transfer media assets
   - [x] Copy images from `resort-old/public`
   - [x] Copy videos from `resort-old/public`
   - [x] Optimize images for web
   - [x] Optimize videos for web
-  - [ ] Update all asset references
+  - [x] Update all asset references
 
 - [ ] **7.2** Content migration
   - [ ] Replace all dental terminology with resort terminology
