@@ -235,7 +235,7 @@
   - [x] Create bookings
   - [x] Update bookings
   - [x] Cancel bookings
-  - [ ] Create/update accommodations (admin)
+  - [x] Create/update accommodations (admin)
   - [ ] Create/update activities (admin)
   - [ ] Process payments
 
