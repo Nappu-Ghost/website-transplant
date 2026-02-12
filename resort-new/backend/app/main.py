@@ -24,9 +24,9 @@ from .routers import (
 from .db import engine, Base
 
 app = FastAPI(
-    title="Dental Clinic API",
+    title="Resort API",
     version="0.1.0",
-    description="API for managing a Dental Clinic System. Access documentation at /docs or /redoc.",
+    description="API for managing Azure Lagoon Resort operations. Access documentation at /docs or /redoc.",
 )
 
 origins = [
@@ -82,13 +82,13 @@ app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Admin"])
 
 @app.get(f"{API_PREFIX}/health", tags=["Health Check"])
 async def health_check():
-    return {"status": "healthy", "message": "Dental Clinic API is operational."}
+    return {"status": "healthy", "message": "Resort API is operational."}
 
 
 @app.get("/", include_in_schema=False)
 async def root_message():
     return {
-        "message": "Dental Clinic API is running.",
+        "message": "Resort API is running.",
         "documentation_urls": [app.docs_url, app.redoc_url],
         "health_check": f"{API_PREFIX}/health",
     }

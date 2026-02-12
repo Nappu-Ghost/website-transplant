@@ -200,7 +200,7 @@
   - [x] Update all asset references
 
 - [ ] **7.2** Content migration
-  - [ ] Replace all dental terminology with resort terminology
+  - [x] Replace all dental terminology with resort terminology
   - [ ] Update page titles and descriptions
   - [ ] Update SEO metadata
   - [ ] Update navigation labels
@@ -318,13 +318,6 @@
   - [ ] Production build test
   - [ ] Database migration scripts
   - [ ] Backup strategy
-
-- [ ] **11.3** Launch
-  - [ ] Deploy backend
-  - [ ] Deploy frontend
-  - [ ] DNS configuration
-  - [ ] SSL certificate
-  - [ ] Final smoke tests
 
 ---
 

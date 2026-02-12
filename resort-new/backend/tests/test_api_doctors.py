@@ -8,11 +8,11 @@ def create_prerequisites_for_doctor(auth_client: TestClient):
     timestamp_ms = int(datetime.now().timestamp() * 10000) 
 
     clinic_data = {
-        "name": f"Doctor Test Clinic {timestamp_ms}",
-        "address": "123 Med St",
+        "name": f"Host Pavilion {timestamp_ms}",
+        "address": "123 Lagoon Way",
         "phone": "555-1234",
         "opening_hours": "9am-5pm",
-        "image_url": "https://example.com/clinic.jpg"
+        "image_url": "https://example.com/pavilion.jpg"
     }
     clinic_response = auth_client.post("/clinics/", json=clinic_data)
     if clinic_response.status_code != 201:
@@ -23,7 +23,7 @@ def create_prerequisites_for_doctor(auth_client: TestClient):
     user_data = {
         "email": f"doc_user_{timestamp_ms}@example.com",
         "password": "testpassword123",
-        "name": "Test Doctor User",
+        "name": "Test Host User",
         "role": RoleEnum.DOCTOR.value, 
         "status": StatusEnum.ACTIVE.value
     }
@@ -40,7 +40,7 @@ def test_create_doctor(auth_client: TestClient, db_session: Session):
     user_id, clinic_id = create_prerequisites_for_doctor(auth_client)
     
     doctor_data = {
-        "specialty": "General Dentistry",
+        "specialty": "Wellness Guide",
         "clinic_id": clinic_id,
         "user_id": user_id,
         "status": StatusEnum.ACTIVE.value
@@ -69,10 +69,10 @@ def test_create_doctor_with_new_user(auth_client: TestClient, db_session: Sessio
     timestamp_ms = int(datetime.now().timestamp() * 10000) 
     
     doctor_data = {
-        "specialty": "Orthodontics",
+        "specialty": "Movement Coach",
         "clinic_id": clinic_id,
         "user_email": f"new_doc_{timestamp_ms}@example.com",
-        "user_name": "New Doctor User",
+        "user_name": "New Host User",
         "user_password": "securepassword123",
         "status": StatusEnum.ACTIVE.value
     }
@@ -97,7 +97,7 @@ def test_get_doctors(auth_client: TestClient):
     
     # Create a doctor
     doctor_data = {
-        "specialty": "General Dentistry",
+        "specialty": "Wellness Guide",
         "clinic_id": clinic_id,
         "user_id": user_id,
         "status": StatusEnum.ACTIVE.value
@@ -132,7 +132,7 @@ def test_get_doctor_by_id(auth_client: TestClient):
     
     # Create a doctor
     doctor_data = {
-        "specialty": "Pediatric Dentistry",
+        "specialty": "Family Wellness",
         "clinic_id": clinic_id,
         "user_id": user_id,
         "status": StatusEnum.ACTIVE.value
@@ -160,7 +160,7 @@ def test_update_doctor(auth_client: TestClient):
     
     # Create a doctor
     doctor_data = {
-        "specialty": "Endodontics",
+        "specialty": "Recovery Therapy",
         "clinic_id": clinic_id,
         "user_id": user_id,
         "status": StatusEnum.ACTIVE.value
@@ -172,7 +172,7 @@ def test_update_doctor(auth_client: TestClient):
     
     # Update the doctor
     update_data = {
-        "specialty": "Oral Surgery",
+        "specialty": "Ocean Therapy",
         "status": StatusEnum.INACTIVE.value
     }
     
@@ -192,7 +192,7 @@ def test_delete_doctor(auth_client: TestClient, db_session: Session):
     
     # Create a doctor
     doctor_data = {
-        "specialty": "Periodontics",
+        "specialty": "Holistic Care",
         "clinic_id": clinic_id,
         "user_id": user_id,
         "status": StatusEnum.ACTIVE.value

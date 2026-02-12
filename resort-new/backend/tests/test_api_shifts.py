@@ -8,17 +8,17 @@ from datetime import datetime, date, timedelta
 
 def create_prerequisites_for_shift(auth_client: TestClient):
     timestamp = datetime.now().timestamp()
-    doc_user_data = {"email": f"doc_shift_{timestamp}@example.com", "password": "password123", "name": "Shift Doctor User", "role": RoleEnum.DOCTOR}
+    doc_user_data = {"email": f"doc_shift_{timestamp}@example.com", "password": "password123", "name": "Shift Host User", "role": RoleEnum.DOCTOR}
     doc_user_res = auth_client.post("/users/", json=doc_user_data)
     assert doc_user_res.status_code == 201
     doc_user_id = doc_user_res.json()["id"]
 
-    clinic_data = {"name": f"Shift Clinic {timestamp}", "address": "1 Shift St", "opening_hours": "9AM-5PM"}
+    clinic_data = {"name": f"Shift Pavilion {timestamp}", "address": "1 Lagoon Way", "opening_hours": "9AM-5PM"}
     clinic_res = auth_client.post("/clinics/", json=clinic_data)
     assert clinic_res.status_code == 201
     clinic_id = clinic_res.json()["id"]
 
-    doctor_data = {"specialty": "Shift Specialist", "clinic_id": clinic_id, "user_id": doc_user_id}
+    doctor_data = {"specialty": "Shift Guide", "clinic_id": clinic_id, "user_id": doc_user_id}
     doc_res = auth_client.post("/doctors/", json=doctor_data)
     assert doc_res.status_code == 201, doc_res.json()
     doctor_id = doc_res.json()["id"]

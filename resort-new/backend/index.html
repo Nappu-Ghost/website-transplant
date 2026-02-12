@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dental Clinic API Tester</title>
+  <title>Resort API Tester</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -168,7 +168,7 @@
 
 <body>
   <div class="container">
-    <h1>Dental Clinic API Tester</h1>
+    <h1>Resort API Tester</h1>
     <div class="api-url-input">
       <label for="apiBaseUrl">API Base URL:</label>
       <input type="text" id="apiBaseUrl" value="http://localhost:8000/api/v1">
@@ -329,7 +329,7 @@
         <h3>Create Service (POST)</h3>
         <label for="serviceCreateBody">Request Body (JSON):</label>
         <textarea id="serviceCreateBody"
-          placeholder='{ "name": "Check-up", "description": "Routine dental check-up", "priceMorning": 50, "priceAfternoon": 55, "priceEvening": 60, "status": "ACTIVE" }'></textarea>
+          placeholder='{ "name": "Lagoon Ritual", "description": "Signature wellness ritual", "priceMorning": 50, "priceAfternoon": 55, "priceEvening": 60, "status": "ACTIVE" }'></textarea>
         <button onclick="performRequest('/services/', 'POST', 'serviceCreateBody')">Create Service</button>
       </div>
       <div class="subsection">
@@ -338,7 +338,7 @@
         <input type="text" id="serviceIdPut" placeholder="Enter Service ID">
         <label for="servicePutBody">Request Body (JSON):</label>
         <textarea id="servicePutBody"
-          placeholder='{ "name": "Advanced Check-up", "description": "Comprehensive dental check-up", "priceMorning": 70, "priceAfternoon": 75, "priceEvening": 80, "status": "ACTIVE" }'></textarea>
+          placeholder='{ "name": "Extended Ritual", "description": "Comprehensive wellness ritual", "priceMorning": 70, "priceAfternoon": 75, "priceEvening": 80, "status": "ACTIVE" }'></textarea>
         <button class="put-btn"
           onclick="performRequestById('/services/', 'serviceIdPut', 'PUT', 'servicePutBody')">Update Service
           (PUT)</button>
@@ -381,7 +381,7 @@
           details if your API handles it.</p>
         <label for="doctorCreateBody">Request Body (JSON):</label>
         <textarea id="doctorCreateBody"
-          placeholder='{ "user_email": "doc@example.com", "user_password": "securepassword", "user_name": "Dr. Smith", "user_role": "DOCTOR", "specialty": "Orthodontics", "clinic_id": 1, "status": "ACTIVE" }'></textarea>
+          placeholder='{ "user_email": "host@example.com", "user_password": "securepassword", "user_name": "Host Kai", "user_role": "DOCTOR", "specialty": "Wellness Guide", "clinic_id": 1, "status": "ACTIVE" }'></textarea>
         <button onclick="performRequest('/doctors/', 'POST', 'doctorCreateBody')">Create Doctor</button>
       </div>
       <div class="subsection">
@@ -390,7 +390,7 @@
         <input type="text" id="doctorIdPut" placeholder="Enter Doctor ID">
         <label for="doctorPutBody">Request Body (JSON):</label>
         <textarea id="doctorPutBody"
-          placeholder='{ "user_email": "doc_updated@example.com", ..., "specialty": "General Dentistry", "clinic_id": 1, "status": "ACTIVE" }'></textarea>
+          placeholder='{ "user_email": "host_updated@example.com", ..., "specialty": "Movement Coach", "clinic_id": 1, "status": "ACTIVE" }'></textarea>
         <button class="put-btn" onclick="performRequestById('/doctors/', 'doctorIdPut', 'PUT', 'doctorPutBody')">Update
           Doctor (PUT)</button>
       </div>
@@ -430,7 +430,7 @@
         <h3>Create Appointment (POST)</h3>
         <label for="appointmentCreateBody">Request Body (JSON):</label>
         <textarea id="appointmentCreateBody"
-          placeholder='{ "customer_id": 1, "clinic_id": 1, "service_id": 1, "doctor_id": 1, "appointmentTime": "2025-12-20T10:00:00", "price": 75.00, "status": "SCHEDULED", "notes": "Routine checkup" }'></textarea>
+          placeholder='{ "customer_id": 1, "clinic_id": 1, "service_id": 1, "doctor_id": 1, "appointmentTime": "2025-12-20T10:00:00", "price": 75.00, "status": "SCHEDULED", "notes": "Arrival consult" }'></textarea>
         <button onclick="performRequest('/appointments/', 'POST', 'appointmentCreateBody')">Create Appointment</button>
       </div>
       <div class="subsection">
@@ -450,7 +450,7 @@
         <input type="text" id="appointmentIdPatch" placeholder="Enter Appointment ID">
         <label for="appointmentPatchBody">Request Body (JSON - partial):</label>
         <textarea id="appointmentPatchBody"
-          placeholder='{ "status": "CANCELLED", "notes": "Patient cancelled." }'></textarea>
+          placeholder='{ "status": "CANCELLED", "notes": "Guest cancelled." }'></textarea>
         <button class="patch-btn"
           onclick="performRequestById('/appointments/', 'appointmentIdPatch', 'PATCH', 'appointmentPatchBody')">Update
           Appointment (PATCH)</button>
@@ -529,7 +529,7 @@
         <h3>Create Surgery Booking (POST)</h3>
         <label for="surgeryBookingCreateBody">Request Body (JSON):</label>
         <textarea id="surgeryBookingCreateBody"
-          placeholder='{ "doctor_id": 1, "clinic_id": 1, "date": "2025-12-22", "startTime": "09:00", "endTime": "12:00", "procedure": "Wisdom Tooth Extraction" }'></textarea>
+          placeholder='{ "doctor_id": 1, "clinic_id": 1, "date": "2025-12-22", "startTime": "09:00", "endTime": "12:00", "procedure": "Recovery Ritual" }'></textarea>
         <button onclick="performRequest('/surgery-bookings/', 'POST', 'surgeryBookingCreateBody')">Create
           Booking</button>
       </div>

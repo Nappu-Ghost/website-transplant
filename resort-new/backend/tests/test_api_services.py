@@ -9,13 +9,13 @@ def unique_service_name(base="Service"):
 
 def test_create_service(auth_client: TestClient, db_session: Session):
     service_data = {
-        "name": unique_service_name("Cleaning"),
-        "description": "Standard dental cleaning",
+        "name": unique_service_name("Ritual"),
+        "description": "Signature lagoon ritual",
         "price_morning": 75.0,
         "price_afternoon": 70.0,
         "price_evening": 80.0,
         "icon_url": "https://example.com/cleaning.png",
-        "includes": "Teeth cleaning, dental assessment, polishing",
+        "includes": "Wellness consultation, herbal tea, recovery balm",
         "status": "ACTIVE"
     }
     response = auth_client.post("/services/", json=service_data)
@@ -75,7 +75,7 @@ def test_read_services_with_data(auth_client: TestClient):
         "price_evening": 80,
         "description": "Service Two", 
         "icon_url": "https://example.com/service2.png",
-        "includes": "Full checkup, cleaning"
+        "includes": "Full consult, recovery ritual"
     })
 
     response = auth_client.get("/services/")
@@ -123,7 +123,7 @@ def test_update_service_put(auth_client: TestClient):
         "price_afternoon": 55.0,
         "price_evening": 65.0,
         "icon_url": "https://example.com/updated.png",
-        "includes": "Advanced cleaning, checkup",
+        "includes": "Advanced recovery, consult",
         "status": "INACTIVE"
     }
     response = auth_client.put(f"/services/{service_id}", json=put_data)
@@ -152,19 +152,19 @@ def test_update_service_patch(auth_client: TestClient, db_session: Session):
     patch_data = {
         "description": "Patched Description", 
         "price_evening": 75.5,
-        "includes": "Basic cleaning"
+        "includes": "Basic recovery"
     }
     response = auth_client.patch(f"/services/{service_id}", json=patch_data)
     assert response.status_code == 200, response.json()
     data = response.json()
     assert data["description"] == "Patched Description"
     assert data["price_evening"] == 75.5
-    assert data["includes"] == "Basic cleaning"
+    assert data["includes"] == "Basic recovery"
     assert data["name"] == name 
 
     db_service = db_session.get(models.Service, service_id)
     assert db_service.description == "Patched Description"
-    assert db_service.includes == "Basic cleaning"
+    assert db_service.includes == "Basic recovery"
 
 def test_delete_service(auth_client: TestClient, db_session: Session):
     name = unique_service_name("DeleteServ")

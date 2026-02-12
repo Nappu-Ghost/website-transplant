@@ -5,7 +5,7 @@ from app import schemas, models
 from datetime import datetime 
 
 
-def unique_clinic_name(base="Clinic"):
+def unique_clinic_name(base="Pavilion"):
     return f"{base} {datetime.now().timestamp()}"
 
 def test_create_clinic(auth_client: TestClient, db_session: Session):
@@ -15,7 +15,7 @@ def test_create_clinic(auth_client: TestClient, db_session: Session):
         "address": "123 Test St, Testville",
         "phone": "555-0101",
         "opening_hours": "9am-5pm",
-        "image_url": "https://example.com/clinic.jpg",
+        "image_url": "https://example.com/pavilion.jpg",
         "rooms": 5,
         "beds": 10,
         "surgeryRooms": 2,
@@ -57,7 +57,7 @@ def test_read_clinic(auth_client: TestClient, db_session: Session):
         "address": "456 Beta Rd",
         "phone": "555-0303",
         "opening_hours": "9am-7pm",
-        "image_url": "https://example.com/beta-clinic.jpg"
+        "image_url": "https://example.com/lagoon-villa.jpg"
     }
     create_response = auth_client.post("/clinics/", json=clinic_data)
     assert create_response.status_code == 201
@@ -128,7 +128,7 @@ def test_update_clinic_put(auth_client: TestClient):
         "address": "New Epsilon Address",
         "phone": "555-9999",
         "opening_hours": "24/7", 
-        "image_url": "https://example.com/updated-clinic.jpg",
+        "image_url": "https://example.com/updated-pavilion.jpg",
         "rooms": 3, 
         "beds": 6, 
         "surgeryRooms": 1, 

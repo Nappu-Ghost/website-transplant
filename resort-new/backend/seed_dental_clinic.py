@@ -33,7 +33,7 @@ except ImportError:
     from app.utils.security import get_password_hash
 
 
-DATABASE_URL = "sqlite:///dental_clinic.db"
+DATABASE_URL = "sqlite:///resort_seed.db"
 Base = declarative_base()
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -237,55 +237,55 @@ class SurgeryBooking(Base):
         Index("ix_surgerybooking_clinic_date_seed_v4", "clinic_id", "date"),
     )
 
-CLINIC_NAMES = ["Malé Central Clinic", "Kulhudhufushi Dental Care", "Addu City Smiles"]
-DENTISTS_PER_CLINIC = 2
-TOTAL_DOCTORS = len(CLINIC_NAMES) * DENTISTS_PER_CLINIC
+CLINIC_NAMES = ["Lagoon Wellness Pavilion", "Azure Spa House", "Harbor Recovery Studio"]
+HOSTS_PER_PAVILION = 2
+TOTAL_DOCTORS = len(CLINIC_NAMES) * HOSTS_PER_PAVILION
 
 SERVICE_DATA = [
     {
-        "name": "Preventive Care",
+        "name": "Lagoon Wellness Check",
         "price_morning": 150.0,
         "price_afternoon": 125.0,
         "price_evening": 100.0,
-        "description": "Routine checkups, professional cleanings, and diagnostic X-rays.",
-        "includes": "Checkup, Cleaning, Basic X-Rays",
-        "icon_url": "/images/icons/teeth-sparkle.svg",
+        "description": "Arrival consult, gentle assessment, and a personalized recovery plan.",
+        "includes": "Arrival consult, Wellness plan, Hydration ritual",
+        "icon_url": "/images/gallery/activities/swimming.svg",
     },
     {
-        "name": "Basic Restorative",
+        "name": "Recovery Ritual",
         "price_morning": 200.0,
         "price_afternoon": 250.0,
         "price_evening": 150.0,
-        "description": "Treatment for cavities including fillings and simple tooth extractions.",
-        "includes": "Composite Filling, Simple Extraction",
-        "icon_url": "/images/icons/medikit.svg",
+        "description": "Restorative bodywork with aromatherapy and guided breathwork.",
+        "includes": "Bodywork, Aromatherapy, Breathwork",
+        "icon_url": "/images/gallery/activities/volleyball.svg",
     },
     {
-        "name": "Cosmetic Dentistry",
+        "name": "Glow Facial",
         "price_morning": 250.0,
         "price_afternoon": 400.0,
         "price_evening": 600.0,
-        "description": "Procedures like veneers, and teeth whitening.",
-        "includes": "Veneers, Whitening",
-        "icon_url": "/images/icons/smiley.svg",
+        "description": "Brightening facial with ocean minerals and calming massage.",
+        "includes": "Mineral facial, Light massage",
+        "icon_url": "/images/gallery/activities/snorkel.svg",
     },
     {
-        "name": "Emergency Care",
+        "name": "On-call Wellness",
         "price_morning": 350.0,
         "price_afternoon": 500.0,
         "price_evening": 750.0,
-        "description": "Urgent treatments for dental injuries or acute pain.",
-        "includes": "Pain Relief, Injury Assessment",
-        "icon_url": "/images/icons/bandage.svg",
+        "description": "Responsive support for travel fatigue or sudden discomfort.",
+        "includes": "On-call consult, Recovery kit",
+        "icon_url": "/images/gallery/activities/submarine.svg",
     },
     {
-        "name": "Heart Health Oral Check",
+        "name": "Heart Wellness Consult",
         "price_morning": 100.0,
         "price_afternoon": 90.0,
         "price_evening": 80.0,
-        "description": "Consultation regarding oral health and its link to heart health.",
-        "includes": "Consultation, Risk Assessment",
-        "icon_url": "/images/icons/heart-pulse.svg",
+        "description": "Consultation focused on circulation, rest, and gentle movement.",
+        "includes": "Consultation, Vital check",
+        "icon_url": "/images/gallery/activities/roller-coaster.svg",
     },
 ]
 
@@ -359,9 +359,9 @@ def seed():
         print(f"Starting seeding process...")
         
         clinic_image_map = {
-            "Malé Central Clinic": "/images/clinics/clinic1.jpg",
-            "Kulhudhufushi Dental Care": "/images/clinics/clinic2.jpg",
-            "Addu City Smiles": "/images/clinics/clinic3.jpg"
+            "Lagoon Wellness Pavilion": "/images/gallery/hotels/hotel1.jpg",
+            "Azure Spa House": "/images/gallery/hotels/hotel2.jpg",
+            "Harbor Recovery Studio": "/images/gallery/hotels/hotel3.jpg",
         }
         
         db_clinics = []
@@ -450,22 +450,22 @@ def seed():
 
         db_doctor_users = []
         for i in range(TOTAL_DOCTORS):
-            doc_last_name = fake.last_name().replace("'", "").lower()
-            doc_email = f"dr.{doc_last_name}{i+1}@example.doc"
+            host_last_name = fake.last_name().replace("'", "").lower()
+            host_email = f"host.{host_last_name}{i+1}@example.host"
             user_data = {
-                "name": f"Dr. {fake.first_name()} {doc_last_name.capitalize()}",
+                "name": f"Host {fake.first_name()} {host_last_name.capitalize()}",
                 "password": "password",
                 "role": RoleEnum.DOCTOR,
                 "status": StatusEnum.ACTIVE,
             }
-            user, _ = find_or_create_user(db, defaults=user_data, email=doc_email)
+            user, _ = find_or_create_user(db, defaults=user_data, email=host_email)
             db_doctor_users.append(user)
         db.flush()
 
         db_doctors = []
         doctor_user_index = 0
         for clinic_idx, clinic in enumerate(db_clinics):
-            for _ in range(DENTISTS_PER_CLINIC):
+            for _ in range(HOSTS_PER_PAVILION):
                 if doctor_user_index >= len(db_doctor_users):
                     break
                 linked_user = db_doctor_users[doctor_user_index]
@@ -480,7 +480,7 @@ def seed():
                     "user_id": linked_user.id,
                     "clinic_id": clinic.id,
                     "specialty": random.choice(
-                        ["General Dentistry", "Orthodontics", "Pediatrics"]
+                        ["Wellness Guide", "Movement Coach", "Mindfulness Host"]
                     ),
                     "status": StatusEnum.ACTIVE,
                 }
@@ -600,7 +600,7 @@ def seed():
                     start_time=start_time_obj.strftime("%H:%M"),
                     end_time=end_time_obj.strftime("%H:%M"),
                     procedure=random.choice(
-                        ["Wisdom Tooth Extraction", "Implant Placement"]
+                        ["Recovery Therapy", "Sunset Ritual"]
                     ),
                     clinic_id=doctor_clinic.id,
                     doctor_id=random_doctor.id,

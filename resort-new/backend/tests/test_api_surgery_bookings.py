@@ -8,17 +8,17 @@ from datetime import datetime, date, timedelta
 
 def create_prerequisites_for_surgery(auth_client: TestClient):
     timestamp = datetime.now().timestamp()
-    doc_user_data = {"email": f"doc_surgery_{timestamp}@example.com", "password": "password123", "name": "Surgery Doctor User", "role": RoleEnum.DOCTOR}
+    doc_user_data = {"email": f"doc_surgery_{timestamp}@example.com", "password": "password123", "name": "Wellness Host User", "role": RoleEnum.DOCTOR}
     doc_user_res = auth_client.post("/users/", json=doc_user_data)
     assert doc_user_res.status_code == 201
     doc_user_id = doc_user_res.json()["id"]
 
-    clinic_data = {"name": f"Surgery Clinic {timestamp}", "address": "1 Surgery Ln", "surgeryRooms": 1, "opening_hours": "9AM-5PM"} 
+    clinic_data = {"name": f"Recovery Pavilion {timestamp}", "address": "1 Lagoon Way", "surgeryRooms": 1, "opening_hours": "9AM-5PM"} 
     clinic_res = auth_client.post("/clinics/", json=clinic_data)
     assert clinic_res.status_code == 201
     clinic_id = clinic_res.json()["id"]
 
-    doctor_data = {"specialty": "Surgeon", "clinic_id": clinic_id, "user_id": doc_user_id}
+    doctor_data = {"specialty": "Recovery Specialist", "clinic_id": clinic_id, "user_id": doc_user_id}
     doc_res = auth_client.post("/doctors/", json=doctor_data)
     assert doc_res.status_code == 201, doc_res.json()
     doctor_id = doc_res.json()["id"]
@@ -32,7 +32,7 @@ def test_create_surgery_booking(auth_client: TestClient, db_session: Session):
         "date": booking_date,
         "start_time": "09:00",
         "end_time": "11:00",
-        "procedure": "Wisdom Tooth Extraction",
+        "procedure": "Deep Tissue Ritual",
         "clinic_id": clinic_id,
         "doctor_id": doctor_id
     }
@@ -59,8 +59,8 @@ def test_read_surgery_bookings_with_data(auth_client: TestClient):
     doc_id1, clinic_id1 = create_prerequisites_for_surgery(auth_client)
     doc_id2, clinic_id2 = create_prerequisites_for_surgery(auth_client)
 
-    auth_client.post("/surgery-bookings/", json={"date": (date.today() + timedelta(days=11)).isoformat(), "start_time": "10:00", "end_time": "12:00", "procedure": "Implant", "clinic_id": clinic_id1, "doctor_id": doc_id1})
-    auth_client.post("/surgery-bookings/", json={"date": (date.today() + timedelta(days=12)).isoformat(), "start_time": "14:00", "end_time": "16:00", "procedure": "Root Canal", "clinic_id": clinic_id2, "doctor_id": doc_id2})
+    auth_client.post("/surgery-bookings/", json={"date": (date.today() + timedelta(days=11)).isoformat(), "start_time": "10:00", "end_time": "12:00", "procedure": "Ocean Ritual", "clinic_id": clinic_id1, "doctor_id": doc_id1})
+    auth_client.post("/surgery-bookings/", json={"date": (date.today() + timedelta(days=12)).isoformat(), "start_time": "14:00", "end_time": "16:00", "procedure": "Lagoon Flow", "clinic_id": clinic_id2, "doctor_id": doc_id2})
 
     response = auth_client.get("/surgery-bookings/")
     assert response.status_code == 200
@@ -75,7 +75,7 @@ def test_get_surgery_booking_by_id(auth_client: TestClient):
         "date": booking_date,
         "start_time": "13:00",
         "end_time": "15:30",
-        "procedure": "Dental Implant Surgery",
+        "procedure": "Skyline Ceremony",
         "clinic_id": clinic_id,
         "doctor_id": doctor_id
     }
@@ -91,7 +91,7 @@ def test_get_surgery_booking_by_id(auth_client: TestClient):
     assert booking["date"] == booking_date
     assert booking["start_time"] == "13:00"
     assert booking["end_time"] == "15:30"
-    assert booking["procedure"] == "Dental Implant Surgery"
+    assert booking["procedure"] == "Skyline Ceremony"
 
 def test_update_surgery_booking(auth_client: TestClient):
     doctor_id, clinic_id = create_prerequisites_for_surgery(auth_client)
@@ -102,7 +102,7 @@ def test_update_surgery_booking(auth_client: TestClient):
         "date": booking_date,
         "start_time": "10:00",
         "end_time": "12:00",
-        "procedure": "Tooth Extraction",
+        "procedure": "Quiet Recovery",
         "clinic_id": clinic_id,
         "doctor_id": doctor_id
     }
@@ -113,14 +113,14 @@ def test_update_surgery_booking(auth_client: TestClient):
     
     # Update the booking
     update_data = {
-        "procedure": "Complex Tooth Extraction",
+        "procedure": "Extended Recovery",
         "end_time": "13:00"
     }
     
     update_response = auth_client.patch(f"/surgery-bookings/{booking_id}", json=update_data)
     assert update_response.status_code == 200
     updated_booking = update_response.json()
-    assert updated_booking["procedure"] == "Complex Tooth Extraction"
+    assert updated_booking["procedure"] == "Extended Recovery"
     assert updated_booking["end_time"] == "13:00"
     
 def test_delete_surgery_booking(auth_client: TestClient, db_session: Session):
@@ -132,7 +132,7 @@ def test_delete_surgery_booking(auth_client: TestClient, db_session: Session):
         "date": booking_date,
         "start_time": "09:30",
         "end_time": "11:30",
-        "procedure": "Dental Surgery",
+        "procedure": "Restorative Session",
         "clinic_id": clinic_id,
         "doctor_id": doctor_id
     }
