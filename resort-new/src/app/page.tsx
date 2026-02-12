@@ -146,8 +146,10 @@ export default function Home() {
             >
               <source src="/videos/hero.mp4" type="video/mp4" />
             </video>
-            <div className="absolute inset-0 bg-[linear-gradient(120deg,_hsl(var(--background))_8%,_hsl(var(--background)/0.75)_55%,_transparent_100%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
+            <div className="absolute inset-0 bg-[linear-gradient(120deg,_hsl(var(--background))_6%,_hsl(var(--background)/0.7)_55%,_transparent_100%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.4),_transparent_60%)]" />
+            <div className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background/95 via-background/50 to-transparent" />
+            <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-background/60 to-background" />
           </div>
           <div className="container relative z-10 mx-auto grid gap-12 px-4 pb-20 md:grid-cols-[1.1fr_0.9fr] md:items-center">
             <div className="space-y-6">
