@@ -177,6 +177,17 @@ export class ApiClient {
   async getUserPayments(token?: string | null) {
     return this.request('/payments/user', {}, undefined, true, token);
   }
+  async getPayments(filters?: Record<string, any>, token?: string | null) {
+    const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
+    return this.request(`/payments${queryParams}`, {}, undefined, true, token);
+  }
+  async getPaymentById(id: string, token?: string | null) { return this.request(`/payments/${id}`, {}, undefined, true, token); }
+  async createPayment(data: any, token?: string | null) {
+    return this.request('/payments/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
+  }
+  async updatePayment(id: string, data: any, token?: string | null) {
+    return this.request(`/payments/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
+  }
   async createBooking(data: any, token?: string | null) { return this.request('/bookings/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async updateBooking(id: string, data: any, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteBooking(id: string, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'DELETE' }, undefined, true, token); }

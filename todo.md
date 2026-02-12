@@ -199,7 +199,7 @@
   - [x] Optimize videos for web
   - [x] Update all asset references
 
-- [ ] **7.2** Content migration
+- [x] **7.2** Content migration
   - [x] Replace all dental terminology with resort terminology
   - [x] Update page titles and descriptions
   - [x] Update SEO metadata
@@ -224,20 +224,20 @@
   - [x] Set up authentication headers
   - [x] Handle error responses
 
-- [ ] **8.2** Implement queries
+- [x] **8.2** Implement queries
   - [x] Fetch accommodations
   - [x] Fetch activities
   - [x] Fetch bookings
   - [x] Fetch user data
   - [x] Fetch admin data
 
-- [ ] **8.3** Implement mutations
+- [x] **8.3** Implement mutations
   - [x] Create bookings
   - [x] Update bookings
   - [x] Cancel bookings
   - [x] Create/update accommodations (admin)
-  - [ ] Create/update activities (admin)
-  - [ ] Process payments
+  - [x] Create/update activities (admin)
+  - [x] Process payments
 
 ---
 

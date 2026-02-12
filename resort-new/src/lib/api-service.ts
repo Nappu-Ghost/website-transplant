@@ -34,6 +34,13 @@ export const bookingService = {
   listPaymentsForUser: (token?: string | null) => api.getUserPayments(token),
 };
 
+export const paymentService = {
+  list: (filters?: Record<string, any>, token?: string | null) => api.getPayments(filters, token),
+  getById: (id: string, token?: string | null) => api.getPaymentById(id, token),
+  create: (data: any, token?: string | null) => api.createPayment(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updatePayment(id, data, token),
+};
+
 export const userService = {
   getCurrent: (token?: string | null) => api.getCurrentUser(token),
   list: (filters?: Record<string, any>, token?: string | null) => api.getUsers(filters, token),
