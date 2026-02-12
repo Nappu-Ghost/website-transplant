@@ -1,6 +1,6 @@
 "use client";
 
-import type React from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
@@ -28,6 +28,9 @@ const staggerContainer = {
 };
 
 export default function Home() {
+  const heroVideoRef = useRef<HTMLVideoElement | null>(null);
+  const fadeRef = useRef(false);
+  const [isVideoFading, setIsVideoFading] = useState(false);
   const heroCards = [
     {
       title: 'Lagoon Villas',
@@ -126,6 +129,45 @@ export default function Home() {
     },
   ];
 
+  useEffect(() => {
+    const video = heroVideoRef.current;
+    if (!video) return;
+
+    const setFade = (next: boolean) => {
+      if (fadeRef.current !== next) {
+        fadeRef.current = next;
+        setIsVideoFading(next);
+      }
+    };
+
+    const handleTimeUpdate = () => {
+      const duration = video.duration;
+      if (!duration || Number.isNaN(duration)) return;
+      const remaining = duration - video.currentTime;
+      if (remaining <= 0.6) {
+        setFade(true);
+      } else if (video.currentTime <= 0.2) {
+        setFade(false);
+      }
+    };
+
+    const handleSeeked = () => {
+      if (video.currentTime <= 0.2) {
+        setFade(false);
+      }
+    };
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('loadedmetadata', handleTimeUpdate);
+    video.addEventListener('seeked', handleSeeked);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('loadedmetadata', handleTimeUpdate);
+      video.removeEventListener('seeked', handleSeeked);
+    };
+  }, []);
+
   return (
     <div className="min-h-screen bg-background">
       <div>
@@ -137,7 +179,8 @@ export default function Home() {
         >
           <div className="absolute inset-0">
             <video
-              className="h-full w-full object-cover"
+              ref={heroVideoRef}
+              className={`h-full w-full object-cover transition-opacity duration-700 ${isVideoFading ? 'opacity-0' : 'opacity-100'}`}
               autoPlay
               muted
               loop
