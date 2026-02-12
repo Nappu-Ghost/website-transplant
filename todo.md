@@ -222,7 +222,7 @@
   - [x] Configure TanStack Query
   - [x] Create API service functions
   - [x] Set up authentication headers
-  - [ ] Handle error responses
+  - [x] Handle error responses
 
 - [ ] **8.2** Implement queries
   - [ ] Fetch accommodations

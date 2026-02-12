@@ -1,4 +1,5 @@
 import auth from './auth';
+import { createApiError } from './api-error';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
 
@@ -41,10 +42,7 @@ async function handleResponse(response: Response) {
       }
     }
 
-    const error = new Error(errorMessage) as any;
-    error.status = response.status;
-    error.detail = structuredErrorDetail || errorData;
-    throw error;
+    throw createApiError(errorMessage, response.status, structuredErrorDetail || errorData);
   }
 
   if (response.status === 204) return null;
