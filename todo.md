@@ -221,7 +221,7 @@
 - [ ] **8.1** Set up API client
   - [x] Configure TanStack Query
   - [x] Create API service functions
-  - [ ] Set up authentication headers
+  - [x] Set up authentication headers
   - [ ] Handle error responses
 
 - [ ] **8.2** Implement queries

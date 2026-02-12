@@ -1,3 +1,5 @@
+import auth from './auth';
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
 
 async function handleResponse(response: Response) {
@@ -98,8 +100,8 @@ export class ApiClient {
     if (requiresAuthToken) {
       if (explicitToken !== undefined && explicitToken !== null) {
         tokenToUse = explicitToken;
-      } else if (typeof window !== 'undefined') {
-        tokenToUse = localStorage.getItem('token');
+      } else {
+        tokenToUse = auth.getToken();
       }
     }
     const url = `${this.baseUrl}${endpoint}`;
