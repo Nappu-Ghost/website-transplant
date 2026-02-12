@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
 import { ImageGallery } from '@/components/image-gallery';
@@ -9,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
+import { activityService } from '@/lib/api-service';
 
 type ActivityCategory = 'Adventure' | 'Wellness' | 'Dining' | 'Family';
 type ActivityDuration = '60-90 min' | '2-3 hours' | 'Half day';
@@ -22,81 +24,58 @@ interface ActivityDetail extends ActivityCardProps {
   duration: ActivityDuration;
 }
 
-const activities: ActivityDetail[] = [
-  {
-    name: 'Reef Snorkeling',
-    activityType: 'Adventure',
-    price: 120,
-    duration: '2-3 hours',
-    capacity: 12,
-    category: 'Adventure',
-    intensity: 'Moderate',
+interface ActivitySummary {
+  id: number;
+  name: string;
+  activityType: string;
+  price: number;
+  capacity?: number | null;
+  imageUrl?: string | null;
+  isPremium?: boolean;
+}
+
+const CATEGORY_META: Record<ActivityCategory, { meetingPoint: string; highlights: string[]; imageUrl: string }> = {
+  Adventure: {
     meetingPoint: 'Lagoon Dock',
-    highlights: ['Guided reef tour', 'Gear included', 'Marine biologist guide'],
+    highlights: ['Guided reef tour', 'Gear included', 'Photography stops'],
     imageUrl: '/images/gallery/activities/snorkel.svg',
   },
-  {
-    name: 'Sunset Chef Table',
-    activityType: 'Dining',
-    price: 180,
-    duration: '2-3 hours',
-    capacity: 8,
-    isPremium: true,
-    category: 'Dining',
-    intensity: 'Low',
-    meetingPoint: 'Azure Kitchen Studio',
-    highlights: ['Five-course tasting', 'Wine pairing', 'Chef storytelling'],
-    imageUrl: '/images/gallery/activities/skydiving.svg',
-  },
-  {
-    name: 'Lagoon Meditation',
-    activityType: 'Wellness',
-    price: 95,
-    duration: '60-90 min',
-    capacity: 10,
-    category: 'Wellness',
-    intensity: 'Low',
+  Wellness: {
     meetingPoint: 'Sunrise Pavilion',
     highlights: ['Sound bath', 'Breathwork guide', 'Herbal tea service'],
     imageUrl: '/images/gallery/activities/swimming.svg',
   },
-  {
-    name: 'Lagoon Kayak Circuit',
-    activityType: 'Adventure',
-    price: 110,
-    duration: '2-3 hours',
-    capacity: 10,
-    category: 'Adventure',
-    intensity: 'Moderate',
-    meetingPoint: 'Lagoon Dock',
-    highlights: ['Guided route', 'Waterproof gear', 'Photography stops'],
-    imageUrl: '/images/gallery/activities/submarine.svg',
+  Dining: {
+    meetingPoint: 'Azure Kitchen Studio',
+    highlights: ['Five-course tasting', 'Wine pairing', 'Chef storytelling'],
+    imageUrl: '/images/gallery/activities/skydiving.svg',
   },
-  {
-    name: 'Family Lagoon Walk',
-    activityType: 'Family',
-    price: 80,
-    duration: '60-90 min',
-    capacity: 14,
-    category: 'Family',
-    intensity: 'Low',
+  Family: {
     meetingPoint: 'Garden Gate',
     highlights: ['Tidepool discovery', 'Kids guide', 'Nature journal'],
     imageUrl: '/images/gallery/activities/volleyball.svg',
   },
-  {
-    name: 'Island Discovery',
-    activityType: 'Adventure',
-    price: 210,
-    duration: 'Half day',
-    capacity: 6,
-    category: 'Adventure',
-    intensity: 'High',
-    meetingPoint: 'Harbor Lounge',
-    highlights: ['Private guide', 'Hidden coves', 'Picnic stop'],
-    imageUrl: '/images/gallery/activities/roller-coaster.svg',
-  },
-];
+};
+
+const resolveCategory = (activityType: string): ActivityCategory => {
+  const normalized = activityType.toLowerCase();
+  if (normalized.includes('well')) return 'Wellness';
+  if (normalized.includes('dining') || normalized.includes('culinary')) return 'Dining';
+  if (normalized.includes('family')) return 'Family';
+  return 'Adventure';
+};
+
+const resolveDuration = (price: number): ActivityDuration => {
+  if (price >= 170) return 'Half day';
+  if (price >= 110) return '2-3 hours';
+  return '60-90 min';
+};
+
+const resolveIntensity = (price: number): ActivityDetail['intensity'] => {
+  if (price >= 180) return 'High';
+  if (price >= 110) return 'Moderate';
+  return 'Low';
+};
 
 const activitiesGallery = [
   {
@@ -136,6 +115,31 @@ export default function ActivitiesPage() {
   const [category, setCategory] = useState<ActivityCategory | 'All'>('All');
   const [duration, setDuration] = useState<ActivityDuration | 'All'>('All');
   const [priceRange, setPriceRange] = useState<'All' | 'Under 100' | '100-150' | '150+'>('All');
+
+  const { data: activityData = [], isLoading, isError, error } = useQuery<ActivitySummary[]>({
+    queryKey: ['activities'],
+    queryFn: () => activityService.list(),
+  });
+
+  const activities = useMemo<ActivityDetail[]>(() => {
+    return activityData.map((activity) => {
+      const categoryValue = resolveCategory(activity.activityType);
+      const meta = CATEGORY_META[categoryValue];
+      return {
+        name: activity.name,
+        activityType: activity.activityType,
+        price: activity.price,
+        duration: resolveDuration(activity.price),
+        capacity: activity.capacity ?? 10,
+        isPremium: activity.isPremium,
+        category: categoryValue,
+        intensity: resolveIntensity(activity.price),
+        meetingPoint: meta.meetingPoint,
+        highlights: meta.highlights,
+        imageUrl: activity.imageUrl || meta.imageUrl,
+      };
+    });
+  }, [activityData]);
 
   const filtered = useMemo(() => {
     return activities.filter((activity) => {
@@ -216,14 +220,33 @@ export default function ActivitiesPage() {
       </div>
 
       <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
-        <p>{filtered.length} experiences available</p>
+        <p>{isLoading ? 'Loading experiences...' : `${filtered.length} experiences available`}</p>
         <Button asChild variant="ghost" size="sm">
           <Link href="/booking">Plan a stay</Link>
         </Button>
       </div>
 
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          Array.from({ length: 6 }).map((_, index) => (
+            <ActivityCard
+              key={`activity-skeleton-${index}`}
+              name="Loading"
+              activityType=""
+              price={0}
+              isLoading
+            />
+          ))
+        ) : isError ? (
+          <Card className="col-span-full border-border/70 bg-card/90">
+            <CardHeader>
+              <CardTitle className="text-lg">Unable to load activities</CardTitle>
+            </CardHeader>
+            <CardContent className="text-sm text-muted-foreground">
+              {error instanceof Error ? error.message : 'Please try again shortly.'}
+            </CardContent>
+          </Card>
+        ) : filtered.length === 0 ? (
           <Card className="col-span-full border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">No activities found</CardTitle>

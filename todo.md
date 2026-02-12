@@ -226,7 +226,7 @@
 
 - [ ] **8.2** Implement queries
   - [x] Fetch accommodations
-  - [ ] Fetch activities
+  - [x] Fetch activities
   - [ ] Fetch bookings
   - [ ] Fetch user data
   - [ ] Fetch admin data
