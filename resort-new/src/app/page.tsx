@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
-import { AppHeader } from '@/components/app-header';
-import { AppFooter } from '@/components/app-footer';
 import { AccommodationCard } from '@/components/accommodation-card';
 import { ActivityCard } from '@/components/activity-card';
 import { FeatureCard, PageShell, SectionHeader } from '@/components/shared';
@@ -130,9 +128,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-background">
-      <AppHeader />
-
-      <main>
+      <div>
         <motion.section
           className="relative overflow-hidden bg-background pt-16 md:pt-20"
           initial="hidden"
@@ -313,9 +309,7 @@ export default function Home() {
             </motion.div>
           </div>
         </motion.section>
-      </main>
-
-      <AppFooter />
+      </div>
     </div>
   );
 }

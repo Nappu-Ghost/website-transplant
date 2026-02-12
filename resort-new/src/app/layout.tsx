@@ -6,6 +6,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Providers as AuthProviders } from '@/components/providers/auth-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { SiteShell } from '@/components/site-shell';
 
 // Initialize Inter font
 const inter = Inter({
@@ -37,7 +38,9 @@ export default function RootLayout({
         >
           <AuthProviders>
             <QueryProvider>
-              <MotionProvider>{children}</MotionProvider>
+              <MotionProvider>
+                <SiteShell>{children}</SiteShell>
+              </MotionProvider>
             </QueryProvider>
           </AuthProviders>
           <Toaster />

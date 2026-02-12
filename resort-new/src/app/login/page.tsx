@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { AppHeader } from '@/components/app-header';
-import { AppFooter } from '@/components/app-footer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -105,24 +103,17 @@ export default function LoginPage() {
   // If checking authentication status, show a loading state
   if (authLoading) {
     return (
-      <div className="flex min-h-screen flex-col">
-        <AppHeader />
-        <main className="flex flex-grow items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary mx-auto"></div>
-            <p className="mt-4 text-lg">Loading...</p>
-          </div>
-        </main>
-        <AppFooter />
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-t-2 border-primary"></div>
+          <p className="mt-4 text-lg">Loading...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <AppHeader />
-
-      <main className="flex flex-grow items-center justify-center bg-gradient-to-b from-background to-teal-50 py-12 md:py-20">
+      <div className="flex flex-grow items-center justify-center bg-gradient-to-b from-background to-teal-50 py-12 md:py-20">
         <motion.div
           className="w-full max-w-md px-4"
           initial="hidden"
@@ -209,9 +200,6 @@ export default function LoginPage() {
             </Tabs>
           </Card>
         </motion.div>
-      </main>
-
-      <AppFooter />
-    </div>
+      </div>
   );
 }
