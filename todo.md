@@ -234,7 +234,7 @@
 - [ ] **8.3** Implement mutations
   - [x] Create bookings
   - [x] Update bookings
-  - [ ] Cancel bookings
+  - [x] Cancel bookings
   - [ ] Create/update accommodations (admin)
   - [ ] Create/update activities (admin)
   - [ ] Process payments

@@ -261,6 +261,14 @@ export default function AdminBookingsPage() {
                         >
                           {updateBookingMutation.isPending ? 'Updating...' : 'Save status'}
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          disabled={updateBookingMutation.isPending || booking.apiStatus === 'CANCELLED'}
+                          onClick={() => updateStatus(booking.id, 'CANCELLED')}
+                        >
+                          {booking.apiStatus === 'CANCELLED' ? 'Cancelled' : 'Cancel booking'}
+                        </Button>
                       </div>
                     </ModalDialog>
                   </TableCell>
