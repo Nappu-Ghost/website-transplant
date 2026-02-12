@@ -35,7 +35,7 @@ def get_or_create_hotel(session, name: str) -> models.Hotel:
         name=name,
         description="Oceanfront resort with lagoon villas.",
         location="Baa Atoll",
-        image_url="/images/hotels/azure-lagoon.jpg",
+        image_url="/images/gallery/hotels/hotel1.jpg",
         floors=3,
     )
     session.add(hotel)
@@ -58,7 +58,7 @@ def get_or_create_room(session, hotel_id: int, name: str, room_type: str, price:
         price=price,
         capacity=2,
         description="King bed with private deck.",
-        image_url="/images/rooms/lagoon-suite.jpg",
+        image_url="/images/gallery/rooms/room1.jpg",
         floor_number=2,
         available=True,
         is_premium=room_type.lower().startswith("premium"),
@@ -77,7 +77,7 @@ def get_or_create_activity(session, name: str) -> models.Activity:
         activity_type="Adventure",
         price=120.0,
         capacity=12,
-        image_url="/images/activities/snorkel.jpg",
+        image_url="/images/gallery/activities/snorkel.svg",
         is_premium=False,
     )
     session.add(activity)
@@ -110,7 +110,7 @@ def get_or_create_ferry(session, name: str) -> models.Ferry:
         capacity=48,
         price=85.0,
         schedule="Every 2 hours",
-        image_url="/images/ferries/speedboat.jpg",
+        image_url="/images/gallery/hotels/hotel2.jpg",
     )
     session.add(ferry)
     session.flush()
