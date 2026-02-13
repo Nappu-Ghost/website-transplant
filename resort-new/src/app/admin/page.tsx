@@ -19,6 +19,11 @@ const adminLinks = [
     description: 'Suite inventory, availability, and rate tiers.',
   },
   {
+    href: '/admin/hotels',
+    title: 'Hotels',
+    description: 'Property setup, locations, and floor counts.',
+  },
+  {
     href: '/admin/activities',
     title: 'Activities',
     description: 'Curated experiences, capacity, and scheduling.',
