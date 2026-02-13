@@ -2,7 +2,7 @@ name: Sync to GitLab
 on:
   push:
     branches:
-      - main  # or 'master' depending on your default branch name
+      - main  # Change to 'master' if needed
 
 jobs:
   sync:
@@ -11,8 +11,9 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Required to sync all history/tags
+
       - name: Push to GitLab
         run: |
-          git remote add gitlab https://YOUR_GITLAB_USERNAME:${{ secrets.GITLAB_TOKEN }}@gitlab.uwe.ac.uk/software-development-group-project/website-transplant.git
-          git push gitlab main --force
+          git remote add gitlab https://oauth2:${{ secrets.GITLAB_TOKEN }}@gitlab.uwe.ac.uk/software-development-group-project/website-transplant.git
+          git push gitlab main --force # Change 'main' to match your branch
