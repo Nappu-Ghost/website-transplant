@@ -63,12 +63,16 @@ export default function AdminLandingPage() {
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {adminLinks.map((link) => (
-          <Card key={link.href} className="border-border/70 bg-card/90 p-4 shadow-sm">
-            <Link href={link.href} className="block space-y-2">
-              <h2 className="text-lg font-semibold text-foreground">{link.title}</h2>
-              <p className="text-sm text-muted-foreground">{link.description}</p>
-            </Link>
-          </Card>
+          <Link key={link.href} href={link.href} className="group block">
+            <Card className="relative overflow-hidden border-border/70 bg-card/90 shadow-sm transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+              <span className="pointer-events-none absolute inset-0 translate-x-[-120%] bg-[linear-gradient(120deg,_transparent_0%,_hsl(var(--primary)/0.15)_45%,_hsl(var(--accent)/0.18)_60%,_transparent_100%)] transition-transform duration-700 group-hover:translate-x-[120%]" />
+              <span className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100 bg-[radial-gradient(circle_at_20%_20%,_hsl(var(--primary)/0.2),_transparent_55%)]" />
+              <div className="relative space-y-2 p-4">
+                <h2 className="text-lg font-semibold text-foreground">{link.title}</h2>
+                <p className="text-sm text-muted-foreground">{link.description}</p>
+              </div>
+            </Card>
+          </Link>
         ))}
       </div>
     </div>
