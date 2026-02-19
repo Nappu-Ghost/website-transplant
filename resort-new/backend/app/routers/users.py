@@ -12,11 +12,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@router.post("", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.UserResponse, status_code=status.HTTP_201_CREATED)
 def create_new_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     # Call crud.create_user with the correct keyword argument 'user_in'
     return crud.create_user(db=db, user_in=user) # CHANGED 'user=user' to 'user_in=user'
 
+@router.get("", response_model=List[schemas.UserResponse])
 @router.get("/", response_model=List[schemas.UserResponse])
 def read_users_list(
     skip: int = 0,

@@ -1,6 +1,9 @@
 import os
 import sys
 from datetime import datetime, timedelta
+from typing import List
+
+from faker import Faker
 
 project_root = os.path.abspath(os.path.dirname(__file__))
 if project_root not in sys.path:
@@ -187,23 +190,107 @@ def seed_resort_data():
     Base.metadata.create_all(bind=engine)
     session = SessionLocal()
     try:
-        admin = get_or_create_user(session, "admin@resort.test", "Resort Admin", models.RoleEnum.ADMIN)
-        customer = get_or_create_user(session, "guest@resort.test", "Resort Guest", models.RoleEnum.CUSTOMER)
+        fake = Faker()
+        Faker.seed(42)
 
-        hotel = get_or_create_hotel(session, "Azure Lagoon Resort")
-        room = get_or_create_room(session, hotel.id, "Lagoon Suite 201", "Premium Suite", 480.0)
-        get_or_create_room(session, hotel.id, "Garden Villa 102", "Villa", 280.0)
+        admin = get_or_create_user(
+            session,
+            "admin@example.com",
+            "Resort Admin",
+            models.RoleEnum.ADMIN,
+        )
+        manager = get_or_create_user(
+            session,
+            "manager@example.com",
+            "Resort Manager",
+            models.RoleEnum.MANAGER,
+        )
+        customer = get_or_create_user(
+            session,
+            "guest@example.com",
+            "Resort Guest",
+            models.RoleEnum.CUSTOMER,
+        )
 
-        activity = get_or_create_activity(session, "Reef Snorkeling")
+        hotel_names: List[str] = [
+            "Azure Lagoon Resort",
+            "Coral Bay Retreat",
+        ]
+        hotels: List[models.Hotel] = [get_or_create_hotel(session, n) for n in hotel_names]
+
+        created_rooms: List[models.Room] = []
+        for h in hotels:
+            created_rooms.append(
+                get_or_create_room(
+                    session,
+                    h.id,
+                    f"Lagoon Suite {fake.random_int(200, 299)}",
+                    "Premium Suite",
+                    480.0,
+                )
+            )
+            created_rooms.append(
+                get_or_create_room(
+                    session,
+                    h.id,
+                    f"Garden Villa {fake.random_int(100, 199)}",
+                    "Villa",
+                    280.0,
+                )
+            )
+            created_rooms.append(
+                get_or_create_room(
+                    session,
+                    h.id,
+                    f"Ocean View {fake.random_int(300, 399)}",
+                    "Deluxe",
+                    340.0,
+                )
+            )
+
+        activity_names = [
+            "Reef Snorkeling",
+            "Sunset Dolphin Cruise",
+            "Island Hopping",
+            "Scuba Discovery Dive",
+            "Kayak Lagoon Tour",
+            "Stargazing Deck Night",
+        ]
+        activities = [get_or_create_activity(session, n) for n in activity_names]
+
         get_or_create_event(session, "Sunset Chef's Table")
+        get_or_create_event(session, "Beach Cinema Night")
 
-        ferry = get_or_create_ferry(session, "Lagoon Express")
-        get_or_create_ferry_schedule(session, ferry.id)
+        ferry_names = ["Lagoon Express", "Atoll Hopper"]
+        ferries = [get_or_create_ferry(session, n) for n in ferry_names]
+        for f in ferries:
+            get_or_create_ferry_schedule(session, f.id)
+            existing_count = (
+                session.query(models.FerrySchedule)
+                .filter(models.FerrySchedule.ferry_id == f.id)
+                .count()
+            )
+            for i in range(existing_count, 3):
+                session.add(
+                    models.FerrySchedule(
+                        ferry_id=f.id,
+                        departure=datetime.utcnow() + timedelta(days=1, hours=2 + i * 3),
+                        arrival=datetime.utcnow() + timedelta(days=1, hours=3 + i * 3),
+                        route="Male -> Resort",
+                        price=85.0,
+                        available=True,
+                    )
+                )
 
-        create_booking_with_extras(session, customer, room, activity)
+        create_booking_with_extras(session, customer, created_rooms[0], activities[0])
 
         session.commit()
-        print(f"Seed complete. Admin user: {admin.email}, Guest user: {customer.email}")
+        print(
+            "Seed complete. "
+            f"Admin: {admin.email} / Password123! | "
+            f"Manager: {manager.email} / Password123! | "
+            f"Guest: {customer.email} / Password123!"
+        )
     except Exception as exc:
         session.rollback()
         print(f"Seed failed: {exc}")

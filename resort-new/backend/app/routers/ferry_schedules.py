@@ -9,6 +9,7 @@ from app.dependencies import require_role
 router = APIRouter(tags=["Ferry Schedules"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.FerryScheduleResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.FerryScheduleResponse, status_code=status.HTTP_201_CREATED)
 def create_ferry_schedule(
     schedule: schemas.FerryScheduleCreate,
@@ -20,6 +21,7 @@ def create_ferry_schedule(
     return crud.create_ferry_schedule(db=db, schedule=schedule)
 
 
+@router.get("", response_model=List[schemas.FerryScheduleResponse])
 @router.get("/", response_model=List[schemas.FerryScheduleResponse])
 def read_ferry_schedules(
     ferry_id: Optional[int] = None,

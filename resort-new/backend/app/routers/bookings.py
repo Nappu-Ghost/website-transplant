@@ -9,6 +9,7 @@ from app.dependencies import get_current_active_user, require_role
 router = APIRouter(tags=["Bookings"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.BookingResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.BookingResponse, status_code=status.HTTP_201_CREATED)
 def create_booking(
     booking: schemas.BookingCreate,
@@ -17,8 +18,6 @@ def create_booking(
 ):
     if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER]:
         booking = booking.model_copy(update={"user_id": current_user.id})
-    elif booking.user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to create a booking for another user")
 
     db_booking = crud.create_booking(db=db, booking_in=booking)
     return (
@@ -35,6 +34,7 @@ def create_booking(
     )
 
 
+@router.get("", response_model=List[schemas.BookingResponse])
 @router.get("/", response_model=List[schemas.BookingResponse])
 def read_bookings(
     status: Optional[models.BookingStatusEnum] = None,

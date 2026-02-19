@@ -50,10 +50,10 @@ To start the development server:
 uvicorn app.main:app --reload
 ```
 
-The API will be available at `http://127.0.0.1:8000`.
-- Swagger UI: `http://127.0.0.1:8000/docs`
-- ReDoc: `http://127.0.0.1:8000/redoc`
-- Health Check: `http://127.0.0.1:8000/api/v1/health`
+The API will be available at `http://127.0.0.1:8001`.
+- Swagger UI: `http://127.0.0.1:8001/docs`
+- ReDoc: `http://127.0.0.1:8001/redoc`
+- Health Check: `http://127.0.0.1:8001/api/v1/health`
 
 All API endpoints are prefixed with `/api/v1`.
 
@@ -85,7 +85,7 @@ The `TestClient` fixture in `tests/conftest.py` is configured with `base_url="ht
 
 ## Manual API Testing
 
-While the `uvicorn` server (FastAPI backend) is running on `http://localhost:8000`:
+While the `uvicorn` server (FastAPI backend) is running on `http://localhost:8001`:
 
 - **Using the `index.html` API Tester:**
   - The project includes an `index.html` file that provides a user interface for testing CRUD operations against your API.
@@ -94,25 +94,25 @@ While the `uvicorn` server (FastAPI backend) is running on `http://localhost:800
     python -m http.server 8080
     ```
   - Then, open your web browser and go to `http://localhost:8080`.
-  - Ensure the "API Base URL" field in the `index.html` page is set to your running FastAPI server (e.g., `http://localhost:8000/api/v1`).
+  - Ensure the "API Base URL" field in the `index.html` page is set to your running FastAPI server (e.g., `http://localhost:8001/api/v1`).
 
-- **API Clients (Postman, Insomnia)**: Use these tools to send requests to endpoints like `http://localhost:8000/api/v1/hotels/`.
+- **API Clients (Postman, Insomnia)**: Use these tools to send requests to endpoints like `http://localhost:8001/api/v1/hotels/`.
 - **`curl`**:
   ```bash
   # Example: Get all hotels
-  curl http://localhost:8000/api/v1/hotels/
+  curl http://localhost:8001/api/v1/hotels/
 
   # Example: Create a hotel
   curl -X POST -H "Content-Type: application/json" \
   -d '{"name": "Lagoon Suites", "location": "Oceanfront Wing"}' \
-  http://localhost:8000/api/v1/hotels/
+  http://localhost:8001/api/v1/hotels/
   ```
 
 ## Troubleshooting Common Test Failures
 
 - **`405 Method Not Allowed` / `422 Unprocessable Entity`**:
   - Verify the `API_PREFIX="/api/v1"` is correctly applied in `app/main.py` and router definitions.
-  - Ensure the `TestClient` in `tests/conftest.py` uses the `base_url="http://localhost:8000/api/v1"`.
+  - Ensure the `TestClient` in `tests/conftest.py` uses the `base_url="http://localhost:8001/api/v1"`.
   - Double-check specific endpoint paths and HTTP methods in your tests and router definitions.
 - **Password Validation Errors (e.g., for `/users/`):** Ensure test data meets Pydantic schema validation rules (e.g., minimum password length).
 - **`passlib` / `bcrypt` warnings:** Reinstall with `pip uninstall bcrypt py-bcrypt && pip install bcrypt passlib[bcrypt]`.

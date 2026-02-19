@@ -9,6 +9,7 @@ from app.dependencies import require_role
 router = APIRouter(tags=["Ferries"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.FerryResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.FerryResponse, status_code=status.HTTP_201_CREATED)
 def create_ferry(
     ferry: schemas.FerryCreate,
@@ -20,6 +21,7 @@ def create_ferry(
     return crud.create_ferry(db=db, ferry=ferry)
 
 
+@router.get("", response_model=List[schemas.FerryResponse])
 @router.get("/", response_model=List[schemas.FerryResponse])
 def read_ferries(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_all_db_obj(db, model=models.Ferry, skip=skip, limit=limit)

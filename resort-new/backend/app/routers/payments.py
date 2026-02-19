@@ -9,6 +9,7 @@ from app.dependencies import get_current_active_user, require_role
 router = APIRouter(tags=["Payments"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.PaymentResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.PaymentResponse, status_code=status.HTTP_201_CREATED)
 def create_payment(
     payment: schemas.PaymentCreate,
@@ -24,6 +25,7 @@ def create_payment(
     return crud.create_payment(db=db, payment_in=payment)
 
 
+@router.get("", response_model=List[schemas.PaymentResponse])
 @router.get("/", response_model=List[schemas.PaymentResponse])
 def read_payments(
     booking_id: Optional[int] = None,

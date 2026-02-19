@@ -1,0 +1,10 @@
+{
+  "secret_key": "ZPGRSTN6scN90mY8km5ozvHAEmT47JY1TaFhmI0OJ7KwL_0urbSbLWg33GwbKXM56IOUmgF-WglLuylBAgYMFQ",
+  "algorithm": "HS256",
+  "jwt_issuer": "resort-api",
+  "jwt_audience": "resort-frontend",
+  "access_token_minutes": 30,
+  "refresh_token_days": 14,
+  "pbkdf2_rounds": 310000,
+  "allow_demo_users": true
+}

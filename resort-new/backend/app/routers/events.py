@@ -9,6 +9,7 @@ from app.dependencies import require_role
 router = APIRouter(tags=["Events"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.EventResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.EventResponse, status_code=status.HTTP_201_CREATED)
 def create_event(
     event: schemas.EventCreate,
@@ -20,6 +21,7 @@ def create_event(
     return crud.create_event(db=db, event=event)
 
 
+@router.get("", response_model=List[schemas.EventResponse])
 @router.get("/", response_model=List[schemas.EventResponse])
 def read_events(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     return crud.get_all_db_obj(db, model=models.Event, skip=skip, limit=limit)

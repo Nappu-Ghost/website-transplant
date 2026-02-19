@@ -9,6 +9,7 @@ from app.dependencies import get_current_active_user, require_role
 router = APIRouter(tags=["Ferry Tickets"], responses={404: {"description": "Not found"}})
 
 
+@router.post("", response_model=schemas.FerryTicketResponse, status_code=status.HTTP_201_CREATED)
 @router.post("/", response_model=schemas.FerryTicketResponse, status_code=status.HTTP_201_CREATED)
 def create_ferry_ticket(
     ticket: schemas.FerryTicketCreate,
@@ -32,6 +33,7 @@ def create_ferry_ticket(
     return db_ticket
 
 
+@router.get("", response_model=schemas.FerryTicketResponse)
 @router.get("/", response_model=schemas.FerryTicketResponse)
 def read_ferry_ticket(
     booking_id: int,

@@ -1,11 +1,36 @@
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from __future__ import annotations
+
+from pydantic import BaseModel, EmailStr, Field, ConfigDict, AliasChoices, model_validator
 from typing import Optional, List
 from datetime import datetime, date
+
+def _validate_password_strength(password: str, email: str | None = None) -> str:
+    if password is None:
+        return password
+    pw = password.strip()
+    if len(pw) < 12:
+        raise ValueError("Password must be at least 12 characters long.")
+    if len(pw) > 128:
+        raise ValueError("Password must be at most 128 characters long.")
+
+    classes = 0
+    classes += 1 if any(c.islower() for c in pw) else 0
+    classes += 1 if any(c.isupper() for c in pw) else 0
+    classes += 1 if any(c.isdigit() for c in pw) else 0
+    classes += 1 if any(not c.isalnum() for c in pw) else 0
+    if classes < 3:
+        raise ValueError("Password must include at least 3 of: lowercase, uppercase, digit, symbol.")
+
+    if email:
+        local = email.split("@", 1)[0].lower()
+        if local and local in pw.lower():
+            raise ValueError("Password must not contain parts of your email address.")
+
+    return pw
+
 from app.models import (
     RoleEnum,
     StatusEnum,
-    AppointmentStatusEnum,
-    ShiftTimeEnum,
     BookingStatusEnum,
     PaymentStatusEnum,
     PaymentMethodEnum,
@@ -15,6 +40,15 @@ from app.models import (
 class Token(BaseModel):
     access_token: str
     token_type: str
+    refresh_token: Optional[str] = None
+
+
+class TokenPayload(BaseModel):
+    email: str
+    token_type: Optional[str] = None 
+    token_version: Optional[int] = None
+    session_id: Optional[str] = None
+    jti: Optional[str] = None
 
 
 class TokenData(BaseModel):
@@ -26,19 +60,29 @@ class UserBase(BaseModel):
     name: Optional[str] = None
     role: RoleEnum = RoleEnum.CUSTOMER
     status: StatusEnum = StatusEnum.ACTIVE
-    profileImage: Optional[str] = None
-
+    profileImage: Optional[str] = Field(None, validation_alias=AliasChoices("profileImage", "profile_image"))
 
 class UserCreate(UserBase):
-    password: str = Field(..., min_length=8)
+    password: str
 
+    @model_validator(mode="after")
+    def validate_password(self):
+        self.password = _validate_password_strength(self.password, self.email)
+        return self
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     name: Optional[str] = None
     role: Optional[RoleEnum] = None
     status: Optional[StatusEnum] = None
-    password: Optional[str] = Field(None, min_length=8)
+    profileImage: Optional[str] = Field(None, validation_alias=AliasChoices("profileImage", "profile_image"))
+    password: Optional[str] = None
+
+    @model_validator(mode="after")
+    def validate_password(self):
+        if self.password is not None:
+            self.password = _validate_password_strength(self.password, self.email)
+        return self
 
 
 class UserResponse(UserBase):
@@ -47,194 +91,6 @@ class UserResponse(UserBase):
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
 
-
-class ClinicBase(BaseModel):
-    name: str
-    address: str
-    phone: Optional[str] = None
-    opening_hours: Optional[str] = None
-    image_url: Optional[str] = None
-    rooms: int = Field(3, gt=0)
-    beds: int = Field(12, ge=0)
-    surgeryRooms: int = Field(1, gt=0)
-    status: StatusEnum = StatusEnum.ACTIVE
-
-
-class ClinicCreate(ClinicBase):
-    pass
-
-
-class ClinicUpdate(BaseModel):
-    name: Optional[str] = None
-    address: Optional[str] = None
-    phone: Optional[str] = None
-    opening_hours: Optional[str] = None
-    image_url: Optional[str] = None
-    rooms: Optional[int] = Field(None, gt=0)
-    beds: Optional[int] = Field(None, gt=0)
-    surgeryRooms: Optional[int] = Field(None, gt=0)
-    status: Optional[StatusEnum] = None
-
-
-class ClinicResponse(ClinicBase):
-    id: int
-    createdAt: datetime
-    updatedAt: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ServiceBase(BaseModel):
-    name: str
-    description: Optional[str] = None
-    icon_url: Optional[str] = None
-    includes: Optional[str] = None
-    price_morning: float = Field(..., gt=0)
-    price_afternoon: float = Field(..., gt=0)
-    price_evening: float = Field(..., gt=0)
-    status: StatusEnum = StatusEnum.ACTIVE
-
-
-class ServiceCreate(ServiceBase):
-    pass
-
-
-class ServiceUpdate(BaseModel):
-    name: Optional[str] = None
-    description: Optional[str] = None
-    icon_url: Optional[str] = None
-    includes: Optional[str] = None
-    price_morning: Optional[float] = Field(None, gt=0)
-    price_afternoon: Optional[float] = Field(None, gt=0)
-    price_evening: Optional[float] = Field(None, gt=0)
-    status: Optional[StatusEnum] = None
-
-
-class ServiceResponse(ServiceBase):
-    id: int
-    createdAt: datetime
-    updatedAt: datetime
-    model_config = ConfigDict(from_attributes=True)
-
-
-class DoctorBase(BaseModel):
-    specialty: Optional[str] = None
-    status: StatusEnum = StatusEnum.ACTIVE
-    clinic_id: int
-    user_id: Optional[int] = None
-
-
-class DoctorCreate(DoctorBase):
-    user_email: Optional[EmailStr] = None
-    user_password: Optional[str] = Field(None, min_length=8)
-    user_name: Optional[str] = None
-
-
-class DoctorUpdate(BaseModel):
-    specialty: Optional[str] = None
-    status: Optional[StatusEnum] = None
-    clinic_id: Optional[int] = None
-
-
-class DoctorResponse(DoctorBase):
-    id: int
-    user_id: int
-    createdAt: datetime
-    updatedAt: datetime
-    user: UserResponse
-    clinic: ClinicResponse
-    model_config = ConfigDict(from_attributes=True)
-
-
-class AppointmentBase(BaseModel):
-    appointment_time: datetime
-    status: AppointmentStatusEnum = AppointmentStatusEnum.SCHEDULED
-    price: float = Field(..., ge=0)
-    notes: Optional[str] = None
-    customer_id: int
-    clinic_id: int
-    service_id: int
-    doctor_id: int
-
-
-class AppointmentCreate(AppointmentBase):
-    pass
-
-
-class AppointmentUpdate(BaseModel):
-    appointment_time: Optional[datetime] = None
-    status: Optional[AppointmentStatusEnum] = None
-    price: Optional[float] = Field(None, ge=0)
-    notes: Optional[str] = None
-
-
-class AppointmentResponse(AppointmentBase):
-    id: int
-    bookingReference: str
-    createdAt: datetime
-    updatedAt: datetime
-    customer: UserResponse
-    clinic: ClinicResponse
-    service: ServiceResponse
-    doctor: DoctorResponse
-    model_config = ConfigDict(from_attributes=True)
-
-
-class ShiftBase(BaseModel):
-    date: date
-    shift_time: ShiftTimeEnum
-    room: Optional[str] = None
-    doctor_id: int
-    clinic_id: int
-
-
-class ShiftCreate(ShiftBase):
-    pass
-
-
-class ShiftUpdate(BaseModel):
-    date: Optional[date] = None
-    shift_time: Optional[ShiftTimeEnum] = None
-    room: Optional[str] = None
-
-
-class ShiftResponse(ShiftBase):
-    id: int
-    createdAt: datetime
-    updatedAt: datetime
-    doctor: DoctorResponse
-    clinic: ClinicResponse
-    model_config = ConfigDict(from_attributes=True)
-
-
-class SurgeryBookingBase(BaseModel):
-    date: date
-    start_time: str
-    end_time: str
-    procedure: str
-    clinic_id: int
-    doctor_id: int
-
-
-class SurgeryBookingCreate(SurgeryBookingBase):
-    pass
-
-
-class SurgeryBookingUpdate(BaseModel):
-    date: Optional[date] = None
-    start_time: Optional[str] = None
-    end_time: Optional[str] = None
-    procedure: Optional[str] = None
-
-
-class SurgeryBookingResponse(SurgeryBookingBase):
-    id: int
-    createdAt: datetime
-    updatedAt: datetime
-    clinic: ClinicResponse
-    doctor: DoctorResponse
-    model_config = ConfigDict(from_attributes=True)
-
-
 class HotelBase(BaseModel):
     name: str
     description: Optional[str] = None
@@ -242,10 +98,8 @@ class HotelBase(BaseModel):
     image_url: Optional[str] = None
     floors: int = Field(1, ge=1)
 
-
 class HotelCreate(HotelBase):
     pass
-
 
 class HotelUpdate(BaseModel):
     name: Optional[str] = None
@@ -254,13 +108,11 @@ class HotelUpdate(BaseModel):
     image_url: Optional[str] = None
     floors: Optional[int] = Field(None, ge=1)
 
-
 class HotelResponse(HotelBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class RoomBase(BaseModel):
     hotel_id: int
@@ -274,10 +126,8 @@ class RoomBase(BaseModel):
     available: bool = True
     is_premium: bool = False
 
-
 class RoomCreate(RoomBase):
     pass
-
 
 class RoomUpdate(BaseModel):
     hotel_id: Optional[int] = None
@@ -291,13 +141,11 @@ class RoomUpdate(BaseModel):
     available: Optional[bool] = None
     is_premium: Optional[bool] = None
 
-
 class RoomResponse(RoomBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class ActivityBase(BaseModel):
     name: str
@@ -307,10 +155,8 @@ class ActivityBase(BaseModel):
     image_url: Optional[str] = None
     is_premium: bool = False
 
-
 class ActivityCreate(ActivityBase):
     pass
-
 
 class ActivityUpdate(BaseModel):
     name: Optional[str] = None
@@ -320,13 +166,11 @@ class ActivityUpdate(BaseModel):
     image_url: Optional[str] = None
     is_premium: Optional[bool] = None
 
-
 class ActivityResponse(ActivityBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class EventBase(BaseModel):
     name: str
@@ -334,10 +178,8 @@ class EventBase(BaseModel):
     end_date: datetime
     is_premium: bool = False
 
-
 class EventCreate(EventBase):
     pass
-
 
 class EventUpdate(BaseModel):
     name: Optional[str] = None
@@ -345,13 +187,11 @@ class EventUpdate(BaseModel):
     end_date: Optional[datetime] = None
     is_premium: Optional[bool] = None
 
-
 class EventResponse(EventBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class FerryBase(BaseModel):
     name: str
@@ -361,10 +201,8 @@ class FerryBase(BaseModel):
     schedule: str
     image_url: Optional[str] = None
 
-
 class FerryCreate(FerryBase):
     pass
-
 
 class FerryUpdate(BaseModel):
     name: Optional[str] = None
@@ -374,13 +212,11 @@ class FerryUpdate(BaseModel):
     schedule: Optional[str] = None
     image_url: Optional[str] = None
 
-
 class FerryResponse(FerryBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class FerryScheduleBase(BaseModel):
     ferry_id: int
@@ -390,10 +226,8 @@ class FerryScheduleBase(BaseModel):
     price: float = Field(..., ge=0)
     available: bool = True
 
-
 class FerryScheduleCreate(FerryScheduleBase):
     pass
-
 
 class FerryScheduleUpdate(BaseModel):
     ferry_id: Optional[int] = None
@@ -403,67 +237,29 @@ class FerryScheduleUpdate(BaseModel):
     price: Optional[float] = Field(None, ge=0)
     available: Optional[bool] = None
 
-
 class FerryScheduleResponse(FerryScheduleBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
 
+class FerryTicketCreateIn(BaseModel):
+    number_of_tickets: int = Field(..., ge=0)
+    price: float = Field(..., ge=0)
 
 class FerryTicketBase(BaseModel):
     booking_id: int
     number_of_tickets: int = Field(..., ge=0)
     price: float = Field(..., ge=0)
 
-
 class FerryTicketCreate(FerryTicketBase):
     pass
-
-
-class FerryTicketCreateIn(BaseModel):
-    number_of_tickets: int = Field(..., ge=0)
-    price: float = Field(..., ge=0)
-
 
 class FerryTicketResponse(FerryTicketBase):
     id: int
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
-
-class PaymentBase(BaseModel):
-    booking_id: int
-    amount: float = Field(..., ge=0)
-    currency: str = Field("USD", min_length=3, max_length=3)
-    status: PaymentStatusEnum = PaymentStatusEnum.PENDING
-    method: PaymentMethodEnum = PaymentMethodEnum.CARD
-    provider: Optional[str] = None
-    provider_reference: Optional[str] = None
-    paid_at: Optional[datetime] = None
-
-
-class PaymentCreate(PaymentBase):
-    pass
-
-
-class PaymentUpdate(BaseModel):
-    amount: Optional[float] = Field(None, ge=0)
-    currency: Optional[str] = Field(None, min_length=3, max_length=3)
-    status: Optional[PaymentStatusEnum] = None
-    method: Optional[PaymentMethodEnum] = None
-    provider: Optional[str] = None
-    provider_reference: Optional[str] = None
-    paid_at: Optional[datetime] = None
-
-
-class PaymentResponse(PaymentBase):
-    id: int
-    createdAt: datetime
-    updatedAt: datetime
-    model_config = ConfigDict(from_attributes=True)
-
 
 class BookingRoomResponse(BaseModel):
     id: int
@@ -472,14 +268,12 @@ class BookingRoomResponse(BaseModel):
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
 
-
 class BookingActivityResponse(BaseModel):
     id: int
     activity: ActivityResponse
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
-
 
 class BookingCreate(BaseModel):
     user_id: int
@@ -492,6 +286,19 @@ class BookingCreate(BaseModel):
     activity_ids: Optional[List[int]] = None
     ferry_ticket: Optional[FerryTicketCreateIn] = None
 
+    @model_validator(mode="after")
+    def _validate_booking_window(self):
+        if self.end_date <= self.start_date:
+            raise ValueError("end_date must be after start_date")
+        if (self.end_date.date() - self.start_date.date()).days < 1:
+            raise ValueError("Booking must be at least 1 night")
+        if not self.room_ids:
+            raise ValueError("At least one room is required")
+        if len(self.room_ids) != len(set(self.room_ids)):
+            raise ValueError("room_ids must not contain duplicates")
+        if self.activity_ids and len(self.activity_ids) != len(set(self.activity_ids)):
+            raise ValueError("activity_ids must not contain duplicates")
+        return self
 
 class BookingUpdate(BaseModel):
     number_of_guests: Optional[int] = Field(None, ge=1)
@@ -500,7 +307,6 @@ class BookingUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_premium: Optional[bool] = None
-
 
 class BookingResponse(BaseModel):
     id: int
@@ -518,4 +324,32 @@ class BookingResponse(BaseModel):
     activities: List[BookingActivityResponse]
     ferry_ticket: Optional[FerryTicketResponse] = None
     payments: List[PaymentResponse] = []
+    model_config = ConfigDict(from_attributes=True)
+
+class PaymentBase(BaseModel):
+    booking_id: int
+    amount: float = Field(..., ge=0)
+    currency: str = Field("USD", min_length=3, max_length=3)
+    status: PaymentStatusEnum = PaymentStatusEnum.PENDING
+    method: PaymentMethodEnum = PaymentMethodEnum.CARD
+    provider: Optional[str] = None
+    provider_reference: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+class PaymentCreate(PaymentBase):
+    pass
+
+class PaymentUpdate(BaseModel):
+    amount: Optional[float] = Field(None, ge=0)
+    currency: Optional[str] = Field(None, min_length=3, max_length=3)
+    status: Optional[PaymentStatusEnum] = None
+    method: Optional[PaymentMethodEnum] = None
+    provider: Optional[str] = None
+    provider_reference: Optional[str] = None
+    paid_at: Optional[datetime] = None
+
+class PaymentResponse(PaymentBase):
+    id: int
+    createdAt: datetime
+    updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)

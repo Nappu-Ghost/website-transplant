@@ -1,14 +1,10 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from app.utils.uploads import uploads_root_dir
 from .routers import (
     users,
-    clinics,
-    doctors,
-    services,
-    appointments,
-    shifts,
-    surgery_bookings,
     auth as auth_router,
     hotels,
     rooms,
@@ -22,6 +18,9 @@ from .routers import (
     admin,
 )
 from .db import engine, Base
+from .db import SessionLocal
+from .seed_defaults import ensure_default_users
+from .db_migrations import apply_migrations
 
 app = FastAPI(
     title="Resort API",
@@ -29,11 +28,15 @@ app = FastAPI(
     description="API for managing Azure Lagoon Resort operations. Access documentation at /docs or /redoc.",
 )
 
+# NOTE:
 origins = [
     "http://localhost",
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "http://localhost:8080",
     "http://127.0.0.1:5500",
+    "http://192.168.56.1",
+    "http://192.168.56.1:3000",
     "null",
 ]
 app.add_middleware(
@@ -44,22 +47,34 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+uploads_dir = uploads_root_dir()
+uploads_dir.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
+
 API_PREFIX = "/api/v1"
 
-app.include_router(auth_router.router, prefix=API_PREFIX)
+
+@app.on_event("startup")
+def _startup_create_tables() -> None:
+    """Ensure the SQLite schema exists.
+
+    The frontend expects the API to be usable immediately after running uvicorn.
+    Creating tables on startup removes the extra manual step of running init_db.py.
+    """
+    Base.metadata.create_all(bind=engine)
+
+    apply_migrations(engine)
+
+    db = SessionLocal()
+    try:
+        ensure_default_users(db)
+    finally:
+        db.close()
+
+app.include_router(auth_router.router, prefix=API_PREFIX, tags=["Authentication"])
 app.include_router(users.router, prefix=f"{API_PREFIX}/users", tags=["Users"])
-app.include_router(clinics.router, prefix=f"{API_PREFIX}/clinics", tags=["Clinics"])
-app.include_router(doctors.router, prefix=f"{API_PREFIX}/doctors", tags=["Doctors"])
-app.include_router(services.router, prefix=f"{API_PREFIX}/services", tags=["Services"])
-app.include_router(
-    appointments.router, prefix=f"{API_PREFIX}/appointments", tags=["Appointments"]
-)
-app.include_router(shifts.router, prefix=f"{API_PREFIX}/shifts", tags=["Shifts"])
-app.include_router(
-    surgery_bookings.router,
-    prefix=f"{API_PREFIX}/surgery-bookings",
-    tags=["Surgery Bookings"],
-)
+
 app.include_router(hotels.router, prefix=f"{API_PREFIX}/hotels", tags=["Hotels"])
 app.include_router(rooms.router, prefix=f"{API_PREFIX}/rooms", tags=["Rooms"])
 app.include_router(activities.router, prefix=f"{API_PREFIX}/activities", tags=["Activities"])

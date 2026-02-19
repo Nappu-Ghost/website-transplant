@@ -6,6 +6,7 @@ from typing import List, Optional, Type, TypeVar, Generic, Any
 from pydantic import BaseModel as PydanticBaseModel
 from fastapi import HTTPException, status
 from app.utils.security import get_password_hash, verify_password
+from app.utils import security
 
 ModelType = TypeVar("ModelType", bound=models.Base)
 CreateSchemaType = TypeVar("CreateSchemaType", bound=PydanticBaseModel)
@@ -15,7 +16,6 @@ def get_db_obj(db: Session, model: Type[ModelType], obj_id: int) -> Optional[Mod
     return db.query(model).filter(model.id == obj_id).first()
 
 def get_all_db_obj(db: Session, model: Type[ModelType], skip: int = 0, limit: int = 100) -> List[ModelType]:
-    # If fetching related data for display, add .options(joinedload(...)) here or in router
     return db.query(model).offset(skip).limit(limit).all()
 
 def create_db_obj_generic(db: Session, model: Type[ModelType], obj_in: CreateSchemaType) -> ModelType:
@@ -61,16 +61,14 @@ def update_db_obj_generic(db: Session, db_obj: ModelType, obj_in: UpdateSchemaTy
     return db_obj
 
 def remove_db_obj_generic(db: Session, db_obj: ModelType) -> ModelType:
-    # This generic version will still fail if there are unhandled foreign key constraints
     try:
         db.delete(db_obj)
         db.commit()
     except IntegrityError as e:
         db.rollback()
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Cannot delete item. It might be referenced by other records: {e.orig}")
-    return db_obj # Note: db_obj is detached after commit if deletion was successful
+    return db_obj 
 
-# --- User Specific CRUD ---
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.email == email).first()
 
@@ -114,161 +112,20 @@ def update_user(db: Session, db_user: models.User, user_in: schemas.UserUpdate) 
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Database integrity error during user update: {e.orig}")
     return db_user
 
-# NEW function for deleting a user and their customer appointments
+# Delete a user and their resort-related dependent data
 def delete_user_and_related_data(db: Session, user_to_delete: models.User) -> models.User:
-    # 1. Delete appointments where this user is the customer
-    #    This assumes appointments are not critical to keep if the customer is gone.
-    #    If a doctor made the appointment, that link might also need consideration.
-    db.query(models.Appointment).filter(models.Appointment.customer_id == user_to_delete.id).delete(synchronize_session=False)
+    db.query(models.Booking).filter(models.Booking.user_id == user_to_delete.id).delete(synchronize_session=False)
 
-    # 2. If the user has a doctor_profile, it should be deleted by cascade
-    #    because User.doctor_profile has cascade="all, delete-orphan".
-    #    If not, you would delete it manually here:
-    #    if user_to_delete.doctor_profile:
-    #        db.delete(user_to_delete.doctor_profile)
-
-    # 3. Delete the user itself
     try:
         db.delete(user_to_delete)
         db.commit()
-    except IntegrityError as e:
-        db.rollback()
-        # This might happen if the user is still referenced by other tables
-        # not handled above (e.g., if they are a doctor in a shift/surgery_booking
-        # and the Doctor profile wasn't cascaded or its FKs weren't handled).
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Cannot delete user. They might be referenced in other records not automatically cleared: {e.orig}")
-    
-    return user_to_delete # The object is detached but can be returned for confirmation
-
-# --- Clinic Specific CRUD ---
-def create_clinic(db: Session, clinic: schemas.ClinicCreate) -> models.Clinic:
-    return create_db_obj_generic(db, model=models.Clinic, obj_in=clinic)
-
-# --- Service Specific CRUD ---
-def create_service(db: Session, service: schemas.ServiceCreate) -> models.Service:
-    return create_db_obj_generic(db, model=models.Service, obj_in=service)
-
-# --- Doctor Specific CRUD ---
-def create_doctor(db: Session, doctor_in: schemas.DoctorCreate) -> models.Doctor:
-    user_id_to_use = doctor_in.user_id
-    if doctor_in.user_email:
-        if not doctor_in.user_password:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Password is required when creating a new user for a doctor.")
-        if get_user_by_email(db, email=doctor_in.user_email):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor's user email already exists.")
-        if user_id_to_use:
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Cannot specify both new user details and existing user_id.")
-        new_user_schema = schemas.UserCreate(
-            email=doctor_in.user_email,
-            password=doctor_in.user_password,
-            name=doctor_in.user_name or f"Dr. {doctor_in.user_email.split('@')[0]}",
-            role=models.RoleEnum.DOCTOR,
-            status=models.StatusEnum.ACTIVE
-        )
-        created_user = create_user(db, new_user_schema)
-        user_id_to_use = created_user.id
-    elif user_id_to_use:
-        user = get_db_obj(db, models.User, user_id_to_use)
-        if not user:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"User with id {user_id_to_use} not found.")
-        existing_doctor_profile = db.query(models.Doctor).filter(models.Doctor.user_id == user_id_to_use).first()
-        if existing_doctor_profile:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"User with id {user_id_to_use} is already linked to a doctor profile.")
-        if user.role != models.RoleEnum.DOCTOR: # Ensure user is a doctor
-            user.role = models.RoleEnum.DOCTOR
-            db.add(user) # Will be committed with doctor creation
-    else:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Doctor must be associated with a user. Provide user_id or new user details.")
-    
-    clinic = get_db_obj(db, models.Clinic, doctor_in.clinic_id)
-    if not clinic:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Clinic with id {doctor_in.clinic_id} not found.")
-
-    doctor_data_for_model = doctor_in.model_dump(exclude={"user_email", "user_password", "user_name", "user_role"})
-    doctor_data_for_model["user_id"] = user_id_to_use
-    
-    db_doctor = models.Doctor(**doctor_data_for_model)
-    try:
-        db.add(db_doctor)
-        db.commit()
-        db.refresh(db_doctor)
-    except IntegrityError as e:
-        db.rollback()
-        if "doctors_user_id_key" in str(e.orig) or "UNIQUE constraint failed: doctors.user_id" in str(e.orig):
-             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"User ID {user_id_to_use} is already assigned to another doctor.")
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error creating doctor profile: {e.orig}")
-    return db_doctor
-
-# --- Appointment Specific CRUD ---
-def create_appointment(db: Session, appointment_in: schemas.AppointmentCreate) -> models.Appointment:
-    if not get_db_obj(db, models.User, appointment_in.customer_id):
-        raise HTTPException(status_code=404, detail=f"Customer with id {appointment_in.customer_id} not found")
-    db_clinic = get_db_obj(db, models.Clinic, appointment_in.clinic_id)
-    if not db_clinic:
-        raise HTTPException(status_code=404, detail=f"Clinic with id {appointment_in.clinic_id} not found")
-    if not get_db_obj(db, models.Service, appointment_in.service_id):
-        raise HTTPException(status_code=404, detail=f"Service with id {appointment_in.service_id} not found")
-    db_doctor = get_db_obj(db, models.Doctor, appointment_in.doctor_id)
-    if not db_doctor:
-        raise HTTPException(status_code=404, detail=f"Doctor with id {appointment_in.doctor_id} not found")
-    if db_doctor.clinic_id != appointment_in.clinic_id:
-        raise HTTPException(status_code=400,detail=f"Doctor (ID: {db_doctor.id}) is not associated with the specified clinic (ID: {appointment_in.clinic_id}).")
-    return create_db_obj_generic(db, model=models.Appointment, obj_in=appointment_in)
-
-# --- Shift Specific CRUD ---
-def create_shift(db: Session, shift_in: schemas.ShiftCreate) -> models.Shift:
-    db_doctor = get_db_obj(db, models.Doctor, shift_in.doctor_id)
-    if not db_doctor:
-        raise HTTPException(status_code=404, detail=f"Doctor with id {shift_in.doctor_id} not found")
-    db_clinic = get_db_obj(db, models.Clinic, shift_in.clinic_id)
-    if not db_clinic:
-        raise HTTPException(status_code=404, detail=f"Clinic with id {shift_in.clinic_id} not found")
-    if db_doctor.clinic_id != shift_in.clinic_id:
-        raise HTTPException(status_code=400, detail=f"Doctor (ID: {db_doctor.id}) is not associated with the specified clinic (ID: {shift_in.clinic_id}) for the shift.")
-    return create_db_obj_generic(db, model=models.Shift, obj_in=shift_in)
-
-# --- SurgeryBooking Specific CRUD ---
-def create_surgery_booking(db: Session, booking_in: schemas.SurgeryBookingCreate) -> models.SurgeryBooking:
-    db_clinic = get_db_obj(db, models.Clinic, booking_in.clinic_id)
-    if not db_clinic:
-        raise HTTPException(status_code=404, detail=f"Clinic with id {booking_in.clinic_id} not found")
-    if db_clinic.surgeryRooms < 1: # Using the correct attribute name
-        raise HTTPException(status_code=400, detail=f"Clinic with id {booking_in.clinic_id} has no surgery rooms available.")
-    db_doctor = get_db_obj(db, models.Doctor, booking_in.doctor_id)
-    if not db_doctor:
-        raise HTTPException(status_code=404, detail=f"Doctor with id {booking_in.doctor_id} not found")
-    if db_doctor.clinic_id != booking_in.clinic_id:
-        raise HTTPException(status_code=400, detail=f"Doctor (ID: {db_doctor.id}) is not associated with the specified clinic (ID: {booking_in.clinic_id}) for the surgery booking.")
-    return create_db_obj_generic(db, model=models.SurgeryBooking, obj_in=booking_in)
-
-def delete_clinic_and_related_data(db: Session, clinic_to_delete: models.Clinic) -> models.Clinic:
-    # Delete Appointments
-    db.query(models.Appointment).filter(models.Appointment.clinic_id == clinic_to_delete.id).delete(synchronize_session=False)
-
-    # Delete Shifts
-    db.query(models.Shift).filter(models.Shift.clinic_id == clinic_to_delete.id).delete(synchronize_session=False)
-
-    # Delete Surgery Bookings
-    db.query(models.SurgeryBooking).filter(models.SurgeryBooking.clinic_id == clinic_to_delete.id).delete(synchronize_session=False)
-
-    # Delete Doctors and their Users
-    doctors = db.query(models.Doctor).filter(models.Doctor.clinic_id == clinic_to_delete.id).all()
-    for doctor in doctors:
-        user = db.query(models.User).filter(models.User.id == doctor.user_id).first()
-        db.delete(doctor)
-        if user:
-            db.delete(user)
-
-    try:
-        db.delete(clinic_to_delete)
-        db.commit()
+        return user_to_delete
     except IntegrityError as e:
         db.rollback()
         raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Cannot delete clinic. It might be referenced in other records: {e.orig}"
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Could not delete user due to related data constraints: {str(e)}",
         )
-    return clinic_to_delete
 
 
 def create_hotel(db: Session, hotel: schemas.HotelCreate) -> models.Hotel:
@@ -306,40 +163,112 @@ def create_booking(db: Session, booking_in: schemas.BookingCreate) -> models.Boo
     if not db_user:
         raise HTTPException(status_code=404, detail=f"User with id {booking_in.user_id} not found")
 
+    if booking_in.end_date <= booking_in.start_date:
+        raise HTTPException(status_code=400, detail="end_date must be after start_date")
+    nights = (booking_in.end_date.date() - booking_in.start_date.date()).days
+    if nights < 1:
+        raise HTTPException(status_code=400, detail="Booking must be at least 1 night")
+
     if not booking_in.room_ids:
         raise HTTPException(status_code=400, detail="At least one room is required for a booking")
 
-    rooms = db.query(models.Room).filter(models.Room.id.in_(booking_in.room_ids)).all()
-    if len(rooms) != len(set(booking_in.room_ids)):
+    room_ids = list(dict.fromkeys(booking_in.room_ids))
+    if len(room_ids) != len(booking_in.room_ids):
+        raise HTTPException(status_code=400, detail="room_ids must not contain duplicates")
+
+    rooms = db.query(models.Room).filter(models.Room.id.in_(room_ids)).all()
+    if len(rooms) != len(room_ids):
         raise HTTPException(status_code=404, detail="One or more rooms were not found")
 
+    if any(not r.available for r in rooms):
+        raise HTTPException(status_code=400, detail="One or more rooms are not available")
+
+    hotel_ids = {r.hotel_id for r in rooms}
+    if len(hotel_ids) != 1:
+        raise HTTPException(status_code=400, detail="All rooms in a booking must be from the same hotel")
+
+    db_hotel = get_db_obj(db, models.Hotel, next(iter(hotel_ids)))
+    if not db_hotel:
+        raise HTTPException(status_code=404, detail="Hotel not found for selected rooms")
+
+    invalid_floors = [r.id for r in rooms if r.floor_number < 1 or r.floor_number > (db_hotel.floors or 1)]
+    if invalid_floors:
+        raise HTTPException(
+            status_code=400,
+            detail=f"One or more rooms have an invalid floor for this hotel: {invalid_floors}",
+        )
+
+    total_capacity = sum(int(r.capacity or 0) for r in rooms)
+    if booking_in.number_of_guests > total_capacity:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Selected rooms can accommodate at most {total_capacity} guests",
+        )
+
+    overlapping = (
+        db.query(models.BookingRoom)
+        .join(models.Booking, models.BookingRoom.booking_id == models.Booking.id)
+        .filter(models.BookingRoom.room_id.in_(room_ids))
+        .filter(models.Booking.status != models.BookingStatusEnum.CANCELLED)
+        .filter(models.Booking.start_date < booking_in.end_date)
+        .filter(models.Booking.end_date > booking_in.start_date)
+        .all()
+    )
+    if overlapping:
+        conflict_room_ids = sorted({br.room_id for br in overlapping})
+        raise HTTPException(
+            status_code=409,
+            detail=f"One or more rooms are already booked for the selected dates: {conflict_room_ids}",
+        )
+
     activities = []
+    activity_ids: list[int] = []
     if booking_in.activity_ids:
-        activities = db.query(models.Activity).filter(models.Activity.id.in_(booking_in.activity_ids)).all()
-        if len(activities) != len(set(booking_in.activity_ids)):
+        activity_ids = list(dict.fromkeys(booking_in.activity_ids))
+        if len(activity_ids) != len(booking_in.activity_ids):
+            raise HTTPException(status_code=400, detail="activity_ids must not contain duplicates")
+        activities = db.query(models.Activity).filter(models.Activity.id.in_(activity_ids)).all()
+        if len(activities) != len(activity_ids):
             raise HTTPException(status_code=404, detail="One or more activities were not found")
 
-    booking_data = booking_in.model_dump(exclude={"room_ids", "activity_ids", "ferry_ticket"})
-    db_booking = models.Booking(**booking_data, status=models.BookingStatusEnum.CONFIRMED)
+    if booking_in.is_premium:
+        non_premium_rooms = [r.id for r in rooms if not r.is_premium]
+        non_premium_acts = [a.id for a in activities if not a.is_premium]
+        if non_premium_rooms or non_premium_acts:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Premium booking requires premium rooms/activities. Non-premium rooms={non_premium_rooms}, activities={non_premium_acts}",
+            )
+
+    rooms_cost = float(sum(float(r.price or 0) for r in rooms)) * float(nights)
+    activities_cost = float(sum(float(a.price or 0) for a in activities))
+    ferry_cost = float(booking_in.ferry_ticket.price) if booking_in.ferry_ticket else 0.0
+    computed_total = float(rooms_cost + activities_cost + ferry_cost)
+
+    booking_data = booking_in.model_dump(exclude={"room_ids", "activity_ids", "ferry_ticket", "total_price"})
+    db_booking = models.Booking(
+        **booking_data,
+        total_price=computed_total,
+        status=models.BookingStatusEnum.CONFIRMED,
+    )
 
     try:
         db.add(db_booking)
         db.flush()
 
-        booking_rooms = [
-            models.BookingRoom(booking_id=db_booking.id, room_id=room_id)
-            for room_id in booking_in.room_ids
-        ]
+        booking_rooms = [models.BookingRoom(booking_id=db_booking.id, room_id=room_id) for room_id in room_ids]
         db.add_all(booking_rooms)
 
-        if booking_in.activity_ids:
-            booking_activities = [
-                models.BookingActivity(booking_id=db_booking.id, activity_id=activity_id)
-                for activity_id in booking_in.activity_ids
-            ]
+        if activity_ids:
+            booking_activities = [models.BookingActivity(booking_id=db_booking.id, activity_id=activity_id) for activity_id in activity_ids]
             db.add_all(booking_activities)
 
         if booking_in.ferry_ticket:
+            if booking_in.ferry_ticket.number_of_tickets < booking_in.number_of_guests:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Ferry ticket count must be at least the number_of_guests",
+                )
             db_ferry_ticket = models.FerryTicket(
                 booking_id=db_booking.id,
                 number_of_tickets=booking_in.ferry_ticket.number_of_tickets,
@@ -402,3 +331,81 @@ def update_payment(db: Session, db_payment: models.Payment, payment_in: schemas.
         raise HTTPException(status_code=400, detail=f"Database integrity error: {e.orig}")
 
     return db_payment
+
+from datetime import datetime, timezone
+import uuid
+
+
+def create_user_session(
+    db: Session,
+    *,
+    user: models.User,
+    session_id: str,
+    refresh_token: str,
+    refresh_jti: str,
+    refresh_expires_at: datetime,
+    ip_address: str | None = None,
+    user_agent: str | None = None,
+    device_label: str | None = None,
+) -> models.UserSession:
+    now = datetime.utcnow()
+    sess = models.UserSession(
+        id=session_id,
+        user_id=user.id,
+        refresh_token_hash=security.sha256_hex(refresh_token),
+        refresh_token_jti=refresh_jti,
+        refresh_token_expiresAt=refresh_expires_at.replace(tzinfo=None),
+        ip_address=ip_address,
+        user_agent=user_agent,
+        device_label=device_label,
+        createdAt=now,
+        lastUsedAt=now,
+        revokedAt=None,
+    )
+    db.add(sess)
+    db.commit()
+    db.refresh(sess)
+    return sess
+
+
+def get_user_session(db: Session, *, session_id: str) -> models.UserSession | None:
+    return db.query(models.UserSession).filter(models.UserSession.id == session_id).first()
+
+
+def revoke_user_session(db: Session, *, session_id: str) -> None:
+    sess = get_user_session(db, session_id=session_id)
+    if not sess:
+        return
+    sess.revokedAt = datetime.utcnow()
+    db.add(sess)
+    db.commit()
+
+
+def revoke_all_user_sessions(db: Session, *, user_id: int) -> int:
+    now = datetime.utcnow()
+    q = db.query(models.UserSession).filter(
+        models.UserSession.user_id == user_id,
+        models.UserSession.revokedAt.is_(None),
+    )
+    count = q.count()
+    q.update({models.UserSession.revokedAt: now}, synchronize_session=False)
+    db.commit()
+    return count
+
+
+def rotate_session_refresh(
+    db: Session,
+    *,
+    session: models.UserSession,
+    new_refresh_token: str,
+    new_refresh_jti: str,
+    new_refresh_expires_at: datetime,
+) -> models.UserSession:
+    session.refresh_token_hash = security.sha256_hex(new_refresh_token)
+    session.refresh_token_jti = new_refresh_jti
+    session.refresh_token_expiresAt = new_refresh_expires_at.replace(tzinfo=None)
+    session.lastUsedAt = datetime.utcnow()
+    db.add(session)
+    db.commit()
+    db.refresh(session)
+    return session
