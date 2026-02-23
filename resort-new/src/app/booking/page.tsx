@@ -46,8 +46,8 @@ export default function BookingPage() {
   const searchParams = useSearchParams();
   const [estimate, setEstimate] = useState<Record<string, string | number>>({});
 
-  const selectedRoom = searchParams.get('room') ?? '';
-  const selectedActivity = searchParams.get('activity') ?? '';
+  const selectedRoomId = searchParams.get('roomId');
+  const selectedActivityId = searchParams.get('activityId');
 
   const roomsQuery = useQuery<RoomOption[]>({
     queryKey: ['rooms', 'booking'],
@@ -78,6 +78,21 @@ export default function BookingPage() {
     }));
   }, [activitiesQuery.data]);
 
+  const selectedRoomName = useMemo(() => {
+    if (!selectedRoomId) return '';
+    const roomId = Number(selectedRoomId);
+    if (!Number.isFinite(roomId)) return '';
+    return roomOptions.find((room) => room.id === roomId)?.name ?? '';
+  }, [roomOptions, selectedRoomId]);
+
+  const selectedActivityNames = useMemo(() => {
+    if (!selectedActivityId) return [] as string[];
+    const activityId = Number(selectedActivityId);
+    if (!Number.isFinite(activityId)) return [] as string[];
+    const match = activityOptions.find((activity) => activity.id === activityId);
+    return match ? [match.name] : [];
+  }, [activityOptions, selectedActivityId]);
+
   const roomRates = useMemo(() => {
     if (roomOptions.length > 0) {
       return roomOptions.reduce((acc, room) => {
@@ -107,10 +122,13 @@ export default function BookingPage() {
   }, [estimate.checkIn, estimate.checkOut]);
 
   const guests = typeof estimate.guests === 'number' ? estimate.guests : Number(estimate.guests || 0);
-  const nightlyRate = roomRates[String(estimate.roomType || selectedRoom)] ?? 0;
-  const activityRate = activityRates[String(estimate.activitySelection || selectedActivity)] ?? 0;
+  const nightlyRate = roomRates[String(estimate.roomType || selectedRoomName)] ?? 0;
+  const selectedActivities = Array.isArray((estimate as any).activitySelections)
+    ? ((estimate as any).activitySelections as string[])
+    : selectedActivityNames;
+  const activityTotalRate = selectedActivities.reduce((sum, name) => sum + (activityRates[String(name)] ?? 0), 0);
   const staySubtotal = nights > 0 ? nights * nightlyRate : 0;
-  const activitySubtotal = activityRate > 0 ? activityRate * Math.max(1, guests || 1) : 0;
+  const activitySubtotal = activityTotalRate > 0 ? activityTotalRate * Math.max(1, guests || 1) : 0;
   const subtotal = staySubtotal + activitySubtotal;
   const taxes = subtotal * 0.12;
   const serviceFee = subtotal > 0 ? 45 : 0;
@@ -129,13 +147,13 @@ export default function BookingPage() {
       throw new Error('Selected room is not available.');
     }
 
-    const hasActivity = values.activitySelection && values.activitySelection !== 'none';
-    const selectedActivityOption = hasActivity
-      ? activityOptions.find((activity) => activity.name === values.activitySelection)
-      : undefined;
+    const requestedActivities = Array.isArray(values.activitySelections) ? values.activitySelections : [];
+    const selectedActivityOptions = requestedActivities
+      .map((name) => activityOptions.find((activity) => activity.name === name))
+      .filter(Boolean) as ActivityOption[];
 
-    if (hasActivity && !selectedActivityOption) {
-      throw new Error('Selected activity is not available.');
+    if (requestedActivities.length !== selectedActivityOptions.length) {
+      throw new Error('One or more selected activities are not available.');
     }
 
     const checkInDate = new Date(values.checkIn);
@@ -145,9 +163,9 @@ export default function BookingPage() {
       : 0;
     const guests = Number(values.guests || 1);
     const roomRate = roomRates[selectedRoomOption.name] ?? selectedRoomOption.price ?? 0;
-    const activityRate = selectedActivityOption
-      ? activityRates[selectedActivityOption.name] ?? selectedActivityOption.price ?? 0
-      : 0;
+    const activityRate = selectedActivityOptions.reduce((sum, activity) => {
+      return sum + (activityRates[activity.name] ?? activity.price ?? 0);
+    }, 0);
     const staySubtotal = nights > 0 ? nights * roomRate : 0;
     const activitySubtotal = activityRate > 0 ? activityRate * Math.max(1, guests) : 0;
     const totalPrice = staySubtotal + activitySubtotal;
@@ -160,7 +178,7 @@ export default function BookingPage() {
       end_date: checkOutDate.toISOString(),
       is_premium: Boolean(selectedRoomOption.isPremium),
       room_ids: [selectedRoomOption.id],
-      activity_ids: selectedActivityOption ? [selectedActivityOption.id] : undefined,
+      activity_ids: selectedActivityOptions.length ? selectedActivityOptions.map((activity) => activity.id) : undefined,
     };
 
     const response = await createBookingMutation.mutateAsync(payload);
@@ -179,8 +197,8 @@ export default function BookingPage() {
       />
       <BookingForm
         defaultValues={{
-          ...(selectedRoom ? { roomType: selectedRoom } : {}),
-          ...(selectedActivity ? { activitySelection: selectedActivity } : {}),
+          ...(selectedRoomName ? { roomType: selectedRoomName } : {}),
+          ...(selectedActivityNames.length ? { activitySelections: selectedActivityNames } : {}),
         }}
         isLoading={roomsQuery.isLoading || activitiesQuery.isLoading}
         isSubmitting={createBookingMutation.isPending}

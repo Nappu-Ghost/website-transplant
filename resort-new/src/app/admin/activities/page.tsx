@@ -10,7 +10,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ModalDialog, PageHeader, SectionHeader } from '@/components/shared';
-import { activityService } from '@/lib/api-service';
+import { demoImageUrl } from '@/lib/demo-images';
+import { activityService, metaService } from '@/lib/api-service';
+import { toast } from '@/hooks/use-toast';
 
 interface Activity {
   id: number;
@@ -47,6 +49,17 @@ export default function AdminActivitiesPage() {
   const queryClient = useQueryClient();
   const [activeActivityId, setActiveActivityId] = useState<number | null>(null);
   const [draft, setDraft] = useState<ActivityDraft>(emptyDraft());
+  const [imageFile, setImageFile] = useState<File | null>(null);
+
+  const metaQuery = useQuery<{ demoMode?: boolean; demo_mode?: boolean }>({
+    queryKey: ['meta'],
+    queryFn: () => metaService.get(),
+  });
+
+  const isDemoMode = useMemo(() => {
+    const data: any = metaQuery.data;
+    return Boolean(data?.demoMode ?? data?.demo_mode);
+  }, [metaQuery.data]);
 
   const activitiesQuery = useQuery<Activity[]>({
     queryKey: ['activities', 'admin'],
@@ -68,9 +81,24 @@ export default function AdminActivitiesPage() {
     },
   });
 
+  const uploadImageMutation = useMutation({
+    mutationFn: async ({ id, file }: { id: number; file: File }) => activityService.uploadImage(String(id), file),
+    onSuccess: (data: any) => {
+      const nextUrl = data?.imageUrl ?? data?.image_url ?? '';
+      setDraft((current) => ({ ...current, imageUrl: nextUrl }));
+      setImageFile(null);
+      queryClient.invalidateQueries({ queryKey: ['activities', 'admin'] });
+      toast({ title: 'Image uploaded', description: 'Activity image has been updated.' });
+    },
+    onError: (e: any) => {
+      toast({ title: 'Upload failed', description: e?.message || 'An unexpected error occurred.', variant: 'destructive' });
+    },
+  });
+
   const handleOpenCreate = () => {
     setActiveActivityId(null);
     setDraft(emptyDraft());
+    setImageFile(null);
   };
 
   const handleOpenEdit = (activity: Activity) => {
@@ -83,7 +111,13 @@ export default function AdminActivitiesPage() {
       imageUrl: activity.imageUrl ?? '',
       isPremium: activity.isPremium ? 'true' : 'false',
     });
+    setImageFile(null);
   };
+
+  const previewUrl = useMemo(() => {
+    if (!draft.imageUrl) return '';
+    return metaService.toPublicUrl(draft.imageUrl);
+  }, [draft.imageUrl]);
 
   const handleSave = () => {
     const payload = {
@@ -191,6 +225,57 @@ export default function AdminActivitiesPage() {
                     onChange={(event) => setDraft((current) => ({ ...current, imageUrl: event.target.value }))}
                     placeholder="/images/gallery/activities/snorkel.svg"
                   />
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    {isDemoMode ? (
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          setDraft((current) => ({
+                            ...current,
+                            imageUrl: demoImageUrl('activity', current.name || String(Date.now())),
+                          }))
+                        }
+                      >
+                        Generate demo image
+                      </Button>
+                    ) : null}
+
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept="image/*"
+                        onChange={(event) => setImageFile(event.target.files?.[0] ?? null)}
+                      />
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        disabled={!activeActivityId || !imageFile || uploadImageMutation.isPending}
+                        onClick={() => {
+                          if (!activeActivityId) {
+                            toast({
+                              title: 'Save required',
+                              description: 'Create the activity first before uploading an image.',
+                              variant: 'destructive',
+                            });
+                            return;
+                          }
+                          if (!imageFile) return;
+                          uploadImageMutation.mutate({ id: activeActivityId, file: imageFile });
+                        }}
+                      >
+                        Upload
+                      </Button>
+                    </div>
+
+                    {previewUrl ? (
+                      <a className="text-xs text-muted-foreground underline" href={previewUrl} target="_blank" rel="noreferrer">
+                        Preview
+                      </a>
+                    ) : null}
+                  </div>
                 </div>
                 <div className="space-y-2">
                   <Label>Premium</Label>

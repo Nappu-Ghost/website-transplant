@@ -42,6 +42,17 @@ export async function POST(request: NextRequest) {
           sameSite: 'strict',
         });
 
+        if (tokenResponse.refreshToken) {
+          response.cookies.set({
+            name: 'refresh_token',
+            value: tokenResponse.refreshToken,
+            httpOnly: true,
+            path: '/',
+            maxAge: 60 * 60 * 24 * 14,
+            sameSite: 'strict',
+          });
+        }
+
         return response;
 
       } catch (fetchUserError: any) {

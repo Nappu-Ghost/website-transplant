@@ -16,6 +16,9 @@ class Settings:
     refresh_token_days: int = 14
     pbkdf2_rounds: int = 310_000
     allow_demo_users: bool = True
+    bootstrap_admin_email: str = "admin@example.com"
+    bootstrap_admin_name: str = "System Admin"
+    bootstrap_admin_password: str | None = None
 
 
 def _settings_path() -> Path:
@@ -44,6 +47,13 @@ def load_settings() -> Settings:
         path.write_text(json.dumps(s.__dict__, indent=2), encoding="utf-8")
         return s
 
+    bootstrap_admin_email = str(data.get("bootstrap_admin_email") or "admin@example.com").strip() or "admin@example.com"
+    bootstrap_admin_name = str(data.get("bootstrap_admin_name") or "System Admin").strip() or "System Admin"
+    bootstrap_admin_password_raw = data.get("bootstrap_admin_password")
+    bootstrap_admin_password = None
+    if isinstance(bootstrap_admin_password_raw, str):
+        bootstrap_admin_password = bootstrap_admin_password_raw.strip() or None
+
     return Settings(
         secret_key=secret,
         algorithm=str(data.get("algorithm") or "HS256"),
@@ -53,4 +63,7 @@ def load_settings() -> Settings:
         refresh_token_days=int(data.get("refresh_token_days") or 14),
         pbkdf2_rounds=int(data.get("pbkdf2_rounds") or 310_000),
         allow_demo_users=bool(data.get("allow_demo_users", True)),
+        bootstrap_admin_email=bootstrap_admin_email,
+        bootstrap_admin_name=bootstrap_admin_name,
+        bootstrap_admin_password=bootstrap_admin_password,
     )

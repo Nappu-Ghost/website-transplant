@@ -6,6 +6,7 @@ from app.utils.uploads import uploads_root_dir
 from .routers import (
     users,
     auth as auth_router,
+    meta,
     hotels,
     rooms,
     activities,
@@ -19,7 +20,7 @@ from .routers import (
 )
 from .db import engine, Base
 from .db import SessionLocal
-from .seed_defaults import ensure_default_users
+from .seed_defaults import ensure_bootstrap_admin, ensure_default_users, ensure_default_catalog
 from .db_migrations import apply_migrations
 
 app = FastAPI(
@@ -68,11 +69,14 @@ def _startup_create_tables() -> None:
 
     db = SessionLocal()
     try:
+        ensure_bootstrap_admin(db)
         ensure_default_users(db)
+        ensure_default_catalog(db)
     finally:
         db.close()
 
 app.include_router(auth_router.router, prefix=API_PREFIX, tags=["Authentication"])
+app.include_router(meta.router, prefix=API_PREFIX, tags=["Meta"])
 app.include_router(users.router, prefix=f"{API_PREFIX}/users", tags=["Users"])
 
 app.include_router(hotels.router, prefix=f"{API_PREFIX}/hotels", tags=["Hotels"])

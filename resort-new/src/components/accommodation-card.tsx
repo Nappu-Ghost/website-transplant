@@ -8,8 +8,10 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { demoImageUrl } from '@/lib/demo-images';
 
 export interface AccommodationCardProps {
+  demoMode?: boolean;
   name: string;
   location: string;
   pricePerNight: number;
@@ -25,6 +27,7 @@ export interface AccommodationCardProps {
 }
 
 export function AccommodationCard({
+  demoMode,
   name,
   location,
   pricePerNight,
@@ -38,6 +41,7 @@ export function AccommodationCard({
   isLoading,
   action,
 }: AccommodationCardProps) {
+  const resolvedImageUrl = imageUrl || (demoMode ? demoImageUrl('room', name) : undefined);
   if (isLoading) {
     return (
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
@@ -62,9 +66,9 @@ export function AccommodationCard({
     <motion.div whileHover={{ y: -6 }} transition={{ type: 'spring', stiffness: 260, damping: 20 }}>
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
         <div className="relative aspect-[4/3] w-full">
-          {imageUrl ? (
+          {resolvedImageUrl ? (
             <Image
-              src={imageUrl}
+              src={resolvedImageUrl}
               alt={name}
               fill
               className="object-cover"

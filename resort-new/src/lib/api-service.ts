@@ -6,6 +6,7 @@ export const hotelService = {
   create: (data: any, token?: string | null) => api.createHotel(data, token),
   update: (id: string, data: any, token?: string | null) => api.updateHotel(id, data, token),
   remove: (id: string, token?: string | null) => api.deleteHotel(id, token),
+  uploadImage: (id: string, file: File, token?: string | null) => api.uploadHotelImage(id, file, token),
 };
 
 export const roomService = {
@@ -14,6 +15,7 @@ export const roomService = {
   create: (data: any, token?: string | null) => api.createRoom(data, token),
   update: (id: string, data: any, token?: string | null) => api.updateRoom(id, data, token),
   remove: (id: string, token?: string | null) => api.deleteRoom(id, token),
+  uploadImage: (id: string, file: File, token?: string | null) => api.uploadRoomImage(id, file, token),
 };
 
 export const activityService = {
@@ -22,6 +24,7 @@ export const activityService = {
   create: (data: any, token?: string | null) => api.createActivity(data, token),
   update: (id: string, data: any, token?: string | null) => api.updateActivity(id, data, token),
   remove: (id: string, token?: string | null) => api.deleteActivity(id, token),
+  uploadImage: (id: string, file: File, token?: string | null) => api.uploadActivityImage(id, file, token),
 };
 
 export const bookingService = {
@@ -52,4 +55,9 @@ export const userService = {
 
 export const adminService = {
   getOverview: (token?: string | null) => api.getAdminOverview(token),
+};
+
+export const metaService = {
+  get: () => api.getMeta(),
+  toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

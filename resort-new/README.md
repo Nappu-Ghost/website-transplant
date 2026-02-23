@@ -55,12 +55,6 @@ python -m venv venv
 # Install backend dependencies
 pip install -r requirements.txt
 
-# Initialize the database (if needed)
-python init_db.py
-
-# Seed the database with sample data (optional)
-python seed_resort_wellness.py
-
 # Run the backend server
 python main.py
 ```
@@ -86,14 +80,36 @@ Once the backend is running, you can access the API documentation at:
   - Full system access
   - User and configuration management
 
-## Default Credentials (Seed Data)
+## Default Credentials (Demo Mode)
 
 | Role     | Email                  | Password   |
 | :------- | :--------------------- | :--------- |
-| ADMIN    | admin@example.com      | `password` |
-| Manager  | manager@example.com    | `password` |
-| Officer  | officer@example.com    | `password` |
-| Customer | customer@example.com   | `password` |
+| ADMIN    | admin@example.com      | `Password123!` |
+| Manager  | manager@example.com    | `Password123!` |
+| Guest    | guest@example.com      | `Password123!` |
+
+## Demo Mode
+
+Demo mode is controlled by `backend/instance/settings.json`.
+
+- `allow_demo_users: true` seeds demo users and a small demo catalog (hotels/rooms/activities).
+- `allow_demo_users: false` disables demo users and demo catalog.
+
+### Leaving demo mode
+
+1. Set `allow_demo_users` to `false` in `backend/instance/settings.json`.
+2. If you want a clean reset, delete the SQLite database file you are using and restart the backend.
+
+### Bootstrap admin (non-demo)
+
+If demo mode is disabled and the database has no users, the backend creates a bootstrap admin.
+
+- You can set these in `backend/instance/settings.json`:
+  - `bootstrap_admin_email`
+  - `bootstrap_admin_name`
+  - `bootstrap_admin_password`
+
+If `bootstrap_admin_password` is omitted, a password is generated and written to `backend/instance/bootstrap_admin_credentials.txt`.
 
 ## Core Entities
 
