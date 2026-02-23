@@ -7,11 +7,84 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { PageHeader, SectionHeader } from '@/components/shared';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/auth/useAuth';
+import api from '@/lib/api';
 
 export default function AdminSettingsPage() {
+  const { toast } = useToast();
+  const { user, logout } = useAuth();
   const [autoDeposits, setAutoDeposits] = useState(true);
   const [arrivalReminders, setArrivalReminders] = useState(true);
   const [experienceWaitlist, setExperienceWaitlist] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const getPasswordIssues = (password: string, email?: string) => {
+    const issues: string[] = [];
+    const pw = (password ?? '').trim();
+
+    if (pw.length < 12) issues.push('Password must be at least 12 characters long.');
+    if (pw.length > 128) issues.push('Password must be at most 128 characters long.');
+
+    let classes = 0;
+    if (/[a-z]/.test(pw)) classes += 1;
+    if (/[A-Z]/.test(pw)) classes += 1;
+    if (/[0-9]/.test(pw)) classes += 1;
+    if (/[^a-zA-Z0-9]/.test(pw)) classes += 1;
+    if (pw && classes < 3) issues.push('Password must include at least 3 of: lowercase, uppercase, digit, symbol.');
+
+    if (email) {
+      const local = email.split('@', 1)[0]?.toLowerCase() ?? '';
+      if (local && pw.toLowerCase().includes(local)) {
+        issues.push('Password must not contain parts of your email address.');
+      }
+    }
+
+    return issues;
+  };
+
+  const handleChangePassword = async () => {
+    if (!user?.id) return;
+    if (newPassword !== confirmPassword) {
+      toast({ title: 'Password update failed', description: 'Passwords do not match.', variant: 'destructive' });
+      return;
+    }
+
+    const issues = getPasswordIssues(newPassword, user.email);
+    if (issues.length > 0) {
+      toast({ title: 'Password requirements', description: issues.join(' '), variant: 'destructive' });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await api.updateUser(String(user.id), { password: newPassword });
+      setNewPassword('');
+      setConfirmPassword('');
+      toast({ title: 'Password updated', description: 'Your password has been changed.' });
+      await api.logoutAll();
+      await logout();
+    } catch (e: any) {
+      toast({ title: 'Password update failed', description: e?.message || 'An unexpected error occurred.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleLogoutAll = async () => {
+    setIsSaving(true);
+    try {
+      await api.logoutAll();
+      await logout();
+    } catch (e: any) {
+      toast({ title: 'Could not log out all sessions', description: e?.message || 'An unexpected error occurred.', variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -75,8 +148,44 @@ export default function AdminSettingsPage() {
 
       <SectionHeader
         title="Permissions"
-        description="Invite new admins or update concierge permissions from the Users page."
+        description="Create users, change roles, and manage access from the Users page."
       />
+
+      <Card className="border-border/70 bg-card/90">
+        <CardHeader>
+          <CardTitle className="text-lg">Account security</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="new-password">New password</Label>
+              <Input
+                id="new-password"
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Confirm new password</Label>
+              <Input
+                id="confirm-password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Button className="w-fit" onClick={handleChangePassword} disabled={isSaving || !newPassword || !confirmPassword}>
+              Change password
+            </Button>
+            <Button variant="outline" className="w-fit" onClick={handleLogoutAll} disabled={isSaving}>
+              Log out all sessions
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <Button className="w-fit">Save settings</Button>
     </div>

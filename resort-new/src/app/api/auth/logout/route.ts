@@ -1,7 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import api from '@/lib/api';
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   try {
+    const authHeader = request.headers.get('authorization');
+    const token = authHeader && authHeader.toLowerCase().startsWith('bearer ') ? authHeader.slice(7) : null;
+
+    if (token) {
+      try {
+        await api.logout(token);
+      } catch (e) {
+      }
+    }
+
     // Create a response
     const response = NextResponse.json({
       message: 'Logged out successfully',
@@ -14,6 +25,15 @@ export async function POST() {
       httpOnly: true,
       path: '/',
       maxAge: 0, // Expire immediately
+      sameSite: 'strict',
+    });
+
+    response.cookies.set({
+      name: 'refresh_token',
+      value: '',
+      httpOnly: true,
+      path: '/',
+      maxAge: 0,
       sameSite: 'strict',
     });
 

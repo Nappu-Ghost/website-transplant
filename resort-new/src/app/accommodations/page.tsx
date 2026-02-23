@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import Link from 'next/link';
 import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
 import { ImageGallery } from '@/components/image-gallery';
@@ -15,6 +16,7 @@ import { hotelService, roomService } from '@/lib/api-service';
 type AccommodationCategory = 'Suite' | 'Villa' | 'Residence';
 
 interface AccommodationDetail extends AccommodationCardProps {
+  roomId: number;
   category: AccommodationCategory;
   size: string;
   bed: string;
@@ -96,6 +98,7 @@ const accommodationGallery = [
 ];
 
 export default function AccommodationsPage() {
+  const { demoMode } = useDemoMode();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<AccommodationCategory | 'All'>('All');
   const [capacity, setCapacity] = useState<'All' | '2' | '3' | '4+'>('All');
@@ -122,6 +125,7 @@ export default function AccommodationsPage() {
         const hotel = hotelById.get(room.hotelId);
         const size = resolveSize(room.capacity, room.isPremium);
         return {
+          roomId: room.id,
           name: room.name,
           location: hotel?.name ?? 'Azure Lagoon Resort',
           pricePerNight: room.price,
@@ -233,7 +237,7 @@ export default function AccommodationsPage() {
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, index) => (
-            <AccommodationCard
+            <AccommodationCard demoMode={demoMode}
               key={`accommodation-skeleton-${index}`}
               name="Loading"
               location=""
@@ -262,8 +266,8 @@ export default function AccommodationsPage() {
           </Card>
         ) : (
           filtered.map((accommodation) => (
-            <AccommodationCard
-              key={accommodation.name}
+            <AccommodationCard demoMode={demoMode}
+              key={accommodation.roomId}
               {...accommodation}
               action={
                 <div className="flex flex-col gap-3">
@@ -277,7 +281,7 @@ export default function AccommodationsPage() {
                     }
                     footer={
                       <Button asChild>
-                        <Link href={`/booking?room=${encodeURIComponent(accommodation.name)}`}>
+                        <Link href={`/booking?roomId=${accommodation.roomId}`}>
                           Book this stay
                         </Link>
                       </Button>
@@ -320,7 +324,7 @@ export default function AccommodationsPage() {
                     </div>
                   </ModalDialog>
                   <Button asChild className="w-full">
-                    <Link href={`/booking?room=${encodeURIComponent(accommodation.name)}`}>
+                    <Link href={`/booking?roomId=${accommodation.roomId}`}>
                       Book now
                     </Link>
                   </Button>

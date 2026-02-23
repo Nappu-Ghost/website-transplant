@@ -5,6 +5,7 @@ import { MotionProvider } from '@/components/providers/motion-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { ThemeProvider } from '@/components/providers/theme-provider';
 import { Providers as AuthProviders } from '@/components/providers/auth-provider';
+import { DemoModeProvider } from '@/components/providers/demo-mode-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { SiteShell } from '@/components/site-shell';
 
@@ -37,11 +38,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <AuthProviders>
-            <QueryProvider>
+            <DemoModeProvider>
+              <QueryProvider>
               <MotionProvider>
                 <SiteShell>{children}</SiteShell>
               </MotionProvider>
             </QueryProvider>
+            </DemoModeProvider>
           </AuthProviders>
           <Toaster />
         </ThemeProvider>

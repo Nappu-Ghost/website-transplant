@@ -90,6 +90,17 @@ export class ApiClient {
   private baseUrl: string;
   constructor(baseUrl = API_BASE_URL) { this.baseUrl = baseUrl; }
 
+  private backendOrigin(): string {
+    return this.baseUrl.replace(/\/api\/v1\/?$/, '');
+  }
+
+  public toPublicUrl(url: string): string {
+    if (!url) return url;
+    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+    if (url.startsWith('/')) return `${this.backendOrigin()}${url}`;
+    return url;
+  }
+
   private async request(
     endpoint: string, options: RequestInit = {}, requestContentType?: string,
     requiresAuthToken: boolean = true, explicitToken?: string | null
@@ -112,21 +123,102 @@ export class ApiClient {
       console.log(`ApiClient: Making ${options.method} request to ${url}`);
     }
 
-    const response = await fetch(url, { ...options, headers: headers });
-    const data = await handleResponse(response);
+    const doFetch = async (overrideToken?: string | null) => {
+      const nextHeaders = getHeaders(overrideToken ?? tokenToUse, actualContentType);
+      const response = await fetch(url, { ...options, headers: nextHeaders });
+      return response;
+    };
 
+    let response = await doFetch();
+
+    if (
+      response.status === 401 &&
+      requiresAuthToken &&
+      typeof window !== 'undefined'
+    ) {
+      try {
+        const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+        if (refreshResponse.ok) {
+          const refreshed = await refreshResponse.json();
+          const newAccess = refreshed?.accessToken;
+          if (newAccess) {
+            auth.setToken(newAccess);
+            response = await doFetch(newAccess);
+          }
+        }
+      } catch (e) {
+      }
+    }
+
+    const data = await handleResponse(response);
     return data !== null ? toCamelCase(data) : null;
   }
 
-  async login(email: string, password: string): Promise<{ accessToken: string, tokenType: string }> {
+  private async upload(
+    endpoint: string,
+    formData: FormData,
+    explicitToken?: string | null
+  ) {
+    let tokenToUse: string | null = null;
+
+    if (explicitToken !== undefined && explicitToken !== null) {
+      tokenToUse = explicitToken;
+    } else {
+      tokenToUse = auth.getToken();
+    }
+
+    const url = `${this.baseUrl}${endpoint}`;
+
+    const doFetch = async (overrideToken?: string | null) => {
+      const headers = getHeaders(overrideToken ?? tokenToUse, undefined);
+      delete (headers as any)['Content-Type'];
+      const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        headers,
+      });
+      return response;
+    };
+
+    let response = await doFetch();
+
+    if (response.status === 401 && typeof window !== 'undefined') {
+      const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+      if (refreshResponse.ok) {
+        const refreshed = await refreshResponse.json();
+        const newAccess = refreshed?.accessToken;
+        if (newAccess) {
+          auth.setToken(newAccess);
+          tokenToUse = newAccess;
+          response = await doFetch(newAccess);
+        }
+      }
+    }
+
+    const data = await handleResponse(response);
+    return data !== null ? toCamelCase(data) : null;
+  }
+
+  async login(email: string, password: string): Promise<{ accessToken: string, tokenType: string, refreshToken?: string }> {
     const details = { 'username': email, 'password': password };
     const formBody = Object.keys(details).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(details[key as keyof typeof details])).join('&');
     return this.request('/token', { method: 'POST', body: formBody }, 'application/x-www-form-urlencoded', false);
   }
 
   async register(userData: any) {
-    const payloadToBackend = { ...userData, role: 'CUSTOMER', status: 'ACTIVE' };
-    return this.request('/users/', { method: 'POST', body: JSON.stringify(toSnakeCase(payloadToBackend)) }, 'application/json', false);
+    return this.request('/register', { method: 'POST', body: JSON.stringify(toSnakeCase(userData)) }, 'application/json', false);
+  }
+
+  async refresh(refreshToken: string) {
+    return this.request('/refresh', { method: 'POST', body: JSON.stringify({ refresh_token: refreshToken }) }, 'application/json', false);
+  }
+
+  async logout(token?: string | null) {
+    return this.request('/logout', { method: 'POST' }, undefined, true, token);
+  }
+
+  async logoutAll(token?: string | null) {
+    return this.request('/logout-all', { method: 'POST' }, undefined, true, token);
   }
 
   async getCurrentUser(token?: string | null) {
@@ -144,11 +236,18 @@ export class ApiClient {
   async updateUser(id: string, data: any, token?: string | null) { return this.request(`/users/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteUser(id: string, token?: string | null) { return this.request(`/users/${id}`, { method: 'DELETE' }, undefined, true, token); }
 
+  async getMeta() { return this.request('/meta', {}, undefined, false, null); }
+
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }
   async createHotel(data: any, token?: string | null) { return this.request('/hotels/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async updateHotel(id: string, data: any, token?: string | null) { return this.request(`/hotels/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteHotel(id: string, token?: string | null) { return this.request(`/hotels/${id}`, { method: 'DELETE' }, undefined, true, token); }
+  async uploadHotelImage(id: string, file: File, token?: string | null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.upload(`/hotels/${id}/image`, formData, token);
+  }
 
   async getRooms(filters?: Record<string, any>, token?: string | null) {
     const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';
@@ -158,12 +257,22 @@ export class ApiClient {
   async createRoom(data: any, token?: string | null) { return this.request('/rooms/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async updateRoom(id: string, data: any, token?: string | null) { return this.request(`/rooms/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteRoom(id: string, token?: string | null) { return this.request(`/rooms/${id}`, { method: 'DELETE' }, undefined, true, token); }
+  async uploadRoomImage(id: string, file: File, token?: string | null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.upload(`/rooms/${id}/image`, formData, token);
+  }
 
   async getActivities(token?: string | null) { return this.request('/activities/', {}, undefined, false, token); }
   async getActivityById(id: string, token?: string | null) { return this.request(`/activities/${id}`, {}, undefined, false, token); }
   async createActivity(data: any, token?: string | null) { return this.request('/activities/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async updateActivity(id: string, data: any, token?: string | null) { return this.request(`/activities/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async deleteActivity(id: string, token?: string | null) { return this.request(`/activities/${id}`, { method: 'DELETE' }, undefined, true, token); }
+  async uploadActivityImage(id: string, file: File, token?: string | null) {
+    const formData = new FormData();
+    formData.append('file', file);
+    return this.upload(`/activities/${id}/image`, formData, token);
+  }
 
   async getBookings(filters?: Record<string, any>, token?: string | null) {
     const queryParams = filters ? `?${new URLSearchParams(toSnakeCase(filters)).toString()}` : '';

@@ -23,6 +23,31 @@ const fadeIn = {
   },
 };
 
+
+function getPasswordIssues(password: string, email?: string) {
+  const issues: string[] = [];
+  const pw = (password ?? '').trim();
+
+  if (pw.length < 12) issues.push('Password must be at least 12 characters long.');
+  if (pw.length > 128) issues.push('Password must be at most 128 characters long.');
+
+  let classes = 0;
+  if (/[a-z]/.test(pw)) classes += 1;
+  if (/[A-Z]/.test(pw)) classes += 1;
+  if (/[0-9]/.test(pw)) classes += 1;
+  if (/[^a-zA-Z0-9]/.test(pw)) classes += 1;
+  if (pw && classes < 3) issues.push('Password must include at least 3 of: lowercase, uppercase, digit, symbol.');
+
+  if (email) {
+    const local = email.split('@', 1)[0]?.toLowerCase() ?? '';
+    if (local && pw.toLowerCase().includes(local)) {
+      issues.push('Password must not contain parts of your email address.');
+    }
+  }
+
+  return issues;
+}
+
 export default function LoginPage() {
   const { toast } = useToast();
   const router = useRouter();
@@ -91,6 +116,17 @@ export default function LoginPage() {
       return;
     }
     
+    const issues = getPasswordIssues(password, email);
+    if (issues.length > 0) {
+      toast({
+        title: 'Registration failed',
+        description: issues.join('\n'),
+        variant: 'destructive',
+      });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       await register(name, email, password);
     } catch (error) {

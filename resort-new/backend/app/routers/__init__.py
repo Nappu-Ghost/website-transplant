@@ -1,5 +1,6 @@
 # app/routers/__init__.py
 from . import auth
+from . import meta
 from . import users
 from . import hotels
 from . import rooms

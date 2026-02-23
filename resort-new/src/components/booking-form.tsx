@@ -13,6 +13,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Checkbox } from '@/components/ui/checkbox';
 import { FormCard, useNotify } from '@/components/shared';
 
 const formSchema = z
@@ -23,7 +24,7 @@ const formSchema = z
     checkOut: z.string().min(1, 'Select a check-out date.'),
     guests: z.coerce.number().min(1, 'At least one guest.').max(10, 'Up to 10 guests.'),
     roomType: z.string().min(1, 'Select a room type.'),
-    activitySelection: z.string().optional(),
+    activitySelections: z.array(z.string()).optional(),
     email: z.string().email('Enter a valid email address.'),
     notes: z.string().optional(),
   })
@@ -87,7 +88,7 @@ export function BookingForm({
       phone: '',
       guests: 2,
       roomType: 'Lagoon Suite',
-      activitySelection: 'none',
+      activitySelections: [],
       ...defaultValues,
     },
   });
@@ -99,7 +100,7 @@ export function BookingForm({
     watchedCheckOut,
     watchedGuests,
     watchedRoomType,
-    watchedActivitySelection,
+    watchedActivitySelections,
     watchedEmail,
     watchedNotes,
   ] = useWatch({
@@ -111,7 +112,7 @@ export function BookingForm({
       'checkOut',
       'guests',
       'roomType',
-      'activitySelection',
+      'activitySelections',
       'email',
       'notes',
     ],
@@ -126,7 +127,7 @@ export function BookingForm({
         checkOut: watchedCheckOut,
         guests: watchedGuests,
         roomType: watchedRoomType,
-        activitySelection: watchedActivitySelection,
+        activitySelections: watchedActivitySelections,
         email: watchedEmail,
         notes: watchedNotes,
       };
@@ -151,7 +152,7 @@ export function BookingForm({
     watchedCheckOut,
     watchedGuests,
     watchedRoomType,
-    watchedActivitySelection,
+    watchedActivitySelections,
     watchedEmail,
     watchedNotes,
   ]);
@@ -319,25 +320,42 @@ export function BookingForm({
 
             <div className="grid gap-4 md:grid-cols-2">
               <div className="space-y-2">
-                <Label>Activity selection</Label>
+                <Label>Activities</Label>
                 <Controller
                   control={control}
-                  name="activitySelection"
-                  render={({ field }) => (
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <SelectTrigger aria-invalid={!!errors.activitySelection}>
-                        <SelectValue placeholder="Optional activity" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">No activity</SelectItem>
-                        {resolvedActivityOptions.map((option) => (
-                          <SelectItem key={option.id} value={option.name}>
-                            {option.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+                  name="activitySelections"
+                  render={({ field }) => {
+                    const value = Array.isArray(field.value) ? field.value : [];
+                    const toggle = (name: string) => {
+                      if (value.includes(name)) {
+                        field.onChange(value.filter((item) => item !== name));
+                        return;
+                      }
+                      field.onChange([...value, name]);
+                    };
+
+                    return (
+                      <div className="rounded-xl border border-border/70 bg-card/60 p-3">
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          {resolvedActivityOptions.map((option) => (
+                            <label
+                              key={option.id}
+                              className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm hover:bg-secondary/60"
+                            >
+                              <Checkbox
+                                checked={value.includes(option.name)}
+                                onCheckedChange={() => toggle(option.name)}
+                              />
+                              <span className="text-foreground">{option.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-xs text-muted-foreground">
+                          Selected: {value.length ? value.join(', ') : 'None'}
+                        </div>
+                      </div>
+                    );
+                  }}
                 />
               </div>
               <div className="space-y-2">
@@ -404,10 +422,10 @@ export function BookingForm({
                 <p className="text-xs uppercase tracking-[0.2em]">Room</p>
                 <p className="text-foreground">{preview.roomType}</p>
               </div>
-              {preview.activitySelection && preview.activitySelection !== 'none' && (
+              {Array.isArray(preview.activitySelections) && preview.activitySelections.length > 0 && (
                 <div>
-                  <p className="text-xs uppercase tracking-[0.2em]">Activity</p>
-                  <p className="text-foreground">{preview.activitySelection}</p>
+                  <p className="text-xs uppercase tracking-[0.2em]">Activities</p>
+                  <p className="text-foreground">{preview.activitySelections.join(', ')}</p>
                 </div>
               )}
               <div>

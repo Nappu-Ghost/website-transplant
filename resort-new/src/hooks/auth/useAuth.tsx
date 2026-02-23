@@ -50,13 +50,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const response = await fetch('/api/auth/check-session');
         const data = await response.json();
         if (data?.authenticated && data.user) {
-          authUtils.setUser(data.user);
-          setUser(data.user);
+          const refreshResponse = await fetch('/api/auth/refresh', { method: 'POST' });
+          if (refreshResponse.ok) {
+            const refreshed = await refreshResponse.json();
+            if (refreshed?.accessToken) {
+              authUtils.setToken(refreshed.accessToken);
+            }
+            authUtils.setUser(data.user);
+            setUser(data.user);
+          } else {
+            await fetch('/api/auth/logout', { method: 'POST' });
+            authUtils.clearAuth();
+            setUser(null);
+          }
         } else {
           setUser(null);
         }
       } catch (error) {
-        console.warn('Session check failed:', error);
+        authUtils.clearAuth();
         setUser(null);
       }
     }
@@ -173,7 +184,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const logout = async () => {
     setIsLoading(true);
     try {
-      await fetch('/api/auth/logout', { method: 'POST' }); // Call Next.js API route for logout
+      const token = authUtils.getToken();
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      });
     } catch (error) {
       console.error('Call to /api/auth/logout failed, but proceeding with client-side logout:', error);
     } finally {

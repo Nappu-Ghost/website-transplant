@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import Link from 'next/link';
 import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
 import { ImageGallery } from '@/components/image-gallery';
@@ -111,6 +112,7 @@ const activitiesGallery = [
 ];
 
 export default function ActivitiesPage() {
+  const { demoMode } = useDemoMode();
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<ActivityCategory | 'All'>('All');
   const [duration, setDuration] = useState<ActivityDuration | 'All'>('All');
@@ -229,7 +231,7 @@ export default function ActivitiesPage() {
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, index) => (
-            <ActivityCard
+            <ActivityCard demoMode={demoMode}
               key={`activity-skeleton-${index}`}
               name="Loading"
               activityType=""
@@ -257,7 +259,7 @@ export default function ActivitiesPage() {
           </Card>
         ) : (
           filtered.map((activity) => (
-            <ActivityCard
+            <ActivityCard demoMode={demoMode}
               key={activity.name}
               {...activity}
               action={
@@ -272,7 +274,7 @@ export default function ActivitiesPage() {
                     }
                     footer={
                       <Button asChild>
-                        <Link href={`/booking?activity=${encodeURIComponent(activity.name)}`}>
+                        <Link href={`/booking?activityId=${activity.id}`}>
                           Reserve this experience
                         </Link>
                       </Button>
@@ -315,7 +317,7 @@ export default function ActivitiesPage() {
                     </div>
                   </ModalDialog>
                   <Button asChild className="w-full">
-                    <Link href={`/booking?activity=${encodeURIComponent(activity.name)}`}>
+                    <Link href={`/booking?activityId=${activity.id}`}>
                       Reserve now
                     </Link>
                   </Button>
