@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from fastapi import APIRouter
-from app.utils.settings import load_settings, load_homepage_ads
+from app.utils.settings import load_settings
+from app.utils.homepage import load_homepage_config
 
 router = APIRouter()
 
@@ -13,4 +14,4 @@ def get_meta() -> dict:
 
 @router.get("/meta/homepage")
 def get_homepage() -> dict:
-    return {"ads": load_homepage_ads()}
+    return load_homepage_config()

@@ -5,7 +5,7 @@ from sqlalchemy import func
 from app import models, schemas
 from app.db import get_db
 from app.dependencies import require_role
-from app.utils.settings import load_homepage_ads, save_homepage_ads
+from app.utils.homepage import load_homepage_config, save_homepage_config
 
 router = APIRouter(tags=["Admin"], responses={404: {"description": "Not found"}})
 
@@ -45,7 +45,7 @@ def get_admin_overview(
 def get_homepage_settings(
     current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
 ):
-    return {"ads": load_homepage_ads()}
+    return load_homepage_config()
 
 
 @router.put("/homepage")
@@ -53,6 +53,6 @@ def update_homepage_settings(
     payload: schemas.HomepageConfig,
     current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
 ):
-    ads = [ad.model_dump() for ad in payload.ads]
-    save_homepage_ads(ads)
-    return {"ads": ads}
+    config = payload.model_dump()
+    save_homepage_config(config)
+    return config

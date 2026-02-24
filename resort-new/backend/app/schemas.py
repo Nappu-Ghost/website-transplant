@@ -367,3 +367,74 @@ class PaymentResponse(PaymentBase):
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
+
+
+class HomepageCta(BaseModel):
+    label: Optional[str] = None
+    url: Optional[str] = None
+
+
+class HomepageHero(BaseModel):
+    kicker: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cta_primary: Optional[HomepageCta] = None
+    cta_secondary: Optional[HomepageCta] = None
+    cta_tertiary: Optional[HomepageCta] = None
+
+
+class HomepageHeroCard(BaseModel):
+    id: str
+    title: str
+    detail: str
+    tag: Optional[str] = None
+
+
+class HomepageSectionCard(BaseModel):
+    title: str
+    description: str
+    image_url: Optional[str] = None
+
+
+class HomepageTwoIsland(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    resort: HomepageSectionCard
+    park: HomepageSectionCard
+
+
+class HomepageListItem(BaseModel):
+    id: str
+    title: str
+    description: str
+
+
+class HomepageFerry(BaseModel):
+    title: Optional[str] = None
+    items: List[HomepageListItem] = []
+    cta: Optional[HomepageCta] = None
+
+
+class HomepageDayPlanner(BaseModel):
+    title: Optional[str] = None
+    items: List[HomepageListItem] = []
+    cta: Optional[HomepageCta] = None
+
+
+class HomepageAd(BaseModel):
+    id: str
+    title: str
+    description: str
+    image_url: Optional[str] = None
+    cta_text: Optional[str] = None
+    cta_url: Optional[str] = None
+    badge: Optional[str] = None
+
+
+class HomepageConfig(BaseModel):
+    hero: HomepageHero
+    hero_cards: List[HomepageHeroCard]
+    two_island: HomepageTwoIsland
+    ferry: HomepageFerry
+    ads: List[HomepageAd]
+    day_planner: HomepageDayPlanner

@@ -1,0 +1,125 @@
+{
+  "hero": {
+    "kicker": "Hello World",
+    "title": "Azure Lagoon Resort",
+    "description": "A dual-island destination with a luxury resort on one shore and Azure Land on the other. Seamless transfers let you shape each day around relaxation, adventure, or both.",
+    "cta_primary": {
+      "label": "Plan the full journey",
+      "url": "/booking"
+    },
+    "cta_secondary": {
+      "label": "Explore the resort",
+      "url": "/accommodations"
+    },
+    "cta_tertiary": {
+      "label": "Azure Land highlights",
+      "url": "/activities"
+    }
+  },
+  "hero_cards": [
+    {
+      "id": "resort-island",
+      "title": "Resort Island",
+      "detail": "White sand beaches, chef-led dining, and waterfront suites.",
+      "tag": "Luxury"
+    },
+    {
+      "id": "azure-land",
+      "title": "Azure Land",
+      "detail": "Signature rides, festivals, and immersive story zones.",
+      "tag": "Theme park"
+    },
+    {
+      "id": "island-connection",
+      "title": "Island Connection",
+      "detail": "Seamless transfers between resort calm and park energy.",
+      "tag": "Travel"
+    }
+  ],
+  "two_island": {
+    "title": "Your journey across two islands",
+    "description": "Luxury on one shore, Azure Land on the other, connected by a calm lagoon ride.",
+    "resort": {
+      "title": "Suites, dining, and coastal rituals",
+      "description": "Private cabanas, chef-driven restaurants, and sunset wellness lounges.",
+      "image_url": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80"
+    },
+    "park": {
+      "title": "Rides, festivals, and immersive zones",
+      "description": "Coasters, parade nights, and family-friendly storytelling districts.",
+      "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+    }
+  },
+  "ferry": {
+    "title": "The ferry in between",
+    "items": [
+      {
+        "id": "ferry-frequency",
+        "title": "Every 20 minutes",
+        "description": "Shuttles run all day, so you can move between islands whenever the mood shifts."
+      },
+      {
+        "id": "ferry-booking",
+        "title": "Pre-book your crossings",
+        "description": "Reserve priority slots with lounge seating and sunset departures."
+      }
+    ],
+    "cta": {
+      "label": "Reserve ferry seats",
+      "url": "/booking"
+    }
+  },
+  "ads": [
+    {
+      "id": "lagoon-dining-week",
+      "title": "Lagoon Dining Week",
+      "description": "Chef collaborations, oceanfront tastings, and a closing night under lanterns.",
+      "image_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Reserve a table",
+      "cta_url": "/booking",
+      "badge": "Limited series"
+    },
+    {
+      "id": "skyline-ride",
+      "title": "Skyline Coaster Preview",
+      "description": "Be first in line for the sunset test rides at Azure Land.",
+      "image_url": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Join the list",
+      "cta_url": "/activities",
+      "badge": "Azure Land"
+    },
+    {
+      "id": "ferry-sprint",
+      "title": "Ferry Sprint Pass",
+      "description": "Priority boarding between islands with lounge seating and mocktail service.",
+      "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Upgrade my trip",
+      "cta_url": "/booking",
+      "badge": "Fast track"
+    }
+  ],
+  "day_planner": {
+    "title": "Island day planner",
+    "items": [
+      {
+        "id": "planner-morning",
+        "title": "Morning calm",
+        "description": "Breakfast on the resort deck, spa rituals, and private beach time."
+      },
+      {
+        "id": "planner-afternoon",
+        "title": "Afternoon thrill",
+        "description": "Hop the ferry and explore coasters, shows, and themed dining."
+      },
+      {
+        "id": "planner-evening",
+        "title": "Evening glow",
+        "description": "Return for lantern-lit dinners and beachfront performances."
+      }
+    ],
+    "cta": {
+      "label": "Build my itinerary",
+      "url": "/booking"
+    }
+  }
+}
