@@ -1,16 +1,9 @@
 "use client";
 
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
-import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import { motion } from 'framer-motion';
-import { CalendarCheck, Users, Umbrella, Waves } from 'lucide-react';
-import { AccommodationCard } from '@/components/accommodation-card';
-import { ActivityCard } from '@/components/activity-card';
 import { Button } from '@/components/ui/button';
-import { PageShell, SectionHeader, FeatureCard } from '@/components/shared';
-import { activityService, hotelService, roomService } from '@/lib/api-service';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 20 },
@@ -30,38 +23,7 @@ const staggerContainer = {
   },
 };
 
-type HotelSummary = {
-  id: number;
-  name: string;
-  location: string;
-  imageUrl?: string | null;
-};
-
-type RoomSummary = {
-  id: number;
-  hotelId: number;
-  name: string;
-  type: string;
-  price: number;
-  capacity: number;
-  description?: string | null;
-  imageUrl?: string | null;
-  isPremium?: boolean;
-  available?: boolean;
-};
-
-type ActivitySummary = {
-  id: number;
-  name: string;
-  activityType: string;
-  price: number;
-  capacity?: number | null;
-  imageUrl?: string | null;
-  isPremium?: boolean;
-};
-
 export default function Home() {
-  const { demoMode } = useDemoMode();
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const fadeRef = useRef(false);
   const [isVideoFading, setIsVideoFading] = useState(false);
@@ -83,40 +45,6 @@ export default function Home() {
       tag: 'Arrival',
     },
   ];
-
-  const hotelsQuery = useQuery<HotelSummary[]>({
-    queryKey: ['hotels', 'public'],
-    queryFn: () => hotelService.list(),
-  });
-
-  const roomsQuery = useQuery<RoomSummary[]>({
-    queryKey: ['rooms', 'public'],
-    queryFn: () => roomService.list(),
-  });
-
-  const activitiesQuery = useQuery<ActivitySummary[]>({
-    queryKey: ['activities', 'public'],
-    queryFn: () => activityService.list(),
-  });
-
-  const hotelIndex = useMemo(() => {
-    const map = new Map<number, HotelSummary>();
-    (hotelsQuery.data || []).forEach((hotel) => map.set(hotel.id, hotel));
-    return map;
-  }, [hotelsQuery.data]);
-
-  const featuredRooms = useMemo(() => {
-    const all = (roomsQuery.data || [])
-      .filter((room) => room.available !== false)
-      .sort((a, b) => Number(Boolean(b.isPremium)) - Number(Boolean(a.isPremium)) || b.price - a.price);
-    return all.slice(0, 4);
-  }, [roomsQuery.data]);
-
-  const featuredActivities = useMemo(() => {
-    const all = (activitiesQuery.data || [])
-      .sort((a, b) => Number(Boolean(b.isPremium)) - Number(Boolean(a.isPremium)) || b.price - a.price);
-    return all.slice(0, 4);
-  }, [activitiesQuery.data]);
 
   const handleVideoTimeUpdate = () => {
     const video = heroVideoRef.current;
@@ -210,107 +138,6 @@ export default function Home() {
         </div>
       </motion.section>
 
-      <PageShell>
-        <section className="space-y-6">
-          <SectionHeader
-            title="Featured accommodations"
-            subtitle="Rooms pulled directly from the backend inventory."
-            action={
-              <Button asChild variant="outline">
-                <Link href="/accommodations">See all stays</Link>
-              </Button>
-            }
-          />
-
-          <motion.div
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={staggerContainer}
-          >
-            {roomsQuery.isLoading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <motion.div key={`room-skeleton-${index}`} variants={fadeIn}>
-                    <AccommodationCard
-                      demoMode={demoMode}
-                      isLoading
-                      name=""
-                      location=""
-                      pricePerNight={0}
-                      capacity={0}
-                    />
-                  </motion.div>
-                ))
-              : featuredRooms.map((room) => {
-                  const hotel = hotelIndex.get(room.hotelId);
-                  return (
-                    <motion.div key={room.id} variants={fadeIn}>
-                      <AccommodationCard
-                        demoMode={demoMode}
-                        name={room.name}
-                        location={hotel?.location || 'Island resort'}
-                        pricePerNight={room.price}
-                        capacity={room.capacity}
-                        description={room.description ?? undefined}
-                        imageUrl={room.imageUrl ?? hotel?.imageUrl ?? undefined}
-                        isPremium={room.isPremium}
-                        tags={[room.type]}
-                        href={`/booking?hotelId=${room.hotelId}&roomId=${room.id}`}
-                      />
-                    </motion.div>
-                  );
-                })}
-          </motion.div>
-        </section>
-
-        <section className="space-y-6">
-          <SectionHeader
-            title="Top activities"
-            subtitle="Premium and standard experiences with capacity tracking."
-            action={
-              <Button asChild variant="outline">
-                <Link href="/activities">Browse activities</Link>
-              </Button>
-            }
-          />
-
-          <motion.div
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-4"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.2 }}
-            variants={staggerContainer}
-          >
-            {activitiesQuery.isLoading
-              ? Array.from({ length: 4 }).map((_, index) => (
-                  <motion.div key={`activity-skeleton-${index}`} variants={fadeIn}>
-                    <ActivityCard
-                      demoMode={demoMode}
-                      isLoading
-                      name=""
-                      activityType=""
-                      price={0}
-                    />
-                  </motion.div>
-                ))
-              : featuredActivities.map((activity) => (
-                  <motion.div key={activity.id} variants={fadeIn}>
-                    <ActivityCard
-                      demoMode={demoMode}
-                      name={activity.name}
-                      activityType={activity.activityType}
-                      price={activity.price}
-                      capacity={activity.capacity ?? undefined}
-                      imageUrl={activity.imageUrl ?? undefined}
-                      isPremium={activity.isPremium}
-                      href={`/booking?activityId=${activity.id}`}
-                    />
-                  </motion.div>
-                ))}
-          </motion.div>
-        </section>
-      </PageShell>
     </>
   );
 }
