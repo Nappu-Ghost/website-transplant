@@ -237,6 +237,7 @@ export class ApiClient {
   async deleteUser(id: string, token?: string | null) { return this.request(`/users/${id}`, { method: 'DELETE' }, undefined, true, token); }
 
   async getMeta() { return this.request('/meta', {}, undefined, false, null); }
+  async getHomepageConfig() { return this.request('/meta/homepage', {}, undefined, false, null); }
 
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }
@@ -303,6 +304,20 @@ export class ApiClient {
 
   async getAdminOverview(token?: string | null) {
     return this.request('/admin/overview', {}, undefined, true, token);
+  }
+
+  async getHomepageSettings(token?: string | null) {
+    return this.request('/admin/homepage', {}, undefined, true, token);
+  }
+
+  async updateHomepageSettings(data: any, token?: string | null) {
+    return this.request(
+      '/admin/homepage',
+      { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) },
+      'application/json',
+      true,
+      token,
+    );
   }
 
   async getEvents(token?: string | null) { return this.request('/events/', {}, undefined, false, token); }

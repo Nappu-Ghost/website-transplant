@@ -6,5 +6,34 @@
   "access_token_minutes": 30,
   "refresh_token_days": 14,
   "pbkdf2_rounds": 310000,
-  "allow_demo_users": false
+  "allow_demo_users": false,
+  "homepage_ads": [
+    {
+      "id": "lagoon-dining-week",
+      "title": "Lagoon Dining Week",
+      "description": "Chef collaborations, oceanfront tastings, and a closing night under lanterns.",
+      "image_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Reserve a table",
+      "cta_url": "/booking",
+      "badge": "Limited series"
+    },
+    {
+      "id": "skyline-ride",
+      "title": "Skyline Coaster Preview",
+      "description": "Be first in line for the sunset test rides on the theme park island.",
+      "image_url": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Join the list",
+      "cta_url": "/activities",
+      "badge": "Theme park"
+    },
+    {
+      "id": "ferry-sprint",
+      "title": "Ferry Sprint Pass",
+      "description": "Priority boarding between islands with lounge seating and mocktail service.",
+      "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80",
+      "cta_text": "Upgrade my trip",
+      "cta_url": "/booking",
+      "badge": "Fast track"
+    }
+  ]
 }

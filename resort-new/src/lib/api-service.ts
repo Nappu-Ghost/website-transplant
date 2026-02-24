@@ -55,9 +55,12 @@ export const userService = {
 
 export const adminService = {
   getOverview: (token?: string | null) => api.getAdminOverview(token),
+  getHomepageSettings: (token?: string | null) => api.getHomepageSettings(token),
+  updateHomepageSettings: (data: any, token?: string | null) => api.updateHomepageSettings(data, token),
 };
 
 export const metaService = {
   get: () => api.getMeta(),
+  getHomepage: () => api.getHomepageConfig(),
   toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

@@ -261,6 +261,20 @@ class FerryTicketResponse(FerryTicketBase):
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
+class HomepageAd(BaseModel):
+    id: str
+    title: str
+    description: str
+    image_url: Optional[str] = None
+    cta_text: Optional[str] = None
+    cta_url: Optional[str] = None
+    badge: Optional[str] = None
+
+
+class HomepageConfig(BaseModel):
+    ads: List[HomepageAd] = []
+
 class BookingRoomResponse(BaseModel):
     id: int
     room: RoomResponse

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import secrets
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 
@@ -19,6 +19,39 @@ class Settings:
     bootstrap_admin_email: str = "admin@example.com"
     bootstrap_admin_name: str = "System Admin"
     bootstrap_admin_password: str | None = None
+    homepage_ads: list[dict] = field(default_factory=list)
+
+
+def _default_homepage_ads() -> list[dict]:
+    return [
+        {
+            "id": "lagoon-dining-week",
+            "title": "Lagoon Dining Week",
+            "description": "Chef collaborations, oceanfront tastings, and a closing night under lanterns.",
+            "image_url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1400&q=80",
+            "cta_text": "Reserve a table",
+            "cta_url": "/booking",
+            "badge": "Limited series",
+        },
+        {
+            "id": "skyline-ride",
+            "title": "Skyline Coaster Preview",
+            "description": "Be first in line for the sunset test rides on the theme park island.",
+            "image_url": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&q=80",
+            "cta_text": "Join the list",
+            "cta_url": "/activities",
+            "badge": "Theme park",
+        },
+        {
+            "id": "ferry-sprint",
+            "title": "Ferry Sprint Pass",
+            "description": "Priority boarding between islands with lounge seating and mocktail service.",
+            "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1400&q=80",
+            "cta_text": "Upgrade my trip",
+            "cta_url": "/booking",
+            "badge": "Fast track",
+        },
+    ]
 
 
 def _settings_path() -> Path:
@@ -27,7 +60,7 @@ def _settings_path() -> Path:
 
 def _default_settings() -> Settings:
     secret = secrets.token_urlsafe(64)
-    return Settings(secret_key=secret)
+    return Settings(secret_key=secret, homepage_ads=_default_homepage_ads())
 
 
 def load_settings() -> Settings:
@@ -54,6 +87,9 @@ def load_settings() -> Settings:
     if isinstance(bootstrap_admin_password_raw, str):
         bootstrap_admin_password = bootstrap_admin_password_raw.strip() or None
 
+    homepage_ads_raw = data.get("homepage_ads")
+    homepage_ads = homepage_ads_raw if isinstance(homepage_ads_raw, list) else _default_homepage_ads()
+
     return Settings(
         secret_key=secret,
         algorithm=str(data.get("algorithm") or "HS256"),
@@ -66,4 +102,25 @@ def load_settings() -> Settings:
         bootstrap_admin_email=bootstrap_admin_email,
         bootstrap_admin_name=bootstrap_admin_name,
         bootstrap_admin_password=bootstrap_admin_password,
+        homepage_ads=homepage_ads,
     )
+
+
+def load_homepage_ads() -> list[dict]:
+    settings = load_settings()
+    ads = settings.homepage_ads or []
+    if not ads:
+        ads = _default_homepage_ads()
+        save_homepage_ads(ads)
+    return ads
+
+
+def save_homepage_ads(ads: list[dict]) -> None:
+    path = _settings_path()
+    if not path.exists():
+        settings = _default_settings()
+        path.write_text(json.dumps(settings.__dict__, indent=2), encoding="utf-8")
+
+    data = json.loads(path.read_text(encoding="utf-8"))
+    data["homepage_ads"] = ads
+    path.write_text(json.dumps(data, indent=2), encoding="utf-8")
