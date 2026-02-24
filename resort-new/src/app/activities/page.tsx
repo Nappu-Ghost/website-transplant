@@ -17,6 +17,7 @@ type ActivityCategory = 'Adventure' | 'Wellness' | 'Dining' | 'Family';
 type ActivityDuration = '60-90 min' | '2-3 hours' | 'Half day';
 
 interface ActivityDetail extends ActivityCardProps {
+  id: number;
   category: ActivityCategory;
   intensity: 'Low' | 'Moderate' | 'High';
   meetingPoint: string;
@@ -128,6 +129,7 @@ export default function ActivitiesPage() {
       const categoryValue = resolveCategory(activity.activityType);
       const meta = CATEGORY_META[categoryValue];
       return {
+        id: activity.id,
         name: activity.name,
         activityType: activity.activityType,
         price: activity.price,
@@ -142,6 +144,16 @@ export default function ActivitiesPage() {
       };
     });
   }, [activityData]);
+
+  const featuredActivities = useMemo(() => {
+    return [...activities]
+      .sort(
+        (a, b) =>
+          Number(Boolean(b.isPremium)) - Number(Boolean(a.isPremium)) ||
+          b.price - a.price,
+      )
+      .slice(0, 3);
+  }, [activities]);
 
   const filtered = useMemo(() => {
     return activities.filter((activity) => {
@@ -173,6 +185,38 @@ export default function ActivitiesPage() {
         title="Activities"
         description="Curated experiences designed for calm, connection, and discovery."
       />
+      <section className="mt-8 space-y-6">
+        <SectionHeader
+          title="Featured experiences"
+          description="Premium and top-rated experiences from the live roster."
+          action={
+            <Button asChild variant="outline">
+              <Link href="/booking">Plan a stay</Link>
+            </Button>
+          }
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, index) => (
+                <ActivityCard
+                  demoMode={demoMode}
+                  key={`featured-activity-skeleton-${index}`}
+                  name=""
+                  activityType=""
+                  price={0}
+                  isLoading
+                />
+              ))
+            : featuredActivities.map((activity) => (
+                <ActivityCard
+                  demoMode={demoMode}
+                  key={`featured-activity-${activity.id}`}
+                  {...activity}
+                  href={`/booking?activityId=${activity.id}`}
+                />
+              ))}
+        </div>
+      </section>
       <div className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm">
         <SectionHeader
           title="Plan your experience"

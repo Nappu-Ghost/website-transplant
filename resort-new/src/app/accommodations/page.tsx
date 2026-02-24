@@ -144,6 +144,16 @@ export default function AccommodationsPage() {
       });
   }, [rooms, hotelById]);
 
+  const featuredAccommodations = useMemo(() => {
+    return [...accommodations]
+      .sort(
+        (a, b) =>
+          Number(Boolean(b.isPremium)) - Number(Boolean(a.isPremium)) ||
+          b.pricePerNight - a.pricePerNight,
+      )
+      .slice(0, 3);
+  }, [accommodations]);
+
   const filtered = useMemo(() => {
     return accommodations.filter((accommodation) => {
       const matchesSearch = [
@@ -180,6 +190,39 @@ export default function AccommodationsPage() {
         title="Accommodations"
         description="A calm selection of suites and villas designed for effortless stays."
       />
+      <section className="mt-8 space-y-6">
+        <SectionHeader
+          title="Featured stays"
+          description="Premium suites and villas picked from live availability."
+          action={
+            <Button asChild variant="outline">
+              <Link href="/booking">Plan a stay</Link>
+            </Button>
+          }
+        />
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading
+            ? Array.from({ length: 3 }).map((_, index) => (
+                <AccommodationCard
+                  demoMode={demoMode}
+                  key={`featured-accommodation-skeleton-${index}`}
+                  name=""
+                  location=""
+                  pricePerNight={0}
+                  capacity={0}
+                  isLoading
+                />
+              ))
+            : featuredAccommodations.map((accommodation) => (
+                <AccommodationCard
+                  demoMode={demoMode}
+                  key={`featured-accommodation-${accommodation.roomId}`}
+                  {...accommodation}
+                  href={`/booking?roomId=${accommodation.roomId}`}
+                />
+              ))}
+        </div>
+      </section>
       <div className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm">
         <SectionHeader
           title="Find your stay"
