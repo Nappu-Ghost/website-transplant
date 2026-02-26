@@ -29,6 +29,16 @@ const staggerContainer = {
   },
 };
 
+const sectionStagger = {
+  hidden: {},
+  visible: {
+    transition: {
+      staggerChildren: 0.14,
+      delayChildren: 0.08,
+    },
+  },
+};
+
 export default function Home() {
   const heroVideoRef = useRef<HTMLVideoElement | null>(null);
   const fadeRef = useRef(false);
@@ -65,7 +75,7 @@ export default function Home() {
   return (
     <>
       <motion.section
-        className="relative overflow-hidden bg-background pt-16 md:pt-20"
+        className="relative min-h-[88svh] overflow-hidden bg-background pt-16 md:min-h-[92svh] md:pt-20"
         initial="hidden"
         animate="visible"
         variants={fadeIn}
@@ -89,7 +99,7 @@ export default function Home() {
           <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent via-background/60 to-background" />
         </div>
 
-        <div className="container relative z-10 mx-auto grid gap-12 px-4 pb-20 md:grid-cols-[1.1fr_0.9fr] md:items-center">
+        <div className="container relative z-10 mx-auto grid min-h-[78svh] gap-12 px-4 py-16 md:min-h-[82svh] md:grid-cols-[1.1fr_0.9fr] md:items-center md:py-24">
           <div className="space-y-6">
             <motion.p
               className="text-xs uppercase tracking-[0.35em] text-muted-foreground"
@@ -148,8 +158,14 @@ export default function Home() {
       </motion.section>
 
       <PageShell>
-        <section className="mt-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]">
-          <div className="space-y-4">
+        <motion.section
+          className="mt-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={sectionStagger}
+        >
+          <motion.div className="space-y-4" variants={fadeIn}>
             <SectionHeader
               title={homepage.twoIsland.title || ''}
               description={homepage.twoIsland.description || undefined}
@@ -198,8 +214,9 @@ export default function Home() {
                 </CardContent>
               </Card>
             </div>
-          </div>
-          <Card className="border-border/70 bg-secondary/60">
+          </motion.div>
+          <motion.div variants={fadeIn}>
+            <Card className="border-border/70 bg-secondary/60">
             <CardHeader>
               <CardTitle className="text-lg">{homepage.ferry.title}</CardTitle>
             </CardHeader>
@@ -221,10 +238,17 @@ export default function Home() {
                 </Button>
               ) : null}
             </CardContent>
-          </Card>
-        </section>
+            </Card>
+          </motion.div>
+        </motion.section>
 
-        <section className="mt-16 space-y-6">
+        <motion.section
+          className="mt-16 space-y-6"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={sectionStagger}
+        >
           <SectionHeader
             title="Featured offers"
             description="Promotions and announcements managed from the admin panel."
@@ -233,49 +257,58 @@ export default function Home() {
             {(isConfigLoading ? defaultHomepageConfig.ads : homepage.ads).map((ad) => {
               const imageUrl = ad.imageUrl ? metaService.toPublicUrl(ad.imageUrl) : '';
               return (
-                <Card key={ad.id} className="group overflow-hidden border-border/70 bg-card/90 shadow-sm">
-                  <div className="relative h-44 overflow-hidden">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={ad.title}
-                        className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
-                        loading="lazy"
-                        decoding="async"
-                      />
-                    ) : (
-                      <div className="h-full w-full bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
-                    )}
-                    <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(0,0,0,0.0)_20%,_rgba(0,0,0,0.55)_100%)]" />
-                    {ad.badge ? (
-                      <span className="absolute left-4 top-4 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow">
-                        {ad.badge}
-                      </span>
-                    ) : null}
-                  </div>
-                  <CardContent className="space-y-3 p-4">
-                    <h3 className="text-lg font-semibold text-foreground">{ad.title}</h3>
-                    <p className="text-sm text-muted-foreground">{ad.description}</p>
-                    {ad.ctaUrl ? (
-                      <Button asChild size="sm">
-                        {String(ad.ctaUrl).startsWith('http') ? (
-                          <a href={ad.ctaUrl} target="_blank" rel="noreferrer">
-                            {ad.ctaText || 'Learn more'}
-                          </a>
-                        ) : (
-                          <Link href={ad.ctaUrl}>{ad.ctaText || 'Learn more'}</Link>
-                        )}
-                      </Button>
-                    ) : null}
-                  </CardContent>
-                </Card>
+                <motion.div key={ad.id} variants={fadeIn}>
+                  <Card className="group overflow-hidden border-border/70 bg-card/90 shadow-sm">
+                    <div className="relative h-44 overflow-hidden">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={ad.title}
+                          className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.03]"
+                          loading="lazy"
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
+                      )}
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(0,0,0,0.0)_20%,_rgba(0,0,0,0.55)_100%)]" />
+                      {ad.badge ? (
+                        <span className="absolute left-4 top-4 rounded-full bg-background/80 px-3 py-1 text-xs font-medium text-foreground shadow">
+                          {ad.badge}
+                        </span>
+                      ) : null}
+                    </div>
+                    <CardContent className="space-y-3 p-4">
+                      <h3 className="text-lg font-semibold text-foreground">{ad.title}</h3>
+                      <p className="text-sm text-muted-foreground">{ad.description}</p>
+                      {ad.ctaUrl ? (
+                        <Button asChild size="sm">
+                          {String(ad.ctaUrl).startsWith('http') ? (
+                            <a href={ad.ctaUrl} target="_blank" rel="noreferrer">
+                              {ad.ctaText || 'Learn more'}
+                            </a>
+                          ) : (
+                            <Link href={ad.ctaUrl}>{ad.ctaText || 'Learn more'}</Link>
+                          )}
+                        </Button>
+                      ) : null}
+                    </CardContent>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>
-        </section>
+        </motion.section>
 
-        <section className="mt-16 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <Card className="border-border/70 bg-card/90 shadow-sm">
+        <motion.section
+          className="mt-16 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]"
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, amount: 0.2 }}
+          variants={sectionStagger}
+        >
+          <motion.div variants={fadeIn}>
+            <Card className="border-border/70 bg-card/90 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg">{homepage.dayPlanner.title}</CardTitle>
             </CardHeader>
@@ -297,29 +330,32 @@ export default function Home() {
                 </Button>
               ) : null}
             </CardContent>
-          </Card>
-          <Card className="relative overflow-hidden border-border/70 bg-card/90 shadow-sm">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.25),_transparent_60%)]" />
-            <div className="relative grid gap-6 p-6">
-              <SectionHeader
-                title="Built for families, couples, and groups"
-                description="Split your stay across two islands or focus on one. The schedules and ferry ties it together."
-              />
-              <div className="grid gap-4 sm:grid-cols-2">
-                {[
-                  'Theme park day passes with resort guest priority',
-                  'Shared itineraries for families and group bookings',
-                  'Evening resort-only zones for quiet retreats',
-                  'Concierge support for multi-island celebrations',
-                ].map((item) => (
-                  <div key={item} className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm text-muted-foreground">
-                    {item}
-                  </div>
-                ))}
+            </Card>
+          </motion.div>
+          <motion.div variants={fadeIn}>
+            <Card className="relative overflow-hidden border-border/70 bg-card/90 shadow-sm">
+              <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.25),_transparent_60%)]" />
+              <div className="relative grid gap-6 p-6">
+                <SectionHeader
+                  title="Built for families, couples, and groups"
+                  description="Split your stay across two islands or focus on one. The schedules and ferry ties it together."
+                />
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    'Theme park day passes with resort guest priority',
+                    'Shared itineraries for families and group bookings',
+                    'Evening resort-only zones for quiet retreats',
+                    'Concierge support for multi-island celebrations',
+                  ].map((item) => (
+                    <div key={item} className="rounded-2xl border border-border/60 bg-background/70 p-4 text-sm text-muted-foreground">
+                      {item}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
-          </Card>
-        </section>
+            </Card>
+          </motion.div>
+        </motion.section>
       </PageShell>
     </>
   );
