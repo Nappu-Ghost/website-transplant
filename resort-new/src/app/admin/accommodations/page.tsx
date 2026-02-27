@@ -318,18 +318,43 @@ export default function AdminAccommodationsPage() {
                         type="button"
                         variant="secondary"
                         size="sm"
-                        disabled={!activeRoomId || !imageFile || uploadImageMutation.isPending}
-                        onClick={() => {
-                          if (!activeRoomId) {
+                        disabled={!imageFile || uploadImageMutation.isPending || createRoomMutation.isPending}
+                        onClick={async () => {
+                          if (!imageFile) return;
+                          try {
+                            let nextId = activeRoomId;
+                            if (!nextId) {
+                              if (!draft.hotelId) {
+                              toast({ title: 'Missing hotel', description: 'Select a hotel first.', variant: 'destructive' });
+                              return;
+                            }
+                            const payload = {
+                              hotelId: Number(draft.hotelId),
+                              name: draft.name.trim(),
+                              type: draft.type.trim(),
+                              price: Number(draft.price),
+                              capacity: Number(draft.capacity),
+                              description: draft.description.trim() || undefined,
+                              imageUrl: draft.imageUrl.trim() || undefined,
+                              floorNumber: Number(draft.floorNumber),
+                              available: draft.available === 'true',
+                              isPremium: draft.isPremium === 'true',
+                            };
+                              const created: any = await createRoomMutation.mutateAsync(payload);
+                              nextId = Number(created?.id ?? created?.ID ?? created?.roomId ?? created?.activityId ?? created?.hotelId ?? NaN);
+                              if (!Number.isFinite(nextId)) nextId = null;
+                              if (!nextId) throw new Error('Unable to determine created record id.');
+                              // Update local state so future uploads/edits use the same record.
+                              setActiveRoomId(nextId);
+                            }
+                            await uploadImageMutation.mutateAsync({ id: nextId, file: imageFile });
+                          } catch (e: any) {
                             toast({
-                              title: 'Save required',
-                              description: 'Create the accommodation first before uploading an image.',
+                              title: 'Upload failed',
+                              description: e?.message || 'An unexpected error occurred.',
                               variant: 'destructive',
                             });
-                            return;
                           }
-                          if (!imageFile) return;
-                          uploadImageMutation.mutate({ id: activeRoomId, file: imageFile });
                         }}
                       >
                         Upload

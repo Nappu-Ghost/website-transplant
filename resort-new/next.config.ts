@@ -9,6 +9,19 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },  images: {
     remotePatterns: [
+      // Local FastAPI uploads (dev)
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
+        port: '8001',
+        pathname: '/uploads/**',
+      },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8001',
+        pathname: '/uploads/**',
+      },
       {
         protocol: 'https',
         hostname: 'picsum.photos',

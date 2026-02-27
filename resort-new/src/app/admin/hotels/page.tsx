@@ -228,18 +228,34 @@ export default function AdminHotelsPage() {
                         type="button"
                         variant="secondary"
                         size="sm"
-                        disabled={!activeHotelId || !imageFile || uploadImageMutation.isPending}
-                        onClick={() => {
-                          if (!activeHotelId) {
+                        disabled={!imageFile || uploadImageMutation.isPending || createHotelMutation.isPending}
+                        onClick={async () => {
+                          if (!imageFile) return;
+                          try {
+                            let nextId = activeHotelId;
+                            if (!nextId) {
+                              const payload = {
+                              name: draft.name.trim(),
+                              location: draft.location.trim(),
+                              description: draft.description.trim() || undefined,
+                              imageUrl: draft.imageUrl.trim() || undefined,
+                              floors: Number(draft.floors || 1),
+                            };
+                              const created: any = await createHotelMutation.mutateAsync(payload);
+                              nextId = Number(created?.id ?? created?.ID ?? created?.roomId ?? created?.activityId ?? created?.hotelId ?? NaN);
+                              if (!Number.isFinite(nextId)) nextId = null;
+                              if (!nextId) throw new Error('Unable to determine created record id.');
+                              // Update local state so future uploads/edits use the same record.
+                              setActiveHotelId(nextId);
+                            }
+                            await uploadImageMutation.mutateAsync({ id: nextId, file: imageFile });
+                          } catch (e: any) {
                             toast({
-                              title: 'Save required',
-                              description: 'Create the hotel first before uploading an image.',
+                              title: 'Upload failed',
+                              description: e?.message || 'An unexpected error occurred.',
                               variant: 'destructive',
                             });
-                            return;
                           }
-                          if (!imageFile) return;
-                          uploadImageMutation.mutate({ id: activeHotelId, file: imageFile });
                         }}
                       >
                         Upload
