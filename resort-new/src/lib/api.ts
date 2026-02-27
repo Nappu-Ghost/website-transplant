@@ -1,7 +1,7 @@
 import auth from './auth';
 import { createApiError } from './api-error';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8001/api/v1';
 
 async function handleResponse(response: Response) {
   if (!response.ok) {

@@ -7,8 +7,8 @@ export async function GET() {
     console.log("Check session API called");
     
     // Get the session cookie
-    const cookieStore = cookies();
-    const sessionCookie = cookieStore.get('user_session');
+    const cookieStore = await cookies();
+    const sessionCookie = cookieStore.get("user_session");
 
     if (sessionCookie && sessionCookie.value) {
       // Parse the session data from cookie

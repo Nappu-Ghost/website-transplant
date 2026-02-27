@@ -4,7 +4,7 @@ import api from '@/lib/api';
 
 export async function POST() {
   try {
-    const cookieStore = cookies();
+    const cookieStore = await cookies();
     const refreshCookie = cookieStore.get('refresh_token');
 
     if (!refreshCookie?.value) {
