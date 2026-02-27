@@ -55,6 +55,11 @@ export interface BookingFormProps {
   roomOptions?: BookingOption[];
   activityOptions?: BookingOption[];
   onCreateBooking?: (values: BookingFormValues) => Promise<{ id?: number } | null>;
+  onBookingCreated?: (payload: {
+    id?: number;
+    confirmationCode: string;
+    values: BookingFormValues;
+  }) => void;
 }
 
 const fadeUp = {
@@ -70,6 +75,7 @@ export function BookingForm({
   roomOptions,
   activityOptions,
   onCreateBooking,
+  onBookingCreated,
 }: BookingFormProps) {
   const [preview, setPreview] = useState<BookingFormValues | null>(null);
   const [confirmationCode, setConfirmationCode] = useState<string | null>(null);
@@ -170,6 +176,7 @@ export function BookingForm({
         ? `ALR-${String(bookingId).padStart(6, '0')}`
         : `ALR-${Math.floor(100000 + Math.random() * 900000)}`;
       setConfirmationCode(nextCode);
+      onBookingCreated?.({ id: bookingId, confirmationCode: nextCode, values: data });
       notify.success({
         title: 'Request received',
         description: 'Our concierge will confirm availability shortly.',

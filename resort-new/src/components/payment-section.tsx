@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -8,6 +9,8 @@ import { Input } from '@/components/ui/input';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useNotify } from '@/components/shared';
+import { paymentService } from '@/lib/api-service';
 
 interface PaymentSectionProps {
   subtotal?: number;
@@ -16,6 +19,8 @@ interface PaymentSectionProps {
   currency?: string;
   depositNote?: string;
   isLoading?: boolean;
+  bookingId?: number;
+  confirmationCode?: string;
 }
 
 const fadeUp = {
@@ -30,10 +35,64 @@ export function PaymentSection({
   currency = 'USD',
   depositNote = 'We only capture a 20% deposit today. Balance due on arrival.',
   isLoading,
+  bookingId,
+  confirmationCode,
 }: PaymentSectionProps) {
   const [method, setMethod] = useState<'card' | 'bank' | 'arrival'>('card');
+  const [isConfirming, setIsConfirming] = useState(false);
+  const router = useRouter();
+  const notify = useNotify();
 
   const total = useMemo(() => subtotal + taxes + serviceFee, [subtotal, taxes, serviceFee]);
+
+  const handleConfirm = async () => {
+    if (method !== 'arrival') {
+      notify.error({
+        title: 'Payment not configured',
+        description: 'Only “Pay on arrival” is enabled right now.',
+      });
+      return;
+    }
+
+    if (!bookingId) {
+      notify.error({
+        title: 'Create the booking first',
+        description: 'Submit the booking form above, then confirm “Pay on arrival”.',
+      });
+      return;
+    }
+
+    setIsConfirming(true);
+    try {
+      // "Pay on arrival" does not charge anything online.
+      // We still record a pending payment so the receipt can be generated and later reconciled.
+      const payment = await paymentService.create({
+        bookingId,
+        amount: total,
+        currency,
+        status: 'PENDING',
+        method: 'CASH',
+      });
+
+      const params = new URLSearchParams();
+      params.set('bookingId', String(bookingId));
+      if (payment?.id) params.set('paymentId', String(payment.id));
+      params.set('method', 'arrival');
+      params.set('currency', currency);
+      params.set('total', total.toFixed(2));
+      params.set('subtotal', subtotal.toFixed(2));
+      params.set('taxes', taxes.toFixed(2));
+      params.set('serviceFee', serviceFee.toFixed(2));
+      if (confirmationCode) params.set('code', confirmationCode);
+
+      router.push(`/booking/receipt?${params.toString()}`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to confirm payment method.';
+      notify.error({ title: 'Could not confirm', description: message });
+    } finally {
+      setIsConfirming(false);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -121,7 +180,9 @@ export function PaymentSection({
               </div>
             )}
 
-            <Button size="lg" className="w-full">Confirm payment method</Button>
+            <Button size="lg" className="w-full" onClick={handleConfirm} disabled={isConfirming}>
+              {isConfirming ? 'Confirming…' : 'Confirm payment method'}
+            </Button>
           </CardContent>
         </Card>
       </motion.div>

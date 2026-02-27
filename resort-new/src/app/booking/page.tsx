@@ -45,6 +45,11 @@ export default function BookingPage() {
   const { user } = useAuth();
   const searchParams = useSearchParams();
   const [estimate, setEstimate] = useState<Record<string, string | number>>({});
+  const [createdBooking, setCreatedBooking] = useState<{
+    id?: number;
+    confirmationCode?: string;
+    values?: BookingFormValues;
+  }>({});
 
   const selectedRoomId = searchParams.get('roomId');
   const selectedActivityId = searchParams.get('activityId');
@@ -206,6 +211,7 @@ export default function BookingPage() {
         activityOptions={activityOptions}
         onCreateBooking={handleCreateBooking}
         onEstimateChange={handleEstimateChange}
+        onBookingCreated={(payload) => setCreatedBooking(payload)}
       />
       <div className="mt-16 space-y-4">
         <SectionHeader
@@ -216,6 +222,8 @@ export default function BookingPage() {
           subtotal={subtotal || 0}
           taxes={taxes || 0}
           serviceFee={serviceFee}
+          bookingId={createdBooking.id}
+          confirmationCode={createdBooking.confirmationCode}
         />
       </div>
     </PageShell>

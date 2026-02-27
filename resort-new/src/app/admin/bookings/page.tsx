@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { ModalDialog, PageHeader, SectionHeader } from '@/components/shared';
-import { bookingService } from '@/lib/api-service';
+import { bookingService, paymentService } from '@/lib/api-service';
 
 type BookingStatus = 'Confirmed' | 'Pending' | 'Arriving' | 'Checked-in' | 'Checked-out' | 'Cancelled';
 
@@ -29,6 +29,7 @@ interface ApiBooking {
   numberOfGuests?: number;
   user?: { name?: string | null; email?: string | null } | null;
   rooms?: { room?: { name?: string } }[];
+  payments?: { id: number; status: string; method: string; amount: number; currency: string; createdAt?: string; paidAt?: string | null }[];
 }
 interface BookingSummary {
   id: number;
@@ -39,6 +40,10 @@ interface BookingSummary {
   guests: number;
   status: BookingStatus;
   apiStatus: ApiBookingStatus;
+  paymentStatus: string;
+  paymentMethod: string;
+  paymentAmountLabel: string;
+  paymentId?: number;
 }
 
 const statusTone: Record<BookingStatus, string> = {
@@ -98,11 +103,29 @@ export default function AdminBookingsPage() {
     },
   });
 
+  const updatePaymentMutation = useMutation({
+    mutationFn: ({ paymentId, status }: { paymentId: number; status: string }) =>
+      paymentService.update(String(paymentId), {
+        status,
+        paidAt: status === 'CAPTURED' ? new Date().toISOString() : null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'admin'] });
+    },
+  });
   const bookings = useMemo<BookingSummary[]>(() => {
     return (bookingsQuery.data ?? []).map((booking) => {
       const roomName = booking.rooms?.[0]?.room?.name ?? 'Room pending';
       const guestName = booking.user?.name || booking.user?.email || 'Guest';
       const labelStatus = mapStatusToLabel(booking.status);
+      const primaryPayment = (booking.payments ?? []).slice().sort((a, b) => {
+        const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return tb - ta;
+      })[0];
+      const paymentStatus = primaryPayment?.status ?? '—';
+      const paymentMethod = primaryPayment?.method ?? '—';
+      const paymentAmountLabel = primaryPayment ? `${primaryPayment.amount.toFixed(2)} ${primaryPayment.currency}` : '—';
       return {
         id: booking.id,
         code: getBookingCode(booking.id),
@@ -112,6 +135,10 @@ export default function AdminBookingsPage() {
         guests: booking.numberOfGuests ?? 1,
         status: labelStatus,
         apiStatus: booking.status,
+        paymentStatus,
+        paymentMethod,
+        paymentAmountLabel,
+        paymentId: primaryPayment?.id,
       };
     });
   }, [bookingsQuery.data]);
@@ -195,6 +222,8 @@ export default function AdminBookingsPage() {
                 <TableHead>Dates</TableHead>
                 <TableHead>Room</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Payment</TableHead>
+                <TableHead>Amount</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -215,6 +244,13 @@ export default function AdminBookingsPage() {
                     <Badge className={statusTone[booking.status]}>{booking.status}</Badge>
                   </TableCell>
                   <TableCell>
+                    <div className="flex flex-col">
+                      <span className="text-sm">{booking.paymentStatus}</span>
+                      <span className="text-xs text-muted-foreground">{booking.paymentMethod}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{booking.paymentAmountLabel}</TableCell>
+                  <TableCell>
                     <ModalDialog
                       title="Reservation details"
                       description={`${booking.room} | ${booking.dates}`}
@@ -224,6 +260,34 @@ export default function AdminBookingsPage() {
                         <p>Guests: <span className="text-foreground">{booking.guests}</span></p>
                         <p>Special requests: <span className="text-foreground">Welcome amenity</span></p>
                         <p>Status: <span className="text-foreground">{booking.status}</span></p>
+                        <p>Payment: <span className="text-foreground">{booking.paymentStatus}</span> <span className="text-muted-foreground">({booking.paymentMethod})</span></p>
+                        <p>Amount: <span className="text-foreground">{booking.paymentAmountLabel}</span></p>
+                        <div className="flex flex-wrap gap-2 pt-1">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="secondary"
+                            disabled={!booking.paymentId || updatePaymentMutation.isPending}
+                            onClick={() => {
+                              if (!booking.paymentId) return;
+                              updatePaymentMutation.mutate({ paymentId: booking.paymentId, status: 'CAPTURED' });
+                            }}
+                          >
+                            Mark paid
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant="outline"
+                            disabled={!booking.paymentId || updatePaymentMutation.isPending}
+                            onClick={() => {
+                              if (!booking.paymentId) return;
+                              updatePaymentMutation.mutate({ paymentId: booking.paymentId, status: 'PENDING' });
+                            }}
+                          >
+                            Mark unpaid
+                          </Button>
+                        </div>
                         <div className="space-y-2">
                           <p className="text-xs uppercase tracking-[0.2em]">Update status</p>
                           <Select

@@ -1,6 +1,7 @@
 # app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
 from fastapi.staticfiles import StaticFiles
 from app.utils.uploads import uploads_root_dir
 from .routers import (
@@ -40,9 +41,17 @@ origins = [
     "http://192.168.56.1:3000",
     "null",
 ]
+
+# Allow common LAN dev origins (e.g. http://192.168.x.x:3000) so booking/payment requests
+# don't silently fail due to CORS when accessed from another device.
+allow_origin_regex = os.getenv(
+    "CORS_ALLOW_ORIGIN_REGEX",
+    r"^https?://(localhost|127\.0\.0\.1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)[0-9.]*(:\d+)?$",
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=allow_origin_regex,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
