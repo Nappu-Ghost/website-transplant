@@ -182,8 +182,8 @@ export default function AccommodationsPage() {
 
       return matchesSearch && matchesCategory && matchesCapacity && matchesPrice;
     });
-  }, [search, category, capacity, priceRange]);
-
+  }, [accommodations, search, category, capacity, priceRange]);
+  
   return (
     <PageShell>
       <PageHeader

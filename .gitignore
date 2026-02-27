@@ -43,6 +43,7 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 .env.local
+resort-new/backend/instance/bootstrap_admin_credentials.txt
 
 # Turborepo
 .turbo

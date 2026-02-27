@@ -171,14 +171,14 @@ export default function BookingPage() {
     const totalPrice = staySubtotal + activitySubtotal;
 
     const payload = {
-      user_id: Number(user.id),
-      number_of_guests: guests,
-      total_price: totalPrice,
-      start_date: checkInDate.toISOString(),
-      end_date: checkOutDate.toISOString(),
-      is_premium: Boolean(selectedRoomOption.isPremium),
-      room_ids: [selectedRoomOption.id],
-      activity_ids: selectedActivityOptions.length ? selectedActivityOptions.map((activity) => activity.id) : undefined,
+      userId: Number(user.id),
+      numberOfGuests: guests,
+      totalPrice: totalPrice,
+      startDate: checkInDate.toISOString(),
+      endDate: checkOutDate.toISOString(),
+      isPremium: Boolean(selectedRoomOption.isPremium),
+      roomIds: [selectedRoomOption.id],
+      activityIds: selectedActivityOptions.length ? selectedActivityOptions.map((activity) => activity.id) : [],
     };
 
     const response = await createBookingMutation.mutateAsync(payload);

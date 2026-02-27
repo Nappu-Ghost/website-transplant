@@ -177,7 +177,7 @@ export default function ActivitiesPage() {
 
       return matchesSearch && matchesCategory && matchesDuration && matchesPrice;
     });
-  }, [search, category, duration, priceRange]);
+  }, [activities, search, category, duration, priceRange]);
 
   return (
     <PageShell>
@@ -304,7 +304,7 @@ export default function ActivitiesPage() {
         ) : (
           filtered.map((activity) => (
             <ActivityCard demoMode={demoMode}
-              key={activity.name}
+              key={activity.id}
               {...activity}
               action={
                 <div className="flex flex-col gap-3">

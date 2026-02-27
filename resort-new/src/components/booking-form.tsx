@@ -79,7 +79,9 @@ export function BookingForm({
     handleSubmit,
     register,
     control,
-    formState: { errors, isSubmitting, isValid, isSubmitted },
+    setValue,
+    getValues,
+    formState: { errors, isSubmitting, isValid, isSubmitted, dirtyFields },
   } = useForm<BookingFormValues>({
     resolver: zodResolver(formSchema),
     mode: 'onChange',
@@ -199,6 +201,29 @@ export function BookingForm({
       { id: 5, name: 'Family Lagoon Walk' },
       { id: 6, name: 'Island Discovery' },
     ];
+
+  useEffect(() => {
+    const nextDefaultRoom = defaultValues?.roomType;
+    if (nextDefaultRoom && !dirtyFields.roomType) {
+      setValue('roomType', nextDefaultRoom, { shouldValidate: true });
+    }
+  }, [defaultValues?.roomType, dirtyFields.roomType, setValue]);
+
+  useEffect(() => {
+    const nextActivities = defaultValues?.activitySelections;
+    if (Array.isArray(nextActivities) && !dirtyFields.activitySelections) {
+      setValue('activitySelections', nextActivities, { shouldValidate: true });
+    }
+  }, [defaultValues?.activitySelections, dirtyFields.activitySelections, setValue]);
+
+  useEffect(() => {
+    if (!resolvedRoomOptions.length) return;
+    const current = getValues('roomType');
+    const isValidRoom = resolvedRoomOptions.some((opt) => opt.name === current);
+    if (!isValidRoom && !dirtyFields.roomType) {
+      setValue('roomType', resolvedRoomOptions[0].name, { shouldValidate: true });
+    }
+  }, [resolvedRoomOptions, dirtyFields.roomType, getValues, setValue]);
 
   if (isLoading) {
     return (

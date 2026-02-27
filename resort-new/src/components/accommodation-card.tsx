@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { demoImageUrl } from '@/lib/demo-images';
+import { metaService } from '@/lib/api-service';
 
 export interface AccommodationCardProps {
   demoMode?: boolean;
@@ -41,7 +42,11 @@ export function AccommodationCard({
   isLoading,
   action,
 }: AccommodationCardProps) {
-  const resolvedImageUrl = imageUrl || (demoMode ? demoImageUrl('room', name) : undefined);
+  const candidateImageUrl = imageUrl || (demoMode ? demoImageUrl('room', name) : undefined);
+  const resolvedImageUrl =
+    candidateImageUrl && candidateImageUrl.startsWith('/uploads/')
+      ? metaService.toPublicUrl(candidateImageUrl)
+      : candidateImageUrl;
   if (isLoading) {
     return (
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
