@@ -1,0 +1,43 @@
+{
+  "hero": {
+    "kicker": "Island experiences",
+    "title": "Activities built for calm, thrill, and connection",
+    "description": "From lagoon rituals to skyline rides, every experience is paced for your group and guided by hosts who know the islands best.",
+    "cta_primary": {
+      "label": "Plan an itinerary",
+      "url": "/booking"
+    },
+    "cta_secondary": {
+      "label": "Browse stays",
+      "url": "/accommodations"
+    }
+  },
+  "gallery": [
+    {
+      "id": "activities-hero-1",
+      "image_url": "https://images.unsplash.com/photo-1558281050-4c33200099c7?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "label": "Canoeing",
+      "caption": "Morning cruises around the resort."
+    },
+    {
+      "id": "activities-hero-2",
+      "image_url": "https://images.unsplash.com/photo-1682687982360-3fbab65f9d50?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "label": "Scuba Diving",
+      "caption": "Get to know what's below the surface."
+    },
+    {
+      "id": "activities-hero-3",
+      "image_url": "https://images.unsplash.com/photo-1607429289259-456053385f53?q=80&w=1170&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+      "label": "Surfing",
+      "caption": "Surf Surf"
+    }
+  ],
+  "featured": {
+    "title": "Featured experiences",
+    "description": "Premium and top-rated experiences from the live roster."
+  },
+  "listing": {
+    "title": "All activities",
+    "description": "Explore the full lineup and plan your day."
+  }
+}

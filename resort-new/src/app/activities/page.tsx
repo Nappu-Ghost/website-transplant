@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ActivityCard, type ActivityCardProps } from '@/components/activity-card';
-import { ImageGallery } from '@/components/image-gallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
-import { activityService } from '@/lib/api-service';
+import { ModalDialog, PageShell, SectionHeader } from '@/components/shared';
+import { activityService, metaService } from '@/lib/api-service';
+import { resolveImageUrl } from '@/lib/asset-url';
+import { defaultActivitiesConfig, type ActivitiesConfig } from '@/lib/activities-defaults';
 
 type ActivityCategory = 'Adventure' | 'Wellness' | 'Dining' | 'Family';
 type ActivityDuration = '60-90 min' | '2-3 hours' | 'Half day';
@@ -79,50 +79,44 @@ const resolveIntensity = (price: number): ActivityDetail['intensity'] => {
   return 'Low';
 };
 
-const activitiesGallery = [
-  {
-    src: '/images/gallery/activities/snorkel.svg',
-    alt: 'Reef snorkeling',
-    label: 'Adventure',
-  },
-  {
-    src: '/images/gallery/activities/swimming.svg',
-    alt: 'Lagoon swim',
-    label: 'Wellness',
-  },
-  {
-    src: '/images/gallery/activities/submarine.svg',
-    alt: 'Submarine tour',
-    label: 'Explore',
-  },
-  {
-    src: '/images/gallery/activities/volleyball.svg',
-    alt: 'Beach volleyball',
-    label: 'Social',
-  },
-  {
-    src: '/images/gallery/activities/roller-coaster.svg',
-    alt: 'Island thrills',
-    label: 'Energy',
-  },
-  {
-    src: '/images/gallery/activities/skydiving.svg',
-    alt: 'Sky view',
-    label: 'Premium',
-  },
-];
-
 export default function ActivitiesPage() {
   const { demoMode } = useDemoMode();
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<ActivityCategory | 'All'>('All');
-  const [duration, setDuration] = useState<ActivityDuration | 'All'>('All');
-  const [priceRange, setPriceRange] = useState<'All' | 'Under 100' | '100-150' | '150+'>('All');
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
 
   const { data: activityData = [], isLoading, isError, error } = useQuery<ActivitySummary[]>({
     queryKey: ['activities'],
     queryFn: () => activityService.list(),
   });
+
+  const { data: activitiesPageData } = useQuery({
+    queryKey: ['activities', 'page'],
+    queryFn: () => metaService.getActivities(),
+  });
+
+  const activitiesConfig = useMemo<ActivitiesConfig>(() => {
+    if (activitiesPageData && typeof activitiesPageData === 'object') {
+      return activitiesPageData as ActivitiesConfig;
+    }
+    return defaultActivitiesConfig;
+  }, [activitiesPageData]);
+
+  const heroGallery = useMemo(() => {
+    const gallery = activitiesConfig.gallery?.length
+      ? activitiesConfig.gallery
+      : defaultActivitiesConfig.gallery;
+    return gallery;
+  }, [activitiesConfig.gallery]);
+
+  useEffect(() => {
+    if (heroGallery.length <= 1) {
+      setActiveHeroIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setActiveHeroIndex((prev) => (prev + 1) % heroGallery.length);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [heroGallery.length]);
 
   const activities = useMemo<ActivityDetail[]>(() => {
     return activityData.map((activity) => {
@@ -155,45 +149,72 @@ export default function ActivitiesPage() {
       .slice(0, 3);
   }, [activities]);
 
-  const filtered = useMemo(() => {
-    return activities.filter((activity) => {
-      const matchesSearch = [
-        activity.name,
-        activity.activityType,
-        activity.highlights.join(' '),
-        activity.meetingPoint,
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(search.toLowerCase().trim());
-
-      const matchesCategory = category === 'All' || activity.category === category;
-      const matchesDuration = duration === 'All' || activity.duration === duration;
-      const matchesPrice =
-        priceRange === 'All' ||
-        (priceRange === 'Under 100' && activity.price < 100) ||
-        (priceRange === '100-150' && activity.price >= 100 && activity.price <= 150) ||
-        (priceRange === '150+' && activity.price > 150);
-
-      return matchesSearch && matchesCategory && matchesDuration && matchesPrice;
-    });
-  }, [activities, search, category, duration, priceRange]);
+  const featuredIds = useMemo(() => new Set(featuredActivities.map((item) => item.id)), [featuredActivities]);
+  const restActivities = useMemo(
+    () => activities.filter((item) => !featuredIds.has(item.id)),
+    [activities, featuredIds],
+  );
 
   return (
     <PageShell>
-      <PageHeader
-        title="Activities"
-        description="Curated experiences designed for calm, connection, and discovery."
-      />
-      <section className="mt-8 space-y-6">
+      <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/80 p-6 shadow-sm md:p-10">
+        {heroGallery.map((item, index) => {
+          const imageSrc = resolveImageUrl(item.imageUrl);
+          return (
+            <div
+              key={item.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+                index === activeHeroIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {imageSrc ? (
+                <Image
+                  src={imageSrc}
+                  alt={item.label || 'Activities hero'}
+                  fill
+                  className="object-cover object-right"
+                  sizes="(min-width: 1024px) 80vw, 100vw"
+                  priority={index === activeHeroIndex}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,_hsl(var(--background))_0%,_hsl(var(--background)/0.88)_35%,_hsl(var(--background)/0.35)_60%,_transparent_80%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_hsl(var(--accent)/0.22),_transparent_55%)]" />
+        <div className="relative max-w-3xl space-y-6">
+          <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+            {activitiesConfig.hero.kicker}
+          </p>
+          <h1 className="text-3xl font-semibold text-foreground md:text-4xl lg:text-5xl font-serif">
+            {activitiesConfig.hero.title}
+          </h1>
+          <p className="max-w-xl text-base text-muted-foreground md:text-lg">
+            {activitiesConfig.hero.description}
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {activitiesConfig.hero.ctaPrimary?.url && activitiesConfig.hero.ctaPrimary.label ? (
+              <Button asChild size="lg">
+                <Link href={activitiesConfig.hero.ctaPrimary.url}>
+                  {activitiesConfig.hero.ctaPrimary.label}
+                </Link>
+              </Button>
+            ) : null}
+            {activitiesConfig.hero.ctaSecondary?.url && activitiesConfig.hero.ctaSecondary.label ? (
+              <Button asChild size="lg" variant="outline">
+                <Link href={activitiesConfig.hero.ctaSecondary.url}>
+                  {activitiesConfig.hero.ctaSecondary.label}
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-12 space-y-6">
         <SectionHeader
-          title="Featured experiences"
-          description="Premium and top-rated experiences from the live roster."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/booking">Plan a stay</Link>
-            </Button>
-          }
+          title={activitiesConfig.featured.title || ''}
+          description={activitiesConfig.featured.description || undefined}
         />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {isLoading
@@ -217,62 +238,13 @@ export default function ActivitiesPage() {
               ))}
         </div>
       </section>
-      <div className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm">
+
+      <section className="mt-12 space-y-6">
         <SectionHeader
-          title="Plan your experience"
-          description="Filter by category, duration, or ideal pace."
+          title={activitiesConfig.listing.title || ''}
+          description={activitiesConfig.listing.description || undefined}
         />
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search wellness, dining, adventure"
-          />
-          <Select value={category} onValueChange={(value) => setCategory(value as ActivityCategory | 'All')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All categories</SelectItem>
-              <SelectItem value="Adventure">Adventure</SelectItem>
-              <SelectItem value="Wellness">Wellness</SelectItem>
-              <SelectItem value="Dining">Dining</SelectItem>
-              <SelectItem value="Family">Family</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={duration} onValueChange={(value) => setDuration(value as ActivityDuration | 'All')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Duration" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Any duration</SelectItem>
-              <SelectItem value="60-90 min">60-90 min</SelectItem>
-              <SelectItem value="2-3 hours">2-3 hours</SelectItem>
-              <SelectItem value="Half day">Half day</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={priceRange} onValueChange={(value) => setPriceRange(value as 'All' | 'Under 100' | '100-150' | '150+')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Price" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Any price</SelectItem>
-              <SelectItem value="Under 100">Under $100</SelectItem>
-              <SelectItem value="100-150">$100-$150</SelectItem>
-              <SelectItem value="150+">$150+</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
-        <p>{isLoading ? 'Loading experiences...' : `${filtered.length} experiences available`}</p>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/booking">Plan a stay</Link>
-        </Button>
-      </div>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {isLoading ? (
           Array.from({ length: 6 }).map((_, index) => (
             <ActivityCard demoMode={demoMode}
@@ -292,17 +264,17 @@ export default function ActivitiesPage() {
               {error instanceof Error ? error.message : 'Please try again shortly.'}
             </CardContent>
           </Card>
-        ) : filtered.length === 0 ? (
+        ) : restActivities.length === 0 ? (
           <Card className="col-span-full border-border/70 bg-card/90">
             <CardHeader>
               <CardTitle className="text-lg">No activities found</CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
-              Adjust your filters or explore another pace of travel.
+              There are no activities available right now.
             </CardContent>
           </Card>
         ) : (
-          filtered.map((activity) => (
+          restActivities.map((activity) => (
             <ActivityCard demoMode={demoMode}
               key={activity.id}
               {...activity}
@@ -370,56 +342,8 @@ export default function ActivitiesPage() {
             />
           ))
         )}
-      </div>
-
-      <section className="mt-16 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-        <Card className="relative overflow-hidden border-border/70 bg-card/90 shadow-sm">
-          <div className="absolute inset-0 bg-[linear-gradient(160deg,_hsl(var(--background))_10%,_transparent_70%)]" />
-          <div className="relative p-6">
-            <SectionHeader
-              title="Immersive previews"
-              description="A glimpse into the calm, adventure, and culinary rituals awaiting you."
-            />
-            <div className="mt-6 aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
-              <video
-                className="h-full w-full object-cover"
-                autoPlay
-                muted
-                loop
-                playsInline
-                preload="metadata"
-              >
-                <source src="/videos/hero.mp4" type="video/mp4" />
-              </video>
-            </div>
-          </div>
-        </Card>
-        <Card className="border-border/70 bg-secondary/60">
-          <CardHeader>
-            <CardTitle className="text-lg">Your pace, curated</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>
-              Choose from sunrise rituals, chef-led dining, or ocean-focused exploration.
-              Our hosts align every detail with your energy and schedule.
-            </p>
-            <p>
-              Every experience includes a dedicated guide, curated refreshment, and a
-              recovery ritual to close the day with ease.
-            </p>
-            <Button asChild variant="outline">
-              <Link href="/booking">Design my itinerary</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        </div>
       </section>
-      <div className="mt-16">
-        <ImageGallery
-          title="Curated Experiences"
-          subtitle="Designed to balance adventure, wellness, and quiet moments."
-          images={activitiesGallery}
-        />
-      </div>
     </PageShell>
   );
 }

@@ -59,11 +59,14 @@ export const adminService = {
   updateHomepageSettings: (data: any, token?: string | null) => api.updateHomepageSettings(data, token),
   getAccommodationsSettings: (token?: string | null) => api.getAccommodationsSettings(token),
   updateAccommodationsSettings: (data: any, token?: string | null) => api.updateAccommodationsSettings(data, token),
+  getActivitiesSettings: (token?: string | null) => api.getActivitiesSettings(token),
+  updateActivitiesSettings: (data: any, token?: string | null) => api.updateActivitiesSettings(data, token),
 };
 
 export const metaService = {
   get: () => api.getMeta(),
   getHomepage: () => api.getHomepageConfig(),
   getAccommodations: () => api.getAccommodationsConfig(),
+  getActivities: () => api.getActivitiesConfig(),
   toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

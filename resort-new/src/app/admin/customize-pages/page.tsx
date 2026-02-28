@@ -13,6 +13,11 @@ const pageLinks = [
     title: 'Customize Accommodations Page',
     description: 'Hero gallery and section headers for accommodations.',
   },
+  {
+    href: '/admin/customize-activities',
+    title: 'Customize Activities Page',
+    description: 'Hero gallery and section headers for activities.',
+  },
 ];
 
 export default function AdminCustomizePagesLanding() {

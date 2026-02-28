@@ -470,3 +470,35 @@ class AccommodationsConfig(BaseModel):
     gallery: List[AccommodationsGalleryItem]
     featured: AccommodationsSection
     listing: AccommodationsSection
+
+
+class ActivitiesCta(BaseModel):
+    label: Optional[str] = None
+    url: Optional[str] = None
+
+
+class ActivitiesHero(BaseModel):
+    kicker: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cta_primary: Optional[ActivitiesCta] = None
+    cta_secondary: Optional[ActivitiesCta] = None
+
+
+class ActivitiesGalleryItem(BaseModel):
+    id: str
+    image_url: str
+    label: Optional[str] = None
+    caption: Optional[str] = None
+
+
+class ActivitiesSection(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class ActivitiesConfig(BaseModel):
+    hero: ActivitiesHero
+    gallery: List[ActivitiesGalleryItem]
+    featured: ActivitiesSection
+    listing: ActivitiesSection
