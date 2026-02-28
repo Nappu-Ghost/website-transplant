@@ -240,6 +240,7 @@ export class ApiClient {
 
   async getMeta() { return this.request('/meta', {}, undefined, false, null); }
   async getHomepageConfig() { return this.request('/meta/homepage', {}, undefined, false, null); }
+  async getAccommodationsConfig() { return this.request('/meta/accommodations', {}, undefined, false, null); }
 
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }
@@ -315,6 +316,20 @@ export class ApiClient {
   async updateHomepageSettings(data: any, token?: string | null) {
     return this.request(
       '/admin/homepage',
+      { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) },
+      'application/json',
+      true,
+      token,
+    );
+  }
+
+  async getAccommodationsSettings(token?: string | null) {
+    return this.request('/admin/accommodations-page', {}, undefined, true, token);
+  }
+
+  async updateAccommodationsSettings(data: any, token?: string | null) {
+    return this.request(
+      '/admin/accommodations-page',
       { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) },
       'application/json',
       true,

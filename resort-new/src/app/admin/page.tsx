@@ -34,9 +34,9 @@ const adminLinks = [
     description: 'Deposits, outstanding balances, and revenue tracking.',
   },
   {
-    href: '/admin/customize-home',
-    title: 'Customize Home Page',
-    description: 'Homepage hero promos, ads, and featured highlights.',
+    href: '/admin/customize-pages',
+    title: 'Customize Pages',
+    description: 'Hero galleries and section copy for public pages.',
   },
   {
     href: '/admin/users',

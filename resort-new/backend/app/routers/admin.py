@@ -6,6 +6,7 @@ from app import models, schemas
 from app.db import get_db
 from app.dependencies import require_role
 from app.utils.homepage import load_homepage_config, save_homepage_config
+from app.utils.accommodations import load_accommodations_config, save_accommodations_config
 
 router = APIRouter(tags=["Admin"], responses={404: {"description": "Not found"}})
 
@@ -55,4 +56,21 @@ def update_homepage_settings(
 ):
     config = payload.model_dump()
     save_homepage_config(config)
+    return config
+
+
+@router.get("/accommodations-page")
+def get_accommodations_settings(
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    return load_accommodations_config()
+
+
+@router.put("/accommodations-page")
+def update_accommodations_settings(
+    payload: schemas.AccommodationsConfig,
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    config = payload.model_dump()
+    save_accommodations_config(config)
     return config

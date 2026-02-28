@@ -438,3 +438,35 @@ class HomepageConfig(BaseModel):
     ferry: HomepageFerry
     ads: List[HomepageAd]
     day_planner: HomepageDayPlanner
+
+
+class AccommodationsCta(BaseModel):
+    label: Optional[str] = None
+    url: Optional[str] = None
+
+
+class AccommodationsHero(BaseModel):
+    kicker: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cta_primary: Optional[AccommodationsCta] = None
+    cta_secondary: Optional[AccommodationsCta] = None
+
+
+class AccommodationsGalleryItem(BaseModel):
+    id: str
+    image_url: str
+    label: Optional[str] = None
+    caption: Optional[str] = None
+
+
+class AccommodationsSection(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class AccommodationsConfig(BaseModel):
+    hero: AccommodationsHero
+    gallery: List[AccommodationsGalleryItem]
+    featured: AccommodationsSection
+    listing: AccommodationsSection

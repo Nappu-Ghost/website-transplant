@@ -57,10 +57,13 @@ export const adminService = {
   getOverview: (token?: string | null) => api.getAdminOverview(token),
   getHomepageSettings: (token?: string | null) => api.getHomepageSettings(token),
   updateHomepageSettings: (data: any, token?: string | null) => api.updateHomepageSettings(data, token),
+  getAccommodationsSettings: (token?: string | null) => api.getAccommodationsSettings(token),
+  updateAccommodationsSettings: (data: any, token?: string | null) => api.updateAccommodationsSettings(data, token),
 };
 
 export const metaService = {
   get: () => api.getMeta(),
   getHomepage: () => api.getHomepageConfig(),
+  getAccommodations: () => api.getAccommodationsConfig(),
   toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

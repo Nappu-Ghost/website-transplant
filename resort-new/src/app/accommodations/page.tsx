@@ -1,17 +1,17 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
-import { ImageGallery } from '@/components/image-gallery';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
-import { hotelService, roomService } from '@/lib/api-service';
+import { ModalDialog, PageShell, SectionHeader } from '@/components/shared';
+import { hotelService, metaService, roomService } from '@/lib/api-service';
+import { resolveImageUrl } from '@/lib/asset-url';
+import { defaultAccommodationsConfig, type AccommodationsConfig } from '@/lib/accommodations-defaults';
 
 type AccommodationCategory = 'Suite' | 'Villa' | 'Residence';
 
@@ -74,45 +74,49 @@ const resolveView = (location?: string) => {
   return 'Ocean view';
 };
 
-const accommodationGallery = [
-  {
-    src: '/images/gallery/hotels/hotel1.jpg',
-    alt: 'Lagoon-facing suites',
-    label: 'Suites',
-  },
-  {
-    src: '/images/gallery/hotels/hotel2.jpg',
-    alt: 'Oceanfront villas',
-    label: 'Villas',
-  },
-  {
-    src: '/images/gallery/hotels/hotel3.jpg',
-    alt: 'Private terrace dining',
-    label: 'Dining',
-  },
-  {
-    src: '/images/gallery/rooms/room1.jpg',
-    alt: 'Serene interiors',
-    label: 'Rooms',
-  },
-];
-
 export default function AccommodationsPage() {
   const { demoMode } = useDemoMode();
-  const [search, setSearch] = useState('');
-  const [category, setCategory] = useState<AccommodationCategory | 'All'>('All');
-  const [capacity, setCapacity] = useState<'All' | '2' | '3' | '4+'>('All');
-  const [priceRange, setPriceRange] = useState<'All' | 'Under 350' | '350-500' | '500+'>('All');
-
-  const { data: rooms = [], isLoading, isError, error } = useQuery<RoomSummary[]>({
+  const { data: rooms = [], isLoading: isRoomsLoading, isError: isRoomsError, error: roomsError } = useQuery<RoomSummary[]>({
     queryKey: ['rooms'],
     queryFn: () => roomService.list(),
   });
 
-  const { data: hotels = [] } = useQuery<HotelSummary[]>({
+  const { data: hotels = [], isLoading: isHotelsLoading, isError: isHotelsError, error: hotelsError } = useQuery<HotelSummary[]>({
     queryKey: ['hotels'],
     queryFn: () => hotelService.list(),
   });
+
+  const { data: accommodationsData } = useQuery({
+    queryKey: ['accommodations', 'page'],
+    queryFn: () => metaService.getAccommodations(),
+  });
+
+  const accommodationsConfig = useMemo<AccommodationsConfig>(() => {
+    if (accommodationsData && typeof accommodationsData === 'object') {
+      return accommodationsData as AccommodationsConfig;
+    }
+    return defaultAccommodationsConfig;
+  }, [accommodationsData]);
+
+  const heroGallery = useMemo(() => {
+    const gallery = accommodationsConfig.gallery?.length
+      ? accommodationsConfig.gallery
+      : defaultAccommodationsConfig.gallery;
+    return gallery;
+  }, [accommodationsConfig.gallery]);
+
+  const [activeHeroIndex, setActiveHeroIndex] = useState(0);
+
+  useEffect(() => {
+    if (heroGallery.length <= 1) {
+      setActiveHeroIndex(0);
+      return;
+    }
+    const interval = setInterval(() => {
+      setActiveHeroIndex((prev) => (prev + 1) % heroGallery.length);
+    }, 20000);
+    return () => clearInterval(interval);
+  }, [heroGallery.length]);
 
   const hotelById = useMemo(() => {
     return new Map(hotels.map((hotel) => [hotel.id, hotel]));
@@ -154,51 +158,78 @@ export default function AccommodationsPage() {
       .slice(0, 3);
   }, [accommodations]);
 
-  const filtered = useMemo(() => {
-    return accommodations.filter((accommodation) => {
-      const matchesSearch = [
-        accommodation.name,
-        accommodation.location,
-        accommodation.description,
-        accommodation.tags?.join(' '),
-      ]
-        .join(' ')
-        .toLowerCase()
-        .includes(search.toLowerCase().trim());
+  const featuredIds = useMemo(() => new Set(featuredAccommodations.map((item) => item.roomId)), [featuredAccommodations]);
+  const restAccommodations = useMemo(
+    () => accommodations.filter((item) => !featuredIds.has(item.roomId)),
+    [accommodations, featuredIds],
+  );
 
-      const matchesCategory = category === 'All' || accommodation.category === category;
-
-      const matchesCapacity =
-        capacity === 'All' ||
-        (capacity === '2' && accommodation.capacity <= 2) ||
-        (capacity === '3' && accommodation.capacity === 3) ||
-        (capacity === '4+' && accommodation.capacity >= 4);
-
-      const matchesPrice =
-        priceRange === 'All' ||
-        (priceRange === 'Under 350' && accommodation.pricePerNight < 350) ||
-        (priceRange === '350-500' && accommodation.pricePerNight >= 350 && accommodation.pricePerNight <= 500) ||
-        (priceRange === '500+' && accommodation.pricePerNight > 500);
-
-      return matchesSearch && matchesCategory && matchesCapacity && matchesPrice;
-    });
-  }, [accommodations, search, category, capacity, priceRange]);
+  const isLoading = isRoomsLoading || isHotelsLoading;
+  const isError = isRoomsError || isHotelsError;
+  const error = roomsError || hotelsError;
   
   return (
     <PageShell>
-      <PageHeader
-        title="Accommodations"
-        description="A calm selection of suites and villas designed for effortless stays."
-      />
-      <section className="mt-8 space-y-6">
+      <section className="relative overflow-hidden rounded-3xl border border-border/70 bg-card/80 p-6 shadow-sm md:p-10">
+        {heroGallery.map((item, index) => {
+          const imageSrc = resolveImageUrl(item.imageUrl);
+          return (
+            <div
+              key={item.id}
+              className={`absolute inset-0 transition-opacity duration-700 ease-out ${
+                index === activeHeroIndex ? 'opacity-100' : 'opacity-0'
+              }`}
+            >
+              {imageSrc ? (
+                <Image
+                  src={imageSrc}
+                  alt={item.label || 'Accommodation hero'}
+                  fill
+                  className="object-cover object-right"
+                  sizes="(min-width: 1024px) 80vw, 100vw"
+                  priority={index === activeHeroIndex}
+                />
+              ) : null}
+            </div>
+          );
+        })}
+        <div className="absolute inset-0 bg-[linear-gradient(90deg,_hsl(var(--background))_0%,_hsl(var(--background)/0.88)_35%,_hsl(var(--background)/0.35)_60%,_transparent_80%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_hsl(var(--accent)/0.22),_transparent_55%)]" />
+        <div className="relative max-w-3xl space-y-6">
+          <div className="space-y-6">
+            <p className="text-xs uppercase tracking-[0.3em] text-muted-foreground">
+              {accommodationsConfig.hero.kicker}
+            </p>
+            <h1 className="text-3xl font-semibold text-foreground md:text-4xl lg:text-5xl font-serif">
+              {accommodationsConfig.hero.title}
+            </h1>
+            <p className="max-w-xl text-base text-muted-foreground md:text-lg">
+              {accommodationsConfig.hero.description}
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {accommodationsConfig.hero.ctaPrimary?.url && accommodationsConfig.hero.ctaPrimary.label ? (
+                <Button asChild size="lg">
+                  <Link href={accommodationsConfig.hero.ctaPrimary.url}>
+                    {accommodationsConfig.hero.ctaPrimary.label}
+                  </Link>
+                </Button>
+              ) : null}
+              {accommodationsConfig.hero.ctaSecondary?.url && accommodationsConfig.hero.ctaSecondary.label ? (
+                <Button asChild size="lg" variant="outline">
+                  <Link href={accommodationsConfig.hero.ctaSecondary.url}>
+                    {accommodationsConfig.hero.ctaSecondary.label}
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="mt-12 space-y-6">
         <SectionHeader
-          title="Featured stays"
-          description="Premium suites and villas picked from live availability."
-          action={
-            <Button asChild variant="outline">
-              <Link href="/booking">Plan a stay</Link>
-            </Button>
-          }
+          title={accommodationsConfig.featured.title || ''}
+          description={accommodationsConfig.featured.description || undefined}
         />
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {isLoading
@@ -223,167 +254,115 @@ export default function AccommodationsPage() {
               ))}
         </div>
       </section>
-      <div className="rounded-2xl border border-border/70 bg-card/70 p-5 shadow-sm">
+
+      <section className="mt-12 space-y-6">
         <SectionHeader
-          title="Find your stay"
-          description="Filter by category, capacity, or nightly rate."
+          title={accommodationsConfig.listing.title || ''}
+          description={accommodationsConfig.listing.description || undefined}
         />
-        <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            placeholder="Search suites, villas, views"
-          />
-          <Select value={category} onValueChange={(value) => setCategory(value as AccommodationCategory | 'All')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Category" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">All categories</SelectItem>
-              <SelectItem value="Suite">Suite</SelectItem>
-              <SelectItem value="Villa">Villa</SelectItem>
-              <SelectItem value="Residence">Residence</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={capacity} onValueChange={(value) => setCapacity(value as 'All' | '2' | '3' | '4+')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Guests" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Any size</SelectItem>
-              <SelectItem value="2">Up to 2 guests</SelectItem>
-              <SelectItem value="3">3 guests</SelectItem>
-              <SelectItem value="4+">4+ guests</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={priceRange} onValueChange={(value) => setPriceRange(value as 'All' | 'Under 350' | '350-500' | '500+')}>
-            <SelectTrigger>
-              <SelectValue placeholder="Price" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="All">Any price</SelectItem>
-              <SelectItem value="Under 350">Under $350</SelectItem>
-              <SelectItem value="350-500">$350-$500</SelectItem>
-              <SelectItem value="500+">$500+</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <div className="mt-8 flex items-center justify-between text-sm text-muted-foreground">
-        <p>{isLoading ? 'Loading stays...' : `${filtered.length} stays available`}</p>
-        <Button asChild variant="ghost" size="sm">
-          <Link href="/booking">Plan a stay</Link>
-        </Button>
-      </div>
-
-      <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
-          Array.from({ length: 6 }).map((_, index) => (
-            <AccommodationCard demoMode={demoMode}
-              key={`accommodation-skeleton-${index}`}
-              name="Loading"
-              location=""
-              pricePerNight={0}
-              capacity={0}
-              isLoading
-            />
-          ))
-        ) : isError ? (
-          <Card className="col-span-full border-border/70 bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-lg">Unable to load stays</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              {error instanceof Error ? error.message : 'Please try again shortly.'}
-            </CardContent>
-          </Card>
-        ) : filtered.length === 0 ? (
-          <Card className="col-span-full border-border/70 bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-lg">No stays found</CardTitle>
-            </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Adjust your filters or explore the full resort offering.
-            </CardContent>
-          </Card>
-        ) : (
-          filtered.map((accommodation) => (
-            <AccommodationCard demoMode={demoMode}
-              key={accommodation.roomId}
-              {...accommodation}
-              action={
-                <div className="flex flex-col gap-3">
-                  <ModalDialog
-                    title={accommodation.name}
-                    description={`${accommodation.category} • ${accommodation.size} • ${accommodation.view}`}
-                    trigger={
-                      <Button variant="outline" className="w-full">
-                        View details
-                      </Button>
-                    }
-                    footer={
-                      <Button asChild>
-                        <Link href={`/booking?roomId=${accommodation.roomId}`}>
-                          Book this stay
-                        </Link>
-                      </Button>
-                    }
-                  >
-                    <div className="grid gap-4 text-sm text-muted-foreground">
-                      <div className="grid gap-2">
-                        <p className="text-xs uppercase tracking-[0.2em]">Overview</p>
-                        <p>{accommodation.description}</p>
-                      </div>
-                      <div className="grid gap-2">
-                        <p className="text-xs uppercase tracking-[0.2em]">Details</p>
-                        <div className="grid gap-2 sm:grid-cols-2">
-                          <div>
-                            <p className="text-foreground">{accommodation.bed}</p>
-                            <p className="text-xs text-muted-foreground">Sleeping</p>
-                          </div>
-                          <div>
-                            <p className="text-foreground">{accommodation.capacity} guests</p>
-                            <p className="text-xs text-muted-foreground">Capacity</p>
-                          </div>
-                          <div>
-                            <p className="text-foreground">{accommodation.size}</p>
-                            <p className="text-xs text-muted-foreground">Suite size</p>
-                          </div>
-                          <div>
-                            <p className="text-foreground">${accommodation.pricePerNight}/night</p>
-                            <p className="text-xs text-muted-foreground">Nightly rate</p>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {isLoading ? (
+            Array.from({ length: 6 }).map((_, index) => (
+              <AccommodationCard
+                demoMode={demoMode}
+                key={`accommodation-skeleton-${index}`}
+                name="Loading"
+                location=""
+                pricePerNight={0}
+                capacity={0}
+                isLoading
+              />
+            ))
+          ) : isError ? (
+            <Card className="col-span-full border-border/70 bg-card/90">
+              <CardHeader>
+                <CardTitle className="text-lg">Unable to load stays</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                {error instanceof Error ? error.message : 'Please try again shortly.'}
+              </CardContent>
+            </Card>
+          ) : restAccommodations.length === 0 ? (
+            <Card className="col-span-full border-border/70 bg-card/90">
+              <CardHeader>
+                <CardTitle className="text-lg">No stays found</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm text-muted-foreground">
+                There are no accommodations available right now.
+              </CardContent>
+            </Card>
+          ) : (
+            restAccommodations.map((accommodation) => (
+              <AccommodationCard
+                demoMode={demoMode}
+                key={accommodation.roomId}
+                {...accommodation}
+                action={
+                  <div className="flex flex-col gap-3">
+                    <ModalDialog
+                      title={accommodation.name}
+                      description={`${accommodation.category} • ${accommodation.size} • ${accommodation.view}`}
+                      trigger={
+                        <Button variant="outline" className="w-full">
+                          View details
+                        </Button>
+                      }
+                      footer={
+                        <Button asChild>
+                          <Link href={`/booking?roomId=${accommodation.roomId}`}>
+                            Book this stay
+                          </Link>
+                        </Button>
+                      }
+                    >
+                      <div className="grid gap-4 text-sm text-muted-foreground">
+                        <div className="grid gap-2">
+                          <p className="text-xs uppercase tracking-[0.2em]">Overview</p>
+                          <p>{accommodation.description}</p>
+                        </div>
+                        <div className="grid gap-2">
+                          <p className="text-xs uppercase tracking-[0.2em]">Details</p>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <div>
+                              <p className="text-foreground">{accommodation.bed}</p>
+                              <p className="text-xs text-muted-foreground">Sleeping</p>
+                            </div>
+                            <div>
+                              <p className="text-foreground">{accommodation.capacity} guests</p>
+                              <p className="text-xs text-muted-foreground">Capacity</p>
+                            </div>
+                            <div>
+                              <p className="text-foreground">{accommodation.size}</p>
+                              <p className="text-xs text-muted-foreground">Suite size</p>
+                            </div>
+                            <div>
+                              <p className="text-foreground">${accommodation.pricePerNight}/night</p>
+                              <p className="text-xs text-muted-foreground">Nightly rate</p>
+                            </div>
                           </div>
                         </div>
+                        <div className="grid gap-2">
+                          <p className="text-xs uppercase tracking-[0.2em]">Highlights</p>
+                          <ul className="grid gap-1">
+                            {accommodation.highlights.map((highlight) => (
+                              <li key={highlight}>• {highlight}</li>
+                            ))}
+                          </ul>
+                        </div>
                       </div>
-                      <div className="grid gap-2">
-                        <p className="text-xs uppercase tracking-[0.2em]">Highlights</p>
-                        <ul className="grid gap-1">
-                          {accommodation.highlights.map((highlight) => (
-                            <li key={highlight}>• {highlight}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    </div>
-                  </ModalDialog>
-                  <Button asChild className="w-full">
-                    <Link href={`/booking?roomId=${accommodation.roomId}`}>
-                      Book now
-                    </Link>
-                  </Button>
-                </div>
-              }
-            />
-          ))
-        )}
-      </div>
-      <div className="mt-16">
-        <ImageGallery
-          title="Inside Azure Lagoon"
-          subtitle="A quiet palette of light, texture, and open space."
-          images={accommodationGallery}
-        />
-      </div>
+                    </ModalDialog>
+                    <Button asChild className="w-full">
+                      <Link href={`/booking?roomId=${accommodation.roomId}`}>
+                        Book now
+                      </Link>
+                    </Button>
+                  </div>
+                }
+              />
+            ))
+          )}
+        </div>
+      </section>
     </PageShell>
   );
 }

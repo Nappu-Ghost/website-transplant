@@ -3,6 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter
 from app.utils.settings import load_settings
 from app.utils.homepage import load_homepage_config
+from app.utils.accommodations import load_accommodations_config
 
 router = APIRouter()
 
@@ -15,3 +16,8 @@ def get_meta() -> dict:
 @router.get("/meta/homepage")
 def get_homepage() -> dict:
     return load_homepage_config()
+
+
+@router.get("/meta/accommodations")
+def get_accommodations() -> dict:
+    return load_accommodations_config()
