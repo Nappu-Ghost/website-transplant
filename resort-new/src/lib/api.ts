@@ -97,7 +97,9 @@ export class ApiClient {
   public toPublicUrl(url: string): string {
     if (!url) return url;
     if (url.startsWith('http://') || url.startsWith('https://')) return url;
-    if (url.startsWith('/')) return `${this.backendOrigin()}${url}`;
+    if (url.startsWith('//')) return `https:${url}`;
+    if (url.startsWith('www.')) return `https://${url}`;
+    if (url.startsWith('/uploads/')) return `${this.backendOrigin()}${url}`;
     return url;
   }
 

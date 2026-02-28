@@ -62,6 +62,14 @@ export default function AdminHotelsPage() {
     mutationFn: (payload: Record<string, any>) => hotelService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels', 'admin'] });
+      toast({ title: 'Hotel created', description: 'The property was saved.' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Save failed',
+        description: error?.message || 'Unable to create the hotel.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -70,6 +78,14 @@ export default function AdminHotelsPage() {
       hotelService.update(String(id), payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels', 'admin'] });
+      toast({ title: 'Hotel updated', description: 'Changes have been saved.' });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Save failed',
+        description: error?.message || 'Unable to update the hotel.',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -106,6 +122,14 @@ export default function AdminHotelsPage() {
   };
 
   const handleSave = () => {
+    if (!draft.name.trim() || !draft.location.trim()) {
+      toast({
+        title: 'Missing required fields',
+        description: 'Name and location are required.',
+        variant: 'destructive',
+      });
+      return;
+    }
     const payload = {
       name: draft.name.trim(),
       location: draft.location.trim(),

@@ -8,6 +8,8 @@ export function resolveImageUrl(url?: string | null) {
     if (!url) return undefined;
 
     if (url.startsWith("http://") || url.startsWith("https://")) return url;
+    if (url.startsWith("//")) return `https:${url}`;
+    if (url.startsWith("www.")) return `https://${url}`;
 
     if (url.startsWith("/uploads/")) {
         return `${getApiOrigin(API_BASE_URL)}${url}`;

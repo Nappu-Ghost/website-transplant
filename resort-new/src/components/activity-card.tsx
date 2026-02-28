@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { demoImageUrl } from '@/lib/demo-images';
-import { metaService } from '@/lib/api-service';
+import { resolveImageUrl } from '@/lib/asset-url';
 
 export interface ActivityCardProps {
   demoMode?: boolean;
@@ -39,10 +39,7 @@ export function ActivityCard({
   action,
 }: ActivityCardProps) {
   const candidateImageUrl = imageUrl || (demoMode ? demoImageUrl('activity', name) : undefined);
-  const resolvedImageUrl =
-    candidateImageUrl && candidateImageUrl.startsWith('/uploads/')
-      ? metaService.toPublicUrl(candidateImageUrl)
-      : candidateImageUrl;
+  const resolvedImageUrl = resolveImageUrl(candidateImageUrl);
         if (isLoading) {
     return (
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
