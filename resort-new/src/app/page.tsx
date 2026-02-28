@@ -159,7 +159,7 @@ export default function Home() {
 
       <PageShell>
         <motion.section
-          className="mt-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr]"
+          className="mt-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
@@ -216,28 +216,28 @@ export default function Home() {
             </div>
           </motion.div>
           <motion.div variants={fadeIn}>
-            <Card className="border-border/70 bg-secondary/60">
-            <CardHeader>
-              <CardTitle className="text-lg">{homepage.ferry.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm text-muted-foreground">
-              {homepage.ferry.items.map((item, index) => (
-                <div key={item.id} className="flex items-start gap-3">
-                  <span className="mt-1 inline-flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    {index === 0 ? <Waves className="h-4 w-4" /> : <CalendarCheck className="h-4 w-4" />}
-                  </span>
-                  <div>
-                    <p className="font-medium text-foreground">{item.title}</p>
-                    <p>{item.description}</p>
+            <Card className="flex flex-col border-border/70 bg-secondary/60">
+              <CardHeader className="px-5 pb-2 pt-5">
+                <CardTitle className="text-lg">{homepage.ferry.title}</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 px-5 pb-5 text-sm text-muted-foreground">
+                {homepage.ferry.items.map((item, index) => (
+                  <div key={item.id} className="rounded-2xl border border-border/70 bg-background/60 px-4 py-2.5">
+                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/12 text-primary">
+                      {index === 0 ? <Waves className="h-6 w-6" /> : <CalendarCheck className="h-6 w-6" />}
+                    </span>
+                    <div className="mt-3 space-y-1">
+                      <p className="text-base font-semibold text-foreground">{item.title}</p>
+                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                    </div>
                   </div>
-                </div>
-              ))}
-              {homepage.ferry.cta?.url && homepage.ferry.cta.label ? (
-                <Button asChild className="w-fit">
-                  <Link href={homepage.ferry.cta.url}>{homepage.ferry.cta.label}</Link>
-                </Button>
-              ) : null}
-            </CardContent>
+                ))}
+                {homepage.ferry.cta?.url && homepage.ferry.cta.label ? (
+                  <Button asChild className="mt-1 w-fit">
+                    <Link href={homepage.ferry.cta.url}>{homepage.ferry.cta.label}</Link>
+                  </Button>
+                ) : null}
+              </CardContent>
             </Card>
           </motion.div>
         </motion.section>
