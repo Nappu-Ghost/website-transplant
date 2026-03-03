@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from 'react';
-import Image from 'next/image';
+
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -69,12 +69,10 @@ export function AccommodationCard({
       <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
         <div className="relative aspect-[4/3] w-full">
           {resolvedImageUrl ? (
-            <Image
+            <img
               src={resolvedImageUrl}
               alt={name}
-              fill
-              className="object-cover"
-              sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
+              className="absolute inset-0 h-full w-full object-cover"
             />
           ) : (
             <div className="h-full w-full bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_hsl(var(--background))_60%)]" />

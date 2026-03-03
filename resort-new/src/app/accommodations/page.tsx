@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useDemoMode } from '@/components/providers/demo-mode-provider';
 import Link from 'next/link';
-import Image from 'next/image';
 import { AccommodationCard, type AccommodationCardProps } from '@/components/accommodation-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,13 +180,10 @@ export default function AccommodationsPage() {
               }`}
             >
               {imageSrc ? (
-                <Image
+                <img
                   src={imageSrc}
                   alt={item.label || 'Accommodation hero'}
-                  fill
-                  className="object-cover object-right"
-                  sizes="(min-width: 1024px) 80vw, 100vw"
-                  priority={index === activeHeroIndex}
+                  className="absolute inset-0 h-full w-full object-cover object-right"
                 />
               ) : null}
             </div>
