@@ -94,22 +94,28 @@
   },
   "team": [
     {
-      "name": "Elena Shore",
-      "role": "General Manager",
-      "bio": "Hospitality leader focused on calm, intuitive guest journeys.",
-      "image_url": "/images/gallery/hotels/hotel1.jpg"
+      "name": "Naflah Mohamed",
+      "role": "Lead Developer",
+      "bio": "Technical Architect behind the project.",
+      "image_url": "https://avatars.githubusercontent.com/u/161013691?v=4"
     },
     {
-      "name": "Mateo Kai",
-      "role": "Experience Curator",
-      "bio": "Designs wellness and adventure itineraries with local guides.",
-      "image_url": "/images/gallery/rooms/room1.jpg"
+      "name": "Ahmed Fauzan Fawwaz",
+      "role": "Backend Developer",
+      "bio": "Structured the framework and developed a fully secure backend.",
+      "image_url": "https://i.redd.it/9ow4y229lct51.jpg"
     },
     {
-      "name": "Ayla Noor",
-      "role": "Culinary Director",
-      "bio": "Leads the kitchen with seasonal menus and shoreline sourcing.",
-      "image_url": "/images/gallery/hotels/hotel3.jpg"
+      "name": "Ismail Zuhal Rifau",
+      "role": "QA Analyst",
+      "bio": "Ensures quality and user experience.",
+      "image_url": "https://i.pinimg.com/736x/43/7b/ac/437bac4d51b6581075819a4d32dc9b21.jpg"
+    },
+    {
+      "name": "Mohamed Razaan",
+      "role": "Security Tester",
+      "bio": "Tests all security features before anything goes live.",
+      "image_url": "https://img.freepik.com/premium-photo/handsome-anime-boy-profile-sky-blue-color-background_864588-92536.jpg"
     }
   ]
 }
