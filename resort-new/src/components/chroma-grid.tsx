@@ -30,7 +30,7 @@ const ChromaGrid: React.FC<ChromaGridProps> = ({
   items,
   className = '',
   radius = 300,
-  columns = 3,
+  columns = 4,
   rows = 2,
   damping = 0.45,
   fadeOut = 0.6,

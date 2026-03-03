@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from 'react';
-import Image from 'next/image';
 import { Leaf, Sparkles, Sun, Waves, HeartHandshake } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -83,13 +82,10 @@ export default function AboutPage() {
               }`}
             >
               {imageSrc ? (
-                <Image
+                <img
                   src={imageSrc}
                   alt={item.label || 'About hero'}
-                  fill
-                  className="object-cover object-right"
-                  sizes="(min-width: 1024px) 80vw, 100vw"
-                  priority={index === activeHeroIndex}
+                  className="absolute inset-0 h-full w-full object-cover object-right"
                 />
               ) : null}
             </div>
@@ -179,6 +175,7 @@ export default function AboutPage() {
         />
         <ChromaGrid
           items={chromaItems}
+          columns={4}
           radius={320}
           damping={0.45}
           fadeOut={0.6}

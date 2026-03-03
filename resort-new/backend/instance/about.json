@@ -15,21 +15,9 @@
   "gallery": [
     {
       "id": "about-hero-1",
-      "image_url": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1600&q=80",
+      "image_url": "https://i.pinimg.com/736x/47/4b/b9/474bb9b768fc0096900b82f92459bfa3.jpg",
       "label": "Lagoon views",
       "caption": "Soft light and open horizons."
-    },
-    {
-      "id": "about-hero-2",
-      "image_url": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1600&q=80",
-      "label": "Island calm",
-      "caption": "Private decks and slow mornings."
-    },
-    {
-      "id": "about-hero-3",
-      "image_url": "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1600&q=80",
-      "label": "Evening glow",
-      "caption": "Golden-hour rituals by the sea."
     }
   ],
   "intro": {
