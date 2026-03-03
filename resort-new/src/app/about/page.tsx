@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
-import { Leaf, Sparkles, Sun, Waves, HeartHandshake, Users } from 'lucide-react';
+import { Leaf, Sparkles, Sun, Waves, HeartHandshake } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FeatureCard, PageShell, SectionHeader } from '@/components/shared';
 import { metaService } from '@/lib/api-service';
 import { resolveImageUrl } from '@/lib/asset-url';
 import { defaultAboutConfig, type AboutConfig } from '@/lib/about-defaults';
+import ChromaGrid, { type ChromaItem } from '@/components/chroma-grid';
 
 const amenityIcons = [Waves, Leaf, Sparkles, Sun];
 
@@ -44,6 +45,30 @@ export default function AboutPage() {
     }, 20000);
     return () => clearInterval(interval);
   }, [heroGallery.length]);
+
+  const chromaItems = useMemo<ChromaItem[]>(() => {
+    const palette = [
+      { border: '#3B82F6', gradient: 'linear-gradient(145deg, #3B82F6, #000)' },
+      { border: '#10B981', gradient: 'linear-gradient(180deg, #10B981, #000)' },
+      { border: '#F59E0B', gradient: 'linear-gradient(165deg, #F59E0B, #000)' },
+      { border: '#EF4444', gradient: 'linear-gradient(195deg, #EF4444, #000)' },
+      { border: '#8B5CF6', gradient: 'linear-gradient(225deg, #8B5CF6, #000)' },
+      { border: '#06B6D4', gradient: 'linear-gradient(135deg, #06B6D4, #000)' },
+    ];
+
+    return aboutConfig.team.map((member, index) => {
+      const colors = palette[index % palette.length];
+      const image = resolveImageUrl(member.imageUrl) || member.imageUrl;
+      return {
+        image,
+        title: member.name,
+        subtitle: member.role,
+        handle: member.bio,
+        borderColor: colors.border,
+        gradient: colors.gradient,
+      };
+    });
+  }, [aboutConfig.team]);
 
   return (
     <PageShell>
@@ -152,29 +177,13 @@ export default function AboutPage() {
           title={aboutConfig.teamSection.title || ''}
           description={aboutConfig.teamSection.description || undefined}
         />
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {aboutConfig.team.map((member) => (
-            <Card key={member.name} className="border-border/70 bg-card/90 shadow-sm">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-t-lg">
-                <Image
-                  src={resolveImageUrl(member.imageUrl) || member.imageUrl}
-                  alt={member.name}
-                  fill
-                  sizes="(min-width: 1024px) 320px, (min-width: 768px) 45vw, 90vw"
-                  className="object-cover"
-                />
-              </div>
-              <CardContent className="space-y-2 p-5">
-                <div className="flex items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  <Users className="h-4 w-4" />
-                  {member.role}
-                </div>
-                <p className="text-lg font-semibold text-foreground">{member.name}</p>
-                <p className="text-sm text-muted-foreground">{member.bio}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ChromaGrid
+          items={chromaItems}
+          radius={320}
+          damping={0.45}
+          fadeOut={0.6}
+          ease="power3.out"
+        />
       </section>
     </PageShell>
   );
