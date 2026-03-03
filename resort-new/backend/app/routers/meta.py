@@ -5,6 +5,7 @@ from app.utils.settings import load_settings
 from app.utils.homepage import load_homepage_config
 from app.utils.accommodations import load_accommodations_config
 from app.utils.activities import load_activities_config
+from app.utils.about import load_about_config
 
 router = APIRouter()
 
@@ -27,3 +28,8 @@ def get_accommodations() -> dict:
 @router.get("/meta/activities")
 def get_activities() -> dict:
     return load_activities_config()
+
+
+@router.get("/meta/about")
+def get_about() -> dict:
+    return load_about_config()

@@ -502,3 +502,68 @@ class ActivitiesConfig(BaseModel):
     gallery: List[ActivitiesGalleryItem]
     featured: ActivitiesSection
     listing: ActivitiesSection
+
+
+class AboutCta(BaseModel):
+    label: Optional[str] = None
+    url: Optional[str] = None
+
+
+class AboutHero(BaseModel):
+    kicker: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = None
+    cta_primary: Optional[AboutCta] = None
+    cta_secondary: Optional[AboutCta] = None
+
+
+class AboutGalleryItem(BaseModel):
+    id: str
+    image_url: str
+    label: Optional[str] = None
+    caption: Optional[str] = None
+
+
+class AboutIntro(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    paragraphs: List[str] = []
+    highlight: Optional[str] = None
+
+
+class AboutStatItem(BaseModel):
+    label: str
+    value: str
+
+
+class AboutStats(BaseModel):
+    title: Optional[str] = None
+    items: List[AboutStatItem] = []
+
+
+class AboutSection(BaseModel):
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class AboutAmenity(BaseModel):
+    title: str
+    description: str
+
+
+class AboutTeamMember(BaseModel):
+    name: str
+    role: str
+    bio: str
+    image_url: str
+
+
+class AboutConfig(BaseModel):
+    hero: AboutHero
+    gallery: List[AboutGalleryItem]
+    intro: AboutIntro
+    stats: AboutStats
+    amenities_section: AboutSection
+    amenities: List[AboutAmenity]
+    team_section: AboutSection
+    team: List[AboutTeamMember]

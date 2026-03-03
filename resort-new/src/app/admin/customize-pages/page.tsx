@@ -18,6 +18,11 @@ const pageLinks = [
     title: 'Customize Activities Page',
     description: 'Hero gallery and section headers for activities.',
   },
+  {
+    href: '/admin/customize-about',
+    title: 'Customize About Page',
+    description: 'Hero gallery, story copy, and team details for about.',
+  },
 ];
 
 export default function AdminCustomizePagesLanding() {

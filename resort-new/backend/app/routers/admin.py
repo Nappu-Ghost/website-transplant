@@ -8,6 +8,7 @@ from app.dependencies import require_role
 from app.utils.homepage import load_homepage_config, save_homepage_config
 from app.utils.accommodations import load_accommodations_config, save_accommodations_config
 from app.utils.activities import load_activities_config, save_activities_config
+from app.utils.about import load_about_config, save_about_config
 
 router = APIRouter(tags=["Admin"], responses={404: {"description": "Not found"}})
 
@@ -91,4 +92,21 @@ def update_activities_settings(
 ):
     config = payload.model_dump()
     save_activities_config(config)
+    return config
+
+
+@router.get("/about-page")
+def get_about_settings(
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    return load_about_config()
+
+
+@router.put("/about-page")
+def update_about_settings(
+    payload: schemas.AboutConfig,
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    config = payload.model_dump()
+    save_about_config(config)
     return config
