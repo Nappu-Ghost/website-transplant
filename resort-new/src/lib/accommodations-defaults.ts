@@ -28,6 +28,7 @@ export type AccommodationsConfig = {
   gallery: AccommodationsGalleryItem[];
   featured: AccommodationsSection;
   listing: AccommodationsSection;
+  featuredIds?: number[] | null;
 };
 
 export const defaultAccommodationsConfig: AccommodationsConfig = {
@@ -63,6 +64,7 @@ export const defaultAccommodationsConfig: AccommodationsConfig = {
     title: 'Featured stays',
     description: 'Premium suites and villas picked from live availability.',
   },
+  featuredIds: [],
   listing: {
     title: 'All accommodations',
     description: 'Browse the full collection and compare amenities.',

@@ -62,6 +62,7 @@ export default function AdminHotelsPage() {
     mutationFn: (payload: Record<string, any>) => hotelService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
       toast({ title: 'Hotel created', description: 'The property was saved.' });
     },
     onError: (error: any) => {
@@ -78,6 +79,7 @@ export default function AdminHotelsPage() {
       hotelService.update(String(id), payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['hotels', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
       toast({ title: 'Hotel updated', description: 'Changes have been saved.' });
     },
     onError: (error: any) => {
@@ -96,6 +98,7 @@ export default function AdminHotelsPage() {
       setDraft((current) => ({ ...current, imageUrl: nextUrl }));
       setImageFile(null);
       queryClient.invalidateQueries({ queryKey: ['hotels', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['hotels'] });
       toast({ title: 'Image uploaded', description: 'Hotel image has been updated.' });
     },
     onError: (e: any) => {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { adminService } from '@/lib/api-service';
+import { adminService, hotelService, roomService } from '@/lib/api-service';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -36,6 +36,21 @@ export default function AdminCustomizeAccommodationsPage() {
     queryKey: ['admin', 'accommodations-page'],
     queryFn: () => adminService.getAccommodationsSettings(),
   });
+
+  const { data: allHotels = [] } = useQuery<{ id: number; name: string }[]>({
+    queryKey: ['hotels'],
+    queryFn: () => hotelService.list(),
+  });
+
+  const { data: allRooms = [] } = useQuery<{ id: number; hotelId: number; name: string; type: string; isPremium?: boolean }[]>({
+    queryKey: ['rooms'],
+    queryFn: () => roomService.list(),
+  });
+
+  const hotelNameById = useMemo(
+    () => new Map(allHotels.map((h) => [h.id, h.name])),
+    [allHotels],
+  );
 
   useEffect(() => {
     if (data && typeof data === 'object') {
@@ -99,6 +114,17 @@ export default function AdminCustomizeAccommodationsPage() {
 
   const removeGalleryItem = (id: string) => {
     setConfig((prev) => ({ ...prev, gallery: prev.gallery.filter((item) => item.id !== id) }));
+  };
+
+  const toggleFeaturedId = (id: number) => {
+    setConfig((prev) => {
+      const current = prev.featuredIds ?? [];
+      if (current.includes(id)) {
+        return { ...prev, featuredIds: current.filter((x) => x !== id) };
+      }
+      if (current.length >= 3) return prev;
+      return { ...prev, featuredIds: [...current, id] };
+    });
   };
 
   const updateSection = (key: 'featured' | 'listing', field: 'title' | 'description', value: string) => {
@@ -251,6 +277,64 @@ export default function AdminCustomizeAccommodationsPage() {
                 </div>
               </div>
             ))
+          )}
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/70 bg-card/90">
+        <CardHeader>
+          <CardTitle className="text-lg">Featured stays</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            Pick 1–3 rooms to pin in the "Featured stays" section. If none are selected, the top-rated ones are shown automatically.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {allRooms.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No rooms in the database yet.</p>
+          ) : (
+            allRooms.map((room) => {
+              const selected = (config.featuredIds ?? []).includes(room.id);
+              const atMax = (config.featuredIds ?? []).length >= 3;
+              return (
+                <label
+                  key={room.id}
+                  className={`flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
+                    selected
+                      ? 'border-primary bg-primary/5'
+                      : atMax
+                      ? 'cursor-not-allowed border-border/40 opacity-50'
+                      : 'border-border/60 hover:bg-muted/40'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={selected}
+                    disabled={!selected && atMax}
+                    onChange={() => toggleFeaturedId(room.id)}
+                    className="h-4 w-4 accent-primary"
+                  />
+                  <span className="flex-1 text-sm font-medium">{room.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {hotelNameById.get(room.hotelId) ?? 'Unknown hotel'} · {room.type}
+                  </span>
+                  {room.isPremium && (
+                    <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-600">
+                      Premium
+                    </span>
+                  )}
+                </label>
+              );
+            })
+          )}
+          {(config.featuredIds ?? []).length > 0 && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-muted-foreground"
+              onClick={() => setConfig((prev) => ({ ...prev, featuredIds: [] }))}
+            >
+              Clear selection
+            </Button>
           )}
         </CardContent>
       </Card>

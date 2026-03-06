@@ -470,6 +470,7 @@ class AccommodationsConfig(BaseModel):
     gallery: List[AccommodationsGalleryItem]
     featured: AccommodationsSection
     listing: AccommodationsSection
+    featured_ids: Optional[List[int]] = None
 
 
 class ActivitiesCta(BaseModel):

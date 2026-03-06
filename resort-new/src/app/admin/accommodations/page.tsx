@@ -92,6 +92,7 @@ export default function AdminAccommodationsPage() {
     mutationFn: (payload: Record<string, any>) => roomService.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 
@@ -100,6 +101,7 @@ export default function AdminAccommodationsPage() {
       roomService.update(String(id), payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['rooms', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
     },
   });
 
@@ -110,6 +112,7 @@ export default function AdminAccommodationsPage() {
       setDraft((current) => ({ ...current, imageUrl: nextUrl }));
       setImageFile(null);
       queryClient.invalidateQueries({ queryKey: ['rooms', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['rooms'] });
       toast({ title: 'Image uploaded', description: 'Accommodation image has been updated.' });
     },
     onError: (e: any) => {
