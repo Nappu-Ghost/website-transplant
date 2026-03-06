@@ -70,3 +70,6 @@ resort-new/backend/app/routers/__pycache__/
 resort-new/backend/app/utils/__pycache__/
 resort-new/backend/tests/__pycache__/
 resort-new/backend/*.db*
+
+# Old website
+/resort-old

@@ -1,3 +1,0 @@
-Testing sync with GitLab
-Sync succesful. Testing Vise Versa - GitLab > GitHub
-Sync Recieved. Nice.
