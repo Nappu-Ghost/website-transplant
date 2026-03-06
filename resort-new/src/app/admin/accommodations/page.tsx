@@ -179,7 +179,7 @@ export default function AdminAccommodationsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title="Accommodations"
+        title="Rooms"
         description="Manage suite inventory, availability, and rate tiers."
       />
 
