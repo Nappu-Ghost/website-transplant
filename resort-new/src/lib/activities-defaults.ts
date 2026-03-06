@@ -28,6 +28,7 @@ export type ActivitiesConfig = {
   gallery: ActivitiesGalleryItem[];
   featured: ActivitiesSection;
   listing: ActivitiesSection;
+  featuredIds?: number[] | null;
 };
 
 export const defaultActivitiesConfig: ActivitiesConfig = {
@@ -63,6 +64,7 @@ export const defaultActivitiesConfig: ActivitiesConfig = {
     title: 'Featured experiences',
     description: 'Premium and top-rated experiences from the live roster.',
   },
+  featuredIds: [],
   listing: {
     title: 'All activities',
     description: 'Explore the full lineup and plan your day.',

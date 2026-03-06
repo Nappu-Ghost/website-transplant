@@ -39,5 +39,10 @@
   "listing": {
     "title": "All activities",
     "description": "Explore the full lineup and plan your day."
-  }
+  },
+  "featured_ids": [
+    1,
+    2,
+    3
+  ]
 }

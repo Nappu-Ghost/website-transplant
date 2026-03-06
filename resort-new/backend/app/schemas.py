@@ -502,6 +502,7 @@ class ActivitiesConfig(BaseModel):
     gallery: List[ActivitiesGalleryItem]
     featured: ActivitiesSection
     listing: ActivitiesSection
+    featured_ids: Optional[List[int]] = None
 
 
 class AboutCta(BaseModel):

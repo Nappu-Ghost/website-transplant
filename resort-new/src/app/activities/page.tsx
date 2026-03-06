@@ -139,6 +139,14 @@ export default function ActivitiesPage() {
   }, [activityData]);
 
   const featuredActivities = useMemo(() => {
+    const pinnedIds = activitiesConfig.featuredIds;
+    if (pinnedIds && pinnedIds.length > 0) {
+      const map = new Map(activities.map((a) => [a.id, a]));
+      return pinnedIds.slice(0, 3).flatMap((id) => {
+        const found = map.get(id);
+        return found ? [found] : [];
+      });
+    }
     return [...activities]
       .sort(
         (a, b) =>
@@ -146,7 +154,7 @@ export default function ActivitiesPage() {
           b.price - a.price,
       )
       .slice(0, 3);
-  }, [activities]);
+  }, [activities, activitiesConfig.featuredIds]);
 
   const featuredIds = useMemo(() => new Set(featuredActivities.map((item) => item.id)), [featuredActivities]);
   const restActivities = useMemo(
