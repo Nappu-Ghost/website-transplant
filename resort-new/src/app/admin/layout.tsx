@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggleButton } from '@/components/theme-toggle-button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,18 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const { user, logout } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  const handleGoBack = () => {
+    if (window.history.length > 1) {
+      router.back();
+      return;
+    }
+    router.push('/admin');
+  };
+
+  const showPreviousButton = pathname !== '/admin';
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,7 +47,16 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-10">{children}</main>
+      <main className="relative mx-auto max-w-6xl px-6 py-10">
+        {showPreviousButton ? (
+          <div className="absolute right-6 top-10 z-10">
+            <Button variant="outline" size="sm" onClick={handleGoBack}>
+              Previous page
+            </Button>
+          </div>
+        ) : null}
+        {children}
+      </main>
     </div>
   );
 }
