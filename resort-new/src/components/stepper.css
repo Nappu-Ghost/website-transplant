@@ -1,0 +1,131 @@
+.booking-stepper {
+  width: 100%;
+}
+
+.booking-stepper-shell {
+  border: 1px solid hsl(var(--border));
+  border-radius: 1.25rem;
+  background: hsl(var(--card));
+  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.08);
+  overflow: hidden;
+}
+
+.booking-stepper-row {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid hsl(var(--border) / 0.65);
+  overflow-x: auto;
+}
+
+.booking-step-indicator {
+  position: relative;
+  cursor: pointer;
+  outline: none;
+  border: none;
+  background: transparent;
+  padding: 0;
+}
+
+.booking-step-indicator:disabled {
+  cursor: not-allowed;
+}
+
+.booking-step-indicator-inner {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: hsl(var(--muted-foreground));
+  background: hsl(var(--muted));
+  border: 1px solid hsl(var(--border));
+}
+
+.booking-step-indicator-inner.active {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.booking-step-indicator-inner.complete {
+  color: hsl(var(--primary-foreground));
+  background: hsl(var(--primary));
+  border-color: hsl(var(--primary));
+}
+
+.booking-step-connector {
+  flex: 1;
+  min-width: 1.3rem;
+  height: 2px;
+  margin: 0 0.5rem;
+  border-radius: 9999px;
+  background: hsl(var(--border));
+  overflow: hidden;
+}
+
+.booking-step-connector-inner {
+  height: 100%;
+  width: 0;
+  background: hsl(var(--primary));
+}
+
+.booking-step-content {
+  position: relative;
+  overflow: hidden;
+}
+
+.booking-step-pane {
+  padding: 1.25rem;
+}
+
+.booking-step-footer {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.booking-step-footer-nav {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.booking-step-footer-nav.end {
+  justify-content: flex-end;
+}
+
+.booking-step-btn {
+  border: 1px solid hsl(var(--border));
+  border-radius: 9999px;
+  padding: 0.5rem 0.95rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+}
+
+.booking-step-btn:hover:not(:disabled) {
+  background: hsl(var(--secondary));
+}
+
+.booking-step-btn.next {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+.booking-step-btn.next:hover:not(:disabled) {
+  opacity: 0.9;
+}
+
+.booking-step-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.booking-step-check {
+  width: 1rem;
+  height: 1rem;
+}
