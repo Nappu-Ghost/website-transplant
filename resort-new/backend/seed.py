@@ -282,9 +282,9 @@ def run_seed():
 
         print("Seeding completed.")
         print("Users:")
-        print("  demo@island.local / Riv3r!Stone#2026")
-        print("  admin@island.local / Gl0w!Maple@7261")
-        print("  manager@island.local / C0balt!Harbor#5512")
+        print("  demo.user@example.com / Riv3r!Stone#2026")
+        print("  admin.user@example.com / Gl0w!Maple@7261")
+        print("  manager.user@example.com / C0balt!Harbor#5512")
     finally:
         db.close()
 

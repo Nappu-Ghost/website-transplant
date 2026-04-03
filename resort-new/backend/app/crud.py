@@ -291,6 +291,11 @@ def create_payment(db: Session, payment_in: schemas.PaymentCreate) -> models.Pay
         raise HTTPException(status_code=404, detail=f"Booking with id {payment_in.booking_id} not found")
 
     db_payment = models.Payment(**payment_in.model_dump())
+    # If a payment is immediately captured, set paid_at if not provided
+    if db_payment.status == models.PaymentStatusEnum.CAPTURED and not db_payment.paid_at:
+        from datetime import datetime
+        db_payment.paid_at = datetime.utcnow()
+
     try:
         db.add(db_payment)
         if payment_in.status in [
@@ -316,6 +321,11 @@ def update_payment(db: Session, db_payment: models.Payment, payment_in: schemas.
 
     try:
         db.add(db_payment)
+        if "status" in update_data:
+            if db_payment.status == models.PaymentStatusEnum.CAPTURED and not db_payment.paid_at:
+                from datetime import datetime
+                db_payment.paid_at = datetime.utcnow()
+
         if "status" in update_data and db_payment.booking_id:
             db_booking = get_db_obj(db, models.Booking, db_payment.booking_id)
             if db_booking and db_payment.status in [

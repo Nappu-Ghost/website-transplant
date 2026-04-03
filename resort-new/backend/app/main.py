@@ -18,6 +18,7 @@ from .routers import (
     ferry_tickets,
     payments,
     admin,
+    places,
 )
 from .db import engine, Base
 from .db import SessionLocal
@@ -63,6 +64,8 @@ uploads_dir.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_dir)), name="uploads")
 
 API_PREFIX = "/api/v1"
+
+app.include_router(places.router, prefix=API_PREFIX, tags=["Places"])
 
 
 @app.on_event("startup")

@@ -22,6 +22,7 @@ export function AppHeader() {
     { href: '/accommodations', label: 'Accommodations' },
     { href: '/activities', label: 'Activities' },
     { href: '/booking', label: 'Booking' },
+    { href: '/map', label: 'Map'},
     { href: '/contact', label: 'Contact' },
   ];
 
