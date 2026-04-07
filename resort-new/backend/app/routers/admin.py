@@ -9,6 +9,7 @@ from app.utils.homepage import load_homepage_config, save_homepage_config
 from app.utils.accommodations import load_accommodations_config, save_accommodations_config
 from app.utils.activities import load_activities_config, save_activities_config
 from app.utils.about import load_about_config, save_about_config
+from app.utils.map_config import load_map_config, save_map_config
 
 router = APIRouter(tags=["Admin"], responses={404: {"description": "Not found"}})
 
@@ -109,4 +110,21 @@ def update_about_settings(
 ):
     config = payload.model_dump()
     save_about_config(config)
+    return config
+
+
+@router.get("/map-page")
+def get_map_settings(
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    return load_map_config()
+
+
+@router.put("/map-page")
+def update_map_settings(
+    payload: schemas.MapConfig,
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    config = payload.model_dump()
+    save_map_config(config)
     return config

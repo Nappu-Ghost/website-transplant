@@ -63,6 +63,8 @@ export const adminService = {
   updateActivitiesSettings: (data: any, token?: string | null) => api.updateActivitiesSettings(data, token),
   getAboutSettings: (token?: string | null) => api.getAboutSettings(token),
   updateAboutSettings: (data: any, token?: string | null) => api.updateAboutSettings(data, token),
+  getMapSettings: (token?: string | null) => api.getMapSettings(token),
+  updateMapSettings: (data: any, token?: string | null) => api.updateMapSettings(data, token),
 };
 
 export const metaService = {
@@ -71,5 +73,6 @@ export const metaService = {
   getAccommodations: () => api.getAccommodationsConfig(),
   getActivities: () => api.getActivitiesConfig(),
   getAbout: () => api.getAboutConfig(),
+  getMap: () => api.getMapConfig(),
   toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

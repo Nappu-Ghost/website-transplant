@@ -1,0 +1,54 @@
+{
+  "enabled": true,
+  "title": "Explore the resort map",
+  "description": "Preview key locations across Azure Lagoon Resort. Hover over a pin for the name, then click to view details and gallery images.",
+  "background_image_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+  "default_zoom": 1.0,
+  "pins": [
+    {
+      "id": "arrival-jetty",
+      "name": "Arrival Jetty",
+      "description": "Main arrival point with concierge welcome and quick ferry access.",
+      "x": 18.0,
+      "y": 72.0,
+      "images": [
+        {
+          "id": "arrival-jetty-1",
+          "url": "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?auto=format&fit=crop&w=1200&q=80",
+          "alt": "Arrival jetty",
+          "caption": "Guests are welcomed here before check-in."
+        }
+      ]
+    },
+    {
+      "id": "lagoon-spa",
+      "name": "Lagoon Spa",
+      "description": "Wellness pavilion for sunrise treatments and evening rituals.",
+      "x": 56.0,
+      "y": 34.0,
+      "images": [
+        {
+          "id": "lagoon-spa-1",
+          "url": "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&w=1200&q=80",
+          "alt": "Lagoon spa",
+          "caption": "Ocean-facing wellness rooms and quiet lounges."
+        }
+      ]
+    },
+    {
+      "id": "sunset-dining",
+      "name": "Sunset Dining Deck",
+      "description": "Signature dinner spot for golden-hour meals over the water.",
+      "x": 78.0,
+      "y": 58.0,
+      "images": [
+        {
+          "id": "sunset-dining-1",
+          "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80",
+          "alt": "Sunset dining deck",
+          "caption": "Chef-led dinners with panoramic lagoon views."
+        }
+      ]
+    }
+  ]
+}

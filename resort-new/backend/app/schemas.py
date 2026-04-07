@@ -569,3 +569,28 @@ class AboutConfig(BaseModel):
     amenities: List[AboutAmenity]
     team_section: AboutSection
     team: List[AboutTeamMember]
+
+
+class MapPinImage(BaseModel):
+    id: str
+    url: str
+    alt: Optional[str] = None
+    caption: Optional[str] = None
+
+
+class MapPin(BaseModel):
+    id: str
+    name: str
+    description: Optional[str] = None
+    x: float = Field(..., ge=0, le=100)
+    y: float = Field(..., ge=0, le=100)
+    images: List[MapPinImage] = []
+
+
+class MapConfig(BaseModel):
+    enabled: bool = True
+    title: Optional[str] = None
+    description: Optional[str] = None
+    background_image_url: Optional[str] = None
+    default_zoom: float = Field(1.0, ge=0.5, le=3.0)
+    pins: List[MapPin] = []

@@ -23,6 +23,11 @@ const pageLinks = [
     title: 'Customize About Page',
     description: 'Hero gallery, story copy, and team details for about.',
   },
+  {
+    href: '/admin/map-editor',
+    title: 'Map Editor',
+    description: 'Background image, default zoom, pins, and public map visibility.',
+  },
 ];
 
 export default function AdminCustomizePagesLanding() {

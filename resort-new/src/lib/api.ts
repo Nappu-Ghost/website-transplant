@@ -243,6 +243,7 @@ export class ApiClient {
   async getAccommodationsConfig() { return this.request('/meta/accommodations', {}, undefined, false, null); }
   async getActivitiesConfig() { return this.request('/meta/activities', {}, undefined, false, null); }
   async getAboutConfig() { return this.request('/meta/about', {}, undefined, false, null); }
+  async getMapConfig() { return this.request('/meta/map', {}, undefined, false, null); }
 
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }
@@ -360,6 +361,20 @@ export class ApiClient {
   async updateAboutSettings(data: any, token?: string | null) {
     return this.request(
       '/admin/about-page',
+      { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) },
+      'application/json',
+      true,
+      token,
+    );
+  }
+
+  async getMapSettings(token?: string | null) {
+    return this.request('/admin/map-page', {}, undefined, true, token);
+  }
+
+  async updateMapSettings(data: any, token?: string | null) {
+    return this.request(
+      '/admin/map-page',
       { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) },
       'application/json',
       true,

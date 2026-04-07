@@ -29,6 +29,11 @@ const adminLinks = [
     description: 'Hero galleries and section copy for public pages.',
   },
   {
+    href: '/admin/map-editor',
+    title: 'Map Editor',
+    description: 'Custom map image, pin placement, and Map tab visibility.',
+  },
+  {
     href: '/admin/users',
     title: 'Users',
     description: 'Guest profiles, roles, and concierge assignments.',
