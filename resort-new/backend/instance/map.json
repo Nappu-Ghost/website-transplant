@@ -2,15 +2,15 @@
   "enabled": true,
   "title": "Explore the resort map",
   "description": "Preview key locations across Azure Lagoon Resort. Hover over a pin for the name, then click to view details and gallery images.",
-  "background_image_url": "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=80",
+  "background_image_url": "https://media.craiyon.com/2025-07-26/eZSWVqkcQfyNpSigWckyfA.webp",
   "default_zoom": 1.0,
   "pins": [
     {
       "id": "arrival-jetty",
       "name": "Arrival Jetty",
       "description": "Main arrival point with concierge welcome and quick ferry access.",
-      "x": 18.0,
-      "y": 72.0,
+      "x": 77.96,
+      "y": 44.3,
       "images": [
         {
           "id": "arrival-jetty-1",
