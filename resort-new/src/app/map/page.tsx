@@ -12,7 +12,7 @@ import { metaService } from '@/lib/api-service';
 import { resolveImageUrl } from '@/lib/asset-url';
 import { defaultMapConfig, type ResortMapConfig } from '@/lib/map-defaults';
 
-const clampZoom = (v: number) => Math.max(0.8, Math.min(2.5, parseFloat(v.toFixed(1))));
+const clampZoom = (v: number) => Math.max(1, Math.min(3, parseFloat(v.toFixed(2))));
 
 export default function MapPage() {
   const [config, setConfig] = useState<ResortMapConfig>(defaultMapConfig);
@@ -20,7 +20,16 @@ export default function MapPage() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
   const [imgAspect, setImgAspect] = useState(16 / 9);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef({
+    isDragging: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
+  });
   const [mapViewportSize, setMapViewportSize] = useState({ width: 0, height: 0 });
 
   const { data, isLoading } = useQuery({
@@ -34,6 +43,7 @@ export default function MapPage() {
       setConfig(next);
       setActivePinId(null);
       setActiveImageIndex(0);
+      setPan({ x: 0, y: 0 });
       setZoom(clampZoom(next.defaultZoom ?? 1));
     }
   }, [data]);
@@ -66,7 +76,7 @@ export default function MapPage() {
   const featuredImage = resolveImageUrl(activeImages[activeImageIndex]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
 
-  const fittedMapFrame = useMemo(() => {
+  const coverMapFrame = useMemo(() => {
     const { width, height } = mapViewportSize;
 
     if (!width || !height) {
@@ -76,26 +86,44 @@ export default function MapPage() {
     const viewportAspect = width / height;
 
     if (viewportAspect > imgAspect) {
-      const fittedHeight = height;
-      const fittedWidth = fittedHeight * imgAspect;
+      const coverWidth = width;
+      const coverHeight = coverWidth / imgAspect;
       return {
-        width: fittedWidth,
-        height: fittedHeight,
-        left: (width - fittedWidth) / 2,
-        top: 0,
+        width: coverWidth,
+        height: coverHeight,
+        left: 0,
+        top: (height - coverHeight) / 2,
       };
     }
 
-    const fittedWidth = width;
-    const fittedHeight = fittedWidth / imgAspect;
+    const coverHeight = height;
+    const coverWidth = coverHeight * imgAspect;
 
     return {
-      width: fittedWidth,
-      height: fittedHeight,
-      left: 0,
-      top: (height - fittedHeight) / 2,
+      width: coverWidth,
+      height: coverHeight,
+      left: (width - coverWidth) / 2,
+      top: 0,
     };
   }, [imgAspect, mapViewportSize]);
+
+  const maxPan = useMemo(() => {
+    const extraX = Math.max(0, (coverMapFrame.width * zoom - mapViewportSize.width) / 2);
+    const extraY = Math.max(0, (coverMapFrame.height * zoom - mapViewportSize.height) / 2);
+    return { x: extraX, y: extraY };
+  }, [coverMapFrame.height, coverMapFrame.width, mapViewportSize.height, mapViewportSize.width, zoom]);
+
+  const clampPanOffset = (x: number, y: number) => ({
+    x: Math.max(-maxPan.x, Math.min(maxPan.x, x)),
+    y: Math.max(-maxPan.y, Math.min(maxPan.y, y)),
+  });
+
+  useEffect(() => {
+    setPan((prev) => {
+      const next = clampPanOffset(prev.x, prev.y);
+      return prev.x === next.x && prev.y === next.y ? prev : next;
+    });
+  }, [maxPan.x, maxPan.y]);
 
   if (!config.enabled) {
     return (
@@ -156,10 +184,13 @@ export default function MapPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setZoom(clampZoom(config.defaultZoom ?? 1))}
+                onClick={() => {
+                  setZoom(clampZoom(config.defaultZoom ?? 1));
+                  setPan({ x: 0, y: 0 });
+                }}
                 className="mt-3 rounded-full border border-border/60 bg-background px-3 py-1.5 text-xs text-muted-foreground transition hover:border-primary/40 hover:text-foreground"
               >
-                Reset to {(config.defaultZoom ?? 1).toFixed(1)}×
+                Reset to {clampZoom(config.defaultZoom ?? 1).toFixed(1)}×
               </button>
             </div>
           </div>
@@ -291,19 +322,53 @@ export default function MapPage() {
         </aside>
 
         <div className="relative min-h-0 bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
-          <div ref={mapViewportRef} className="absolute inset-0 overflow-hidden p-2 sm:p-3 lg:p-4">
+          <div
+            ref={mapViewportRef}
+            className="absolute inset-0 overflow-hidden p-0 sm:p-1 lg:p-2 touch-none"
+            onWheel={(event) => {
+              event.preventDefault();
+              setZoom((value) => clampZoom(value + (event.deltaY < 0 ? 0.1 : -0.1)));
+            }}
+            onPointerDown={(event) => {
+              if (event.button !== 0) return;
+              dragStateRef.current = {
+                isDragging: true,
+                pointerId: event.pointerId,
+                startX: event.clientX,
+                startY: event.clientY,
+                originX: pan.x,
+                originY: pan.y,
+              };
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }}
+            onPointerMove={(event) => {
+              if (!dragStateRef.current.isDragging) return;
+              const dx = event.clientX - dragStateRef.current.startX;
+              const dy = event.clientY - dragStateRef.current.startY;
+              setPan(clampPanOffset(dragStateRef.current.originX + dx, dragStateRef.current.originY + dy));
+            }}
+            onPointerUp={(event) => {
+              if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                event.currentTarget.releasePointerCapture(event.pointerId);
+              }
+              dragStateRef.current.isDragging = false;
+            }}
+            onPointerLeave={() => {
+              dragStateRef.current.isDragging = false;
+            }}
+          >
             <div
-              className="absolute overflow-hidden rounded-[26px] border border-border/60 bg-muted/30 shadow-inner"
+              className="absolute overflow-hidden rounded-[22px] border border-border/50 bg-muted/20 shadow-inner"
               style={{
-                left: fittedMapFrame.left,
-                top: fittedMapFrame.top,
-                width: fittedMapFrame.width,
-                height: fittedMapFrame.height,
+                left: coverMapFrame.left,
+                top: coverMapFrame.top,
+                width: coverMapFrame.width,
+                height: coverMapFrame.height,
               }}
             >
               <div
                 className="absolute inset-0 transition-transform duration-200"
-                style={{ transform: `scale(${zoom})`, transformOrigin: 'center center' }}
+                style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}
               >
                 {previewImage ? (
                   <img
@@ -336,6 +401,7 @@ export default function MapPage() {
                         setActivePinId(isActive ? null : pin.id);
                         setActiveImageIndex(0);
                       }}
+                      onPointerDown={(event) => event.stopPropagation()}
                       className="group absolute -translate-x-1/2 -translate-y-full"
                       style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
                       aria-label={pin.name || `Location ${index + 1}`}
