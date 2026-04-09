@@ -230,9 +230,9 @@ export default function AdminMapEditorPage() {
     const newPin = createEmptyPin(50, 50, config.pins.length);
     setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
     setSelectedPinId(newPin.id);
-    setPendingNewPinId(newPin.id);
-    setDraftPin(clonePin(newPin));
-    setIsPinDialogOpen(true);
+    setPendingNewPinId(null);
+    setDraftPin(null);
+    setIsPinDialogOpen(false);
   };
 
   const updatePinPositionFromPointer = (pinId: string, clientX: number, clientY: number) => {
@@ -488,7 +488,7 @@ export default function AdminMapEditorPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary/80">Pin editor</p>
                   <h2 className="text-xl font-semibold text-foreground">Manage map pins</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    Add a pin from here, then drag it freely on the map and save when you are done.
+                    Add a pin here, then click it from the map or list whenever you want to edit its details.
                   </p>
                 </div>
                 <Badge variant="secondary" className="shrink-0 rounded-full">
@@ -501,7 +501,7 @@ export default function AdminMapEditorPage() {
                   <div>
                     <p className="text-xs font-medium text-foreground">Add a new pin</p>
                     <p className="text-[11px] text-muted-foreground">
-                      New pins start in the center and can be dragged anywhere on the map.
+                      New pins appear on the map immediately and start in the center.
                     </p>
                   </div>
                   <Button type="button" size="sm" className="rounded-full" onClick={addPin}>
