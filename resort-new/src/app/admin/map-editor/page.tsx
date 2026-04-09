@@ -47,6 +47,7 @@ export default function AdminMapEditorPage() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [imgAspect, setImgAspect] = useState(16 / 9);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
   const mapFrameRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef({
@@ -56,6 +57,14 @@ export default function AdminMapEditorPage() {
     startX: 0,
     startY: 0,
     moved: false,
+  });
+  const viewportPanStateRef = useRef({
+    isDragging: false,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    originX: 0,
+    originY: 0,
   });
   const [mapViewportSize, setMapViewportSize] = useState({ width: 0, height: 0 });
 
@@ -69,6 +78,7 @@ export default function AdminMapEditorPage() {
       const nextConfig = data as ResortMapConfig;
       setConfig(nextConfig);
       setSelectedPinId(nextConfig.pins[0]?.id ?? null);
+      setPan({ x: 0, y: 0 });
     }
   }, [data]);
 
@@ -153,6 +163,24 @@ export default function AdminMapEditorPage() {
     };
   }, [imgAspect, mapViewportSize]);
 
+  const maxPan = useMemo(() => {
+    const extraX = Math.max(0, (coverMapFrame.width - mapViewportSize.width) / 2);
+    const extraY = Math.max(0, (coverMapFrame.height - mapViewportSize.height) / 2);
+    return { x: extraX, y: extraY };
+  }, [coverMapFrame.height, coverMapFrame.width, mapViewportSize.height, mapViewportSize.width]);
+
+  const clampPanOffset = (x: number, y: number) => ({
+    x: Math.max(-maxPan.x, Math.min(maxPan.x, x)),
+    y: Math.max(-maxPan.y, Math.min(maxPan.y, y)),
+  });
+
+  useEffect(() => {
+    setPan((prev) => {
+      const next = clampPanOffset(prev.x, prev.y);
+      return prev.x === next.x && prev.y === next.y ? prev : next;
+    });
+  }, [maxPan.x, maxPan.y]);
+
   const updateConfig = <K extends keyof ResortMapConfig>(field: K, value: ResortMapConfig[K]) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
   };
@@ -189,8 +217,8 @@ export default function AdminMapEditorPage() {
     const rect = mapFrameRef.current?.getBoundingClientRect();
     if (!rect || !rect.width || !rect.height) return;
 
-    const x = clampPercent(((clientX - rect.left) / rect.width) * 100);
-    const y = clampPercent(((clientY - rect.top) / rect.height) * 100);
+    const x = clampPercent(((clientX - rect.left - pan.x) / rect.width) * 100);
+    const y = clampPercent(((clientY - rect.top - pan.y) / rect.height) * 100);
     updatePin(pinId, (pin) => ({ ...pin, x, y }));
   };
 
@@ -490,9 +518,36 @@ export default function AdminMapEditorPage() {
           <div className="relative min-h-[420px] bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
             <div
               ref={mapViewportRef}
-              className="absolute inset-0 overflow-hidden p-2 select-none sm:p-3 lg:p-4 touch-none"
+              className="absolute inset-0 overflow-hidden p-2 select-none sm:p-3 lg:p-4 touch-none cursor-grab active:cursor-grabbing"
               onDragStart={(event) => event.preventDefault()}
               onClick={() => setSelectedPinId(null)}
+              onPointerDown={(event) => {
+                if (event.button !== 0) return;
+                viewportPanStateRef.current = {
+                  isDragging: true,
+                  pointerId: event.pointerId,
+                  startX: event.clientX,
+                  startY: event.clientY,
+                  originX: pan.x,
+                  originY: pan.y,
+                };
+                event.currentTarget.setPointerCapture(event.pointerId);
+              }}
+              onPointerMove={(event) => {
+                if (!viewportPanStateRef.current.isDragging) return;
+                const dx = event.clientX - viewportPanStateRef.current.startX;
+                const dy = event.clientY - viewportPanStateRef.current.startY;
+                setPan(clampPanOffset(viewportPanStateRef.current.originX + dx, viewportPanStateRef.current.originY + dy));
+              }}
+              onPointerUp={(event) => {
+                if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                  event.currentTarget.releasePointerCapture(event.pointerId);
+                }
+                viewportPanStateRef.current.isDragging = false;
+              }}
+              onPointerLeave={() => {
+                viewportPanStateRef.current.isDragging = false;
+              }}
             >
               <div
                 ref={mapFrameRef}
@@ -504,66 +559,71 @@ export default function AdminMapEditorPage() {
                   height: coverMapFrame.height,
                 }}
               >
-                {previewImage ? (
-                  <img
-                    src={previewImage}
-                    alt={config.title || 'Custom resort map'}
-                    draggable={false}
-                    className="absolute inset-0 h-full w-full select-none"
-                    style={{ objectFit: 'cover', userSelect: 'none' }}
-                    onLoad={(event) => {
-                      const { naturalWidth, naturalHeight } = event.currentTarget;
-                      if (naturalWidth > 0 && naturalHeight > 0) {
-                        setImgAspect(naturalWidth / naturalHeight);
-                      }
-                    }}
-                  />
-                ) : (
-                  <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
-                    Add a background image in Map settings to start plotting your resort landmarks here.
-                  </div>
-                )}
+                <div
+                  className="absolute inset-0 transition-transform duration-150"
+                  style={{ transform: `translate(${pan.x}px, ${pan.y}px)` }}
+                >
+                  {previewImage ? (
+                    <img
+                      src={previewImage}
+                      alt={config.title || 'Custom resort map'}
+                      draggable={false}
+                      className="absolute inset-0 h-full w-full select-none"
+                      style={{ objectFit: 'cover', userSelect: 'none' }}
+                      onLoad={(event) => {
+                        const { naturalWidth, naturalHeight } = event.currentTarget;
+                        if (naturalWidth > 0 && naturalHeight > 0) {
+                          setImgAspect(naturalWidth / naturalHeight);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                      Add a background image in Map settings to start plotting your resort landmarks here.
+                    </div>
+                  )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/5" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/5" />
 
-                {config.pins.map((pin, index) => {
-                  const isSelected = pin.id === selectedPinId;
-                  return (
-                    <button
-                      key={pin.id}
-                      type="button"
-                      onClick={(event) => event.stopPropagation()}
-                      onPointerDown={(event) => handlePinPointerDown(event, pin.id)}
-                      onPointerMove={(event) => handlePinPointerMove(event, pin.id)}
-                      onPointerUp={(event) => handlePinPointerUp(event, pin.id)}
-                      onPointerCancel={handlePinPointerCancel}
-                      className="group absolute -translate-x-1/2 -translate-y-full touch-none"
-                      style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                      aria-label={`Select ${pin.name || `pin ${index + 1}`}`}
-                      title={pin.name || `Pin ${index + 1}`}
-                    >
-                      <span
-                        className={`relative flex h-10 w-10 cursor-grab items-center justify-center rounded-full border-2 shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 active:cursor-grabbing ${
-                          isSelected
-                            ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                            : 'border-background bg-card text-foreground hover:scale-105 hover:border-primary/50'
-                        }`}
+                  {config.pins.map((pin, index) => {
+                    const isSelected = pin.id === selectedPinId;
+                    return (
+                      <button
+                        key={pin.id}
+                        type="button"
+                        onClick={(event) => event.stopPropagation()}
+                        onPointerDown={(event) => handlePinPointerDown(event, pin.id)}
+                        onPointerMove={(event) => handlePinPointerMove(event, pin.id)}
+                        onPointerUp={(event) => handlePinPointerUp(event, pin.id)}
+                        onPointerCancel={handlePinPointerCancel}
+                        className="group absolute -translate-x-1/2 -translate-y-full touch-none"
+                        style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+                        aria-label={`Select ${pin.name || `pin ${index + 1}`}`}
+                        title={pin.name || `Pin ${index + 1}`}
                       >
-                        {index + 1}
-                      </span>
-                      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/60 bg-background/95 px-2.5 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
-                        {pin.name || `Pin ${index + 1}`}
-                      </span>
-                    </button>
-                  );
-                })}
+                        <span
+                          className={`relative flex h-10 w-10 cursor-grab items-center justify-center rounded-full border-2 shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 active:cursor-grabbing ${
+                            isSelected
+                              ? 'scale-110 border-primary bg-primary text-primary-foreground'
+                              : 'border-background bg-card text-foreground hover:scale-105 hover:border-primary/50'
+                          }`}
+                        >
+                          {index + 1}
+                        </span>
+                        <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/60 bg-background/95 px-2.5 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                          {pin.name || `Pin ${index + 1}`}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
-              <div className="absolute left-5 top-5 max-w-xs rounded-2xl border border-white/80 bg-background/92 px-3 py-2 text-xs text-muted-foreground shadow-lg backdrop-blur">
-                Drag any pin to reposition it, or click a pin to open its edit form.
+              <div className="absolute left-5 top-5 max-w-xs rounded-2xl border border-white/30 bg-slate-950/55 px-3 py-2 text-xs text-white shadow-lg backdrop-blur">
+                Drag the map to pan. Drag pins to reposition them, or click a pin to edit.
               </div>
 
-              <div className="absolute bottom-5 right-5 rounded-full border border-border/60 bg-background/92 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+              <div className="absolute bottom-5 right-5 rounded-full border border-white/30 bg-slate-950/55 px-3 py-1.5 text-xs text-white shadow-sm backdrop-blur">
                 Public map default zoom: {config.defaultZoom.toFixed(1)}×
               </div>
             </div>
