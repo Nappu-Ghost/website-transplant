@@ -239,15 +239,6 @@ export default function MapPage() {
         </aside>
 
         <div className="relative min-h-0 bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
-          <div className="absolute left-4 top-4 z-10 flex flex-wrap items-center gap-2">
-            <Badge variant="secondary" className="rounded-full bg-background/90 shadow-sm">
-              Tourist view
-            </Badge>
-            <Badge variant="outline" className="rounded-full bg-background/80">
-              Tap a pin to explore
-            </Badge>
-          </div>
-
           <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-5 lg:p-6">
             <div
               className="relative h-full max-w-full overflow-hidden rounded-[26px] border border-border/60 bg-muted/40 shadow-inner"
