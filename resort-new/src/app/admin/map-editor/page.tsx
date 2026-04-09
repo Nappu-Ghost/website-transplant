@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, ImageIcon, MapPin as MapPinIcon, MousePointerClick, Plus } from 'lucide-react';
+import { BedDouble, ChevronDown, Eye, ImageIcon, MapPin as MapPinIcon, MousePointerClick, Plus, Sparkles } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -17,21 +19,155 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { adminService } from '@/lib/api-service';
+import { activityService, adminService, hotelService, roomService } from '@/lib/api-service';
 import { resolveImageUrl } from '@/lib/asset-url';
-import { defaultMapConfig, type MapPin, type MapPinImage, type ResortMapConfig } from '@/lib/map-defaults';
+import { defaultMapConfig, type MapPin, type MapPinImage, type MapPinKind, type ResortMapConfig } from '@/lib/map-defaults';
+
+interface HotelSummary {
+  id: number;
+  name: string;
+}
+
+interface AccommodationSummary {
+  id: number;
+  hotelId: number;
+  name: string;
+  type: string;
+  price: number;
+  capacity: number;
+  description?: string | null;
+  imageUrl?: string | null;
+  floorNumber?: number;
+  available?: boolean;
+}
+
+interface ActivitySummary {
+  id: number;
+  name: string;
+  activityType: string;
+  price: number;
+  capacity?: number | null;
+  imageUrl?: string | null;
+  isPremium?: boolean;
+}
 
 const createId = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 const clampPercent = (value: number) => Math.max(0, Math.min(100, Number(value.toFixed(2))));
 
-const createEmptyPin = (x: number, y: number, count: number): MapPin => ({
+const PIN_KIND_META: Record<MapPinKind, { label: string; badgeClass: string; pinClass: string; activePinClass: string }> = {
+  custom: {
+    label: 'Custom',
+    badgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
+    pinClass: 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300',
+    activePinClass: 'border-sky-500 bg-sky-500 text-white',
+  },
+  accommodation: {
+    label: 'Accommodation',
+    badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    pinClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300',
+    activePinClass: 'border-emerald-500 bg-emerald-500 text-white',
+  },
+  activity: {
+    label: 'Activity',
+    badgeClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    pinClass: 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300',
+    activePinClass: 'border-amber-500 bg-amber-500 text-slate-950',
+  },
+};
+
+const getPinKind = (pin: MapPin): MapPinKind => pin.kind ?? 'custom';
+
+const getSuggestedPlacement = (count: number, offset = 0) => {
+  const placements = [
+    { x: 50, y: 50 },
+    { x: 43, y: 48 },
+    { x: 57, y: 52 },
+    { x: 48, y: 60 },
+    { x: 60, y: 42 },
+    { x: 38, y: 58 },
+  ];
+
+  return placements[(count + offset) % placements.length];
+};
+
+const createEmptyPin = (x: number, y: number, count: number, kind: MapPinKind = 'custom'): MapPin => ({
   id: createId('pin'),
   name: `Pin ${count + 1}`,
   description: '',
   x,
   y,
+  kind,
+  sourceId: null,
   images: [],
 });
+
+const createAccommodationPin = (
+  room: AccommodationSummary,
+  hotelName: string | undefined,
+  count: number,
+  offset = 0,
+): MapPin => {
+  const { x, y } = getSuggestedPlacement(count, offset);
+  const summary = [room.type, hotelName ? `at ${hotelName}` : null].filter(Boolean).join(' ');
+  const fallbackDescription = [
+    summary || 'Accommodation on the resort',
+    Number.isFinite(room.capacity) ? `Sleeps ${room.capacity}` : null,
+    Number.isFinite(room.price) ? `$${room.price}/night` : null,
+  ]
+    .filter(Boolean)
+    .join(' • ');
+
+  return {
+    id: createId('pin'),
+    name: room.name,
+    description: room.description?.trim() || fallbackDescription,
+    x,
+    y,
+    kind: 'accommodation',
+    sourceId: room.id,
+    images: room.imageUrl
+      ? [
+          {
+            id: createId('image'),
+            url: room.imageUrl,
+            alt: room.name,
+            caption: hotelName ? `${room.name} • ${hotelName}` : room.type,
+          },
+        ]
+      : [],
+  };
+};
+
+const createActivityPin = (activity: ActivitySummary, count: number, offset = 0): MapPin => {
+  const { x, y } = getSuggestedPlacement(count, offset);
+  const fallbackDescription = [
+    activity.activityType || 'Resort activity',
+    Number.isFinite(activity.capacity) ? `Up to ${activity.capacity} guests` : null,
+    Number.isFinite(activity.price) ? `From $${activity.price}` : null,
+  ]
+    .filter(Boolean)
+    .join(' • ');
+
+  return {
+    id: createId('pin'),
+    name: activity.name,
+    description: fallbackDescription,
+    x,
+    y,
+    kind: 'activity',
+    sourceId: activity.id,
+    images: activity.imageUrl
+      ? [
+          {
+            id: createId('image'),
+            url: activity.imageUrl,
+            alt: activity.name,
+            caption: activity.activityType,
+          },
+        ]
+      : [],
+  };
+};
 
 const createEmptyImage = (): MapPinImage => ({
   id: createId('image'),
@@ -53,6 +189,9 @@ export default function AdminMapEditorPage() {
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [pendingNewPinId, setPendingNewPinId] = useState<string | null>(null);
   const [draftPin, setDraftPin] = useState<MapPin | null>(null);
+  const [sourcePicker, setSourcePicker] = useState<'accommodation' | 'activity' | null>(null);
+  const [selectedAccommodationIds, setSelectedAccommodationIds] = useState<number[]>([]);
+  const [selectedActivityIds, setSelectedActivityIds] = useState<number[]>([]);
   const [imgAspect, setImgAspect] = useState(16 / 9);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
@@ -78,6 +217,21 @@ export default function AdminMapEditorPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'map-page'],
     queryFn: () => adminService.getMapSettings(),
+  });
+
+  const { data: hotels = [] } = useQuery<HotelSummary[]>({
+    queryKey: ['hotels', 'map-editor'],
+    queryFn: () => hotelService.list(),
+  });
+
+  const { data: rooms = [] } = useQuery<AccommodationSummary[]>({
+    queryKey: ['rooms', 'map-editor'],
+    queryFn: () => roomService.list(),
+  });
+
+  const { data: activities = [] } = useQuery<ActivitySummary[]>({
+    queryKey: ['activities', 'map-editor'],
+    queryFn: () => activityService.list(),
   });
 
   useEffect(() => {
@@ -137,7 +291,35 @@ export default function AdminMapEditorPage() {
     [config.pins, selectedPinId],
   );
 
+  const hotelNameById = useMemo(() => new Map(hotels.map((hotel) => [hotel.id, hotel.name])), [hotels]);
+
+  const availableRooms = useMemo(
+    () => rooms.filter((room) => room.available !== false),
+    [rooms],
+  );
+
+  const mappedAccommodationIds = useMemo(
+    () =>
+      new Set(
+        config.pins
+          .filter((pin) => getPinKind(pin) === 'accommodation' && pin.sourceId != null)
+          .map((pin) => Number(pin.sourceId)),
+      ),
+    [config.pins],
+  );
+
+  const mappedActivityIds = useMemo(
+    () =>
+      new Set(
+        config.pins
+          .filter((pin) => getPinKind(pin) === 'activity' && pin.sourceId != null)
+          .map((pin) => Number(pin.sourceId)),
+      ),
+    [config.pins],
+  );
+
   const editingPin = draftPin ?? selectedPin;
+  const editingPinKind = editingPin ? getPinKind(editingPin) : 'custom';
   const isCreatingPin = Boolean(editingPin && pendingNewPinId === editingPin.id);
   const selectedPreviewImage = resolveImageUrl(editingPin?.images[0]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
@@ -226,13 +408,71 @@ export default function AdminMapEditorPage() {
     setIsPinDialogOpen(true);
   };
 
-  const addPin = () => {
-    const newPin = createEmptyPin(50, 50, config.pins.length);
+  const addCustomPin = () => {
+    const newPin = createEmptyPin(50, 50, config.pins.length, 'custom');
     setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
     setSelectedPinId(newPin.id);
     setPendingNewPinId(null);
     setDraftPin(null);
     setIsPinDialogOpen(false);
+  };
+
+  const openSourcePicker = (type: 'accommodation' | 'activity') => {
+    setSourcePicker(type);
+    setSelectedAccommodationIds([]);
+    setSelectedActivityIds([]);
+  };
+
+  const addSelectedAccommodations = () => {
+    const selectedRooms = availableRooms.filter(
+      (room) => selectedAccommodationIds.includes(room.id) && !mappedAccommodationIds.has(room.id),
+    );
+
+    if (!selectedRooms.length) {
+      setSourcePicker(null);
+      return;
+    }
+
+    const newPins = selectedRooms.map((room, index) =>
+      createAccommodationPin(room, hotelNameById.get(room.hotelId), config.pins.length, index),
+    );
+
+    setConfig((prev) => ({ ...prev, pins: [...prev.pins, ...newPins] }));
+    setSelectedPinId(newPins[newPins.length - 1]?.id ?? null);
+    setPendingNewPinId(null);
+    setDraftPin(null);
+    setIsPinDialogOpen(false);
+    setSourcePicker(null);
+    setSelectedAccommodationIds([]);
+    toast({
+      title: selectedRooms.length === 1 ? 'Accommodation added' : 'Accommodations added',
+      description: `Added ${selectedRooms.length} accommodation${selectedRooms.length === 1 ? '' : 's'} to the map.`,
+    });
+  };
+
+  const addSelectedActivities = () => {
+    const selectedItems = activities.filter(
+      (activity) => selectedActivityIds.includes(activity.id) && !mappedActivityIds.has(activity.id),
+    );
+
+    if (!selectedItems.length) {
+      setSourcePicker(null);
+      return;
+    }
+
+    const newPins = selectedItems.map((activity, index) => createActivityPin(activity, config.pins.length, index));
+
+    setConfig((prev) => ({ ...prev, pins: [...prev.pins, ...newPins] }));
+    setSelectedPinId(newPins[newPins.length - 1]?.id ?? null);
+    setPendingNewPinId(null);
+    setDraftPin(null);
+    setIsPinDialogOpen(false);
+    setSourcePicker(null);
+    setSelectedActivityIds([]);
+    toast({
+      title: selectedItems.length === 1 ? 'Activity added' : 'Activities added',
+      description: `Added ${selectedItems.length} activit${selectedItems.length === 1 ? 'y' : 'ies'} to the map.`,
+    });
   };
 
   const updatePinPositionFromPointer = (pinId: string, clientX: number, clientY: number) => {
@@ -488,7 +728,7 @@ export default function AdminMapEditorPage() {
                   <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary/80">Pin editor</p>
                   <h2 className="text-xl font-semibold text-foreground">Manage map pins</h2>
                   <p className="text-sm leading-6 text-muted-foreground">
-                    Add a pin here, then click it from the map or list whenever you want to edit its details.
+                    Add a custom pin or pull in accommodations and activities from the database, then click any pin to edit it.
                   </p>
                 </div>
                 <Badge variant="secondary" className="shrink-0 rounded-full">
@@ -499,15 +739,34 @@ export default function AdminMapEditorPage() {
               <div className="rounded-2xl border border-border/60 bg-muted/40 p-3">
                 <div className="flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs font-medium text-foreground">Add a new pin</p>
+                    <p className="text-xs font-medium text-foreground">Choose what to place on the map</p>
                     <p className="text-[11px] text-muted-foreground">
-                      New pins appear on the map immediately and start in the center.
+                      Custom pins appear instantly. Accommodations and activities can be pulled from the database.
                     </p>
                   </div>
-                  <Button type="button" size="sm" className="rounded-full" onClick={addPin}>
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Add pin
-                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button type="button" size="sm" className="rounded-full">
+                        <Plus className="mr-1 h-3.5 w-3.5" />
+                        Add pin
+                        <ChevronDown className="ml-1 h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <DropdownMenuItem onClick={addCustomPin}>
+                        <MapPinIcon className="mr-2 h-4 w-4 text-sky-600" />
+                        Add Custom Pin
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openSourcePicker('accommodation')}>
+                        <BedDouble className="mr-2 h-4 w-4 text-emerald-600" />
+                        Add Accommodation
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => openSourcePicker('activity')}>
+                        <Sparkles className="mr-2 h-4 w-4 text-amber-600" />
+                        Add Activity
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
             </div>
@@ -520,6 +779,9 @@ export default function AdminMapEditorPage() {
                   {config.pins.length ? (
                     config.pins.map((pin, index) => {
                       const isSelected = pin.id === selectedPinId;
+                      const pinKind = getPinKind(pin);
+                      const pinMeta = PIN_KIND_META[pinKind];
+
                       return (
                         <button
                           key={pin.id}
@@ -532,11 +794,11 @@ export default function AdminMapEditorPage() {
                           }`}
                         >
                           <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-center gap-2">
                                 <span
-                                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
-                                    isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                  className={`flex h-6 w-6 items-center justify-center rounded-full border text-[10px] font-bold ${
+                                    isSelected ? pinMeta.activePinClass : pinMeta.pinClass
                                   }`}
                                 >
                                   {index + 1}
@@ -544,6 +806,9 @@ export default function AdminMapEditorPage() {
                                 <p className="truncate text-sm font-semibold text-foreground">
                                   {pin.name || `Pin ${index + 1}`}
                                 </p>
+                                <Badge variant="outline" className={`rounded-full px-2 py-0.5 text-[10px] ${pinMeta.badgeClass}`}>
+                                  {pinMeta.label}
+                                </Badge>
                               </div>
                               <p className="mt-1 text-[11px] text-muted-foreground">Click to edit details</p>
                             </div>
@@ -636,6 +901,9 @@ export default function AdminMapEditorPage() {
 
                   {config.pins.map((pin, index) => {
                     const isSelected = pin.id === selectedPinId;
+                    const pinKind = getPinKind(pin);
+                    const pinMeta = PIN_KIND_META[pinKind];
+
                     return (
                       <button
                         key={pin.id}
@@ -652,9 +920,7 @@ export default function AdminMapEditorPage() {
                       >
                         <span
                           className={`relative flex h-10 w-10 cursor-grab items-center justify-center rounded-full border-2 shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 active:cursor-grabbing ${
-                            isSelected
-                              ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                              : 'border-background bg-card text-foreground hover:scale-105 hover:border-primary/50'
+                            isSelected ? `scale-110 ${pinMeta.activePinClass}` : `${pinMeta.pinClass} hover:scale-105`
                           }`}
                         >
                           {index + 1}
@@ -680,18 +946,238 @@ export default function AdminMapEditorPage() {
         </div>
       </div>
 
+      <Dialog
+        open={sourcePicker === 'accommodation'}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSourcePicker(null);
+            setSelectedAccommodationIds([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add accommodations</DialogTitle>
+            <DialogDescription>
+              Select from your available accommodations below. Items already on the map are marked and disabled.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[55vh] pr-2">
+            <div className="space-y-2">
+              {availableRooms.length ? (
+                availableRooms.map((room) => {
+                  const isSelected = selectedAccommodationIds.includes(room.id);
+                  const isAlreadyAdded = mappedAccommodationIds.has(room.id);
+                  const hotelName = hotelNameById.get(room.hotelId);
+
+                  return (
+                    <label
+                      key={room.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                        isAlreadyAdded
+                          ? 'border-border/50 bg-muted/30 opacity-70'
+                          : 'border-border/60 bg-background hover:border-emerald-300 hover:bg-emerald-50/40'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isAlreadyAdded || isSelected}
+                        disabled={isAlreadyAdded}
+                        onCheckedChange={() => {
+                          setSelectedAccommodationIds((prev) =>
+                            prev.includes(room.id) ? prev.filter((id) => id !== room.id) : [...prev, room.id],
+                          );
+                        }}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{room.name}</p>
+                          <Badge variant="outline" className="rounded-full border-emerald-200 bg-emerald-50 text-emerald-700">
+                            {room.type}
+                          </Badge>
+                          {typeof room.floorNumber === 'number' ? (
+                            <Badge variant="outline" className="rounded-full">
+                              Floor {room.floorNumber}
+                            </Badge>
+                          ) : null}
+                          {isAlreadyAdded ? (
+                            <Badge variant="secondary" className="rounded-full">
+                              Already on map
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {[hotelName, `Sleeps ${room.capacity}`, `$${room.price}/night`].filter(Boolean).join(' • ')}
+                        </p>
+                        {room.description ? (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{room.description}</p>
+                        ) : null}
+                      </div>
+                    </label>
+                  );
+                })
+              ) : (
+                <p className="rounded-2xl border border-dashed border-border/60 bg-muted/30 px-3 py-4 text-sm text-muted-foreground">
+                  No accommodations are available yet.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              Selected accommodations will be added as green pins and can still be edited afterward.
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSourcePicker(null);
+                  setSelectedAccommodationIds([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={addSelectedAccommodations}
+                disabled={!selectedAccommodationIds.length}
+              >
+                Add selected accommodations
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={sourcePicker === 'activity'}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSourcePicker(null);
+            setSelectedActivityIds([]);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Add activities</DialogTitle>
+            <DialogDescription>
+              Select from your resort activities below. Items already on the map are marked and disabled.
+            </DialogDescription>
+          </DialogHeader>
+
+          <ScrollArea className="max-h-[55vh] pr-2">
+            <div className="space-y-2">
+              {activities.length ? (
+                activities.map((activity) => {
+                  const isSelected = selectedActivityIds.includes(activity.id);
+                  const isAlreadyAdded = mappedActivityIds.has(activity.id);
+
+                  return (
+                    <label
+                      key={activity.id}
+                      className={`flex cursor-pointer items-start gap-3 rounded-2xl border p-3 transition ${
+                        isAlreadyAdded
+                          ? 'border-border/50 bg-muted/30 opacity-70'
+                          : 'border-border/60 bg-background hover:border-amber-300 hover:bg-amber-50/40'
+                      }`}
+                    >
+                      <Checkbox
+                        checked={isAlreadyAdded || isSelected}
+                        disabled={isAlreadyAdded}
+                        onCheckedChange={() => {
+                          setSelectedActivityIds((prev) =>
+                            prev.includes(activity.id) ? prev.filter((id) => id !== activity.id) : [...prev, activity.id],
+                          );
+                        }}
+                        className="mt-0.5"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm font-semibold text-foreground">{activity.name}</p>
+                          <Badge variant="outline" className="rounded-full border-amber-200 bg-amber-50 text-amber-700">
+                            {activity.activityType}
+                          </Badge>
+                          {activity.isPremium ? (
+                            <Badge variant="outline" className="rounded-full">
+                              Premium
+                            </Badge>
+                          ) : null}
+                          {isAlreadyAdded ? (
+                            <Badge variant="secondary" className="rounded-full">
+                              Already on map
+                            </Badge>
+                          ) : null}
+                        </div>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                          {[typeof activity.capacity === 'number' ? `Up to ${activity.capacity} guests` : null, `From $${activity.price}`]
+                            .filter(Boolean)
+                            .join(' • ')}
+                        </p>
+                      </div>
+                    </label>
+                  );
+                })
+              ) : (
+                <p className="rounded-2xl border border-dashed border-border/60 bg-muted/30 px-3 py-4 text-sm text-muted-foreground">
+                  No activities are available yet.
+                </p>
+              )}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="sm:justify-between">
+            <div className="text-xs text-muted-foreground">
+              Selected activities will be added as amber pins and can still be edited afterward.
+            </div>
+            <div className="flex flex-col-reverse gap-2 sm:flex-row">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setSourcePicker(null);
+                  setSelectedActivityIds([]);
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                onClick={addSelectedActivities}
+                disabled={!selectedActivityIds.length}
+              >
+                Add selected activities
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={Boolean(editingPin && isPinDialogOpen)} onOpenChange={handlePinDialogOpenChange}>
         <DialogContent className={`overflow-hidden p-0 sm:max-w-2xl ${isCreatingPin ? '[&>button]:hidden' : ''}`}>
           {editingPin ? (
             <div className="flex max-h-[85vh] flex-col">
               <div className="border-b border-border/60 px-6 py-4 pr-14">
                 <DialogHeader className="space-y-1 text-left">
-                  <DialogTitle>{isCreatingPin ? 'Add pin' : editingPin.name || 'Edit pin'}</DialogTitle>
+                  <DialogTitle className="flex flex-wrap items-center gap-2">
+                    <span>{isCreatingPin ? 'Add pin' : editingPin.name || 'Edit pin'}</span>
+                    <Badge variant="outline" className={`rounded-full ${PIN_KIND_META[editingPinKind].badgeClass}`}>
+                      {PIN_KIND_META[editingPinKind].label}
+                    </Badge>
+                  </DialogTitle>
                   <DialogDescription>
                     {isCreatingPin
                       ? 'Set up this new pin here, then save it to the map layout.'
                       : 'Update this pin here, then save your edits to the map layout.'}
                   </DialogDescription>
+                  {editingPin.sourceId ? (
+                    <p className="text-xs text-muted-foreground">
+                      Linked source ID: {editingPin.sourceId}
+                    </p>
+                  ) : null}
                 </DialogHeader>
               </div>
 

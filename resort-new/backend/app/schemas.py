@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pydantic import BaseModel, EmailStr, Field, ConfigDict, AliasChoices, model_validator
-from typing import Optional, List
+from typing import Literal, Optional, List
 from datetime import datetime, date
 
 def _validate_password_strength(password: str, email: str | None = None) -> str:
@@ -584,6 +584,8 @@ class MapPin(BaseModel):
     description: Optional[str] = None
     x: float = Field(..., ge=0, le=100)
     y: float = Field(..., ge=0, le=100)
+    kind: Literal["custom", "accommodation", "activity"] = "custom"
+    source_id: Optional[int] = None
     images: List[MapPinImage] = []
 
 

@@ -1,3 +1,5 @@
+export type MapPinKind = 'custom' | 'accommodation' | 'activity';
+
 export type MapPinImage = {
   id: string;
   url: string;
@@ -11,6 +13,8 @@ export type MapPin = {
   description?: string | null;
   x: number;
   y: number;
+  kind?: MapPinKind;
+  sourceId?: number | null;
   images: MapPinImage[];
 };
 
@@ -38,6 +42,7 @@ export const defaultMapConfig: ResortMapConfig = {
       description: 'Main arrival point with concierge welcome and quick ferry access.',
       x: 18,
       y: 72,
+      kind: 'custom',
       images: [
         {
           id: 'arrival-jetty-1',
@@ -53,6 +58,7 @@ export const defaultMapConfig: ResortMapConfig = {
       description: 'Wellness pavilion for sunrise treatments and evening rituals.',
       x: 56,
       y: 34,
+      kind: 'custom',
       images: [
         {
           id: 'lagoon-spa-1',

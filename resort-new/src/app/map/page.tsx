@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { MapPin, Minus, Plus, X } from 'lucide-react';
+import { BedDouble, MapPin as MapPinIcon, Minus, Plus, Sparkles, X } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -10,9 +10,48 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { metaService } from '@/lib/api-service';
 import { resolveImageUrl } from '@/lib/asset-url';
-import { defaultMapConfig, type ResortMapConfig } from '@/lib/map-defaults';
+import { defaultMapConfig, type MapPin, type MapPinKind, type ResortMapConfig } from '@/lib/map-defaults';
 
 const clampZoom = (v: number) => Math.max(1, Math.min(3, parseFloat(v.toFixed(2))));
+
+const PIN_KIND_META: Record<
+  MapPinKind,
+  {
+    label: string;
+    icon: typeof MapPinIcon;
+    badgeClass: string;
+    pinClass: string;
+    activePinClass: string;
+    glowClass: string;
+  }
+> = {
+  custom: {
+    label: 'Custom',
+    icon: MapPinIcon,
+    badgeClass: 'border-sky-200 bg-sky-50 text-sky-700',
+    pinClass: 'border-sky-200 bg-sky-50 text-sky-700 hover:border-sky-300',
+    activePinClass: 'border-sky-500 bg-sky-500 text-white',
+    glowClass: 'bg-sky-400/40',
+  },
+  accommodation: {
+    label: 'Accommodation',
+    icon: BedDouble,
+    badgeClass: 'border-emerald-200 bg-emerald-50 text-emerald-700',
+    pinClass: 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-300',
+    activePinClass: 'border-emerald-500 bg-emerald-500 text-white',
+    glowClass: 'bg-emerald-400/40',
+  },
+  activity: {
+    label: 'Activity',
+    icon: Sparkles,
+    badgeClass: 'border-amber-200 bg-amber-50 text-amber-700',
+    pinClass: 'border-amber-200 bg-amber-50 text-amber-700 hover:border-amber-300',
+    activePinClass: 'border-amber-500 bg-amber-500 text-slate-950',
+    glowClass: 'bg-amber-400/40',
+  },
+};
+
+const getPinKind = (pin: MapPin): MapPinKind => pin.kind ?? 'custom';
 
 export default function MapPage() {
   const [config, setConfig] = useState<ResortMapConfig>(defaultMapConfig);
@@ -72,6 +111,8 @@ export default function MapPage() {
     [activePinId, config.pins],
   );
 
+  const activePinKind = activePin ? getPinKind(activePin) : 'custom';
+  const activePinMeta = PIN_KIND_META[activePinKind];
   const activeImages = activePin?.images ?? [];
   const featuredImage = resolveImageUrl(activeImages[activeImageIndex]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
@@ -203,6 +244,9 @@ export default function MapPage() {
                 {config.pins.length ? (
                   config.pins.map((pin, index) => {
                     const isActive = pin.id === activePinId;
+                    const pinKind = getPinKind(pin);
+                    const pinMeta = PIN_KIND_META[pinKind];
+                    const Icon = pinMeta.icon;
                     const thumb = resolveImageUrl(pin.images?.[0]?.url);
 
                     return (
@@ -227,10 +271,10 @@ export default function MapPage() {
                           )}
 
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span
-                                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold ${
-                                  isActive ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                className={`flex h-5 w-5 items-center justify-center rounded-full border text-[10px] font-bold ${
+                                  isActive ? pinMeta.activePinClass : pinMeta.pinClass
                                 }`}
                               >
                                 {index + 1}
@@ -238,6 +282,10 @@ export default function MapPage() {
                               <p className="truncate text-sm font-semibold text-foreground">
                                 {pin.name || `Location ${index + 1}`}
                               </p>
+                              <Badge variant="outline" className={`rounded-full px-2 py-0.5 text-[10px] ${pinMeta.badgeClass}`}>
+                                <Icon className="mr-1 h-3 w-3" />
+                                {pinMeta.label}
+                              </Badge>
                             </div>
                             {pin.description ? (
                               <p className="mt-1 line-clamp-2 text-xs leading-5 text-muted-foreground">{pin.description}</p>
@@ -263,7 +311,12 @@ export default function MapPage() {
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-primary">Selected place</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{activePin.name}</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
+                    <p className="text-sm font-semibold text-foreground">{activePin.name}</p>
+                    <Badge variant="outline" className={`rounded-full px-2 py-0.5 text-[10px] ${activePinMeta.badgeClass}`}>
+                      {activePinMeta.label}
+                    </Badge>
+                  </div>
                 </div>
                 <Button type="button" variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setActivePinId(null)}>
                   <X className="h-3.5 w-3.5" />
@@ -395,6 +448,10 @@ export default function MapPage() {
 
                 {config.pins.map((pin, index) => {
                   const isActive = pin.id === activePinId;
+                  const pinKind = getPinKind(pin);
+                  const pinMeta = PIN_KIND_META[pinKind];
+                  const Icon = pinMeta.icon;
+
                   return (
                     <button
                       key={pin.id}
@@ -409,15 +466,13 @@ export default function MapPage() {
                       aria-label={pin.name || `Location ${index + 1}`}
                       title={pin.name || `Location ${index + 1}`}
                     >
-                      {isActive ? <span className="absolute inset-0 animate-ping rounded-full bg-primary/30" /> : null}
+                      {isActive ? <span className={`absolute inset-0 animate-ping rounded-full ${pinMeta.glowClass}`} /> : null}
                       <span
                         className={`relative flex h-10 w-10 items-center justify-center rounded-full border-2 shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 ${
-                          isActive
-                            ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                            : 'border-background bg-card text-foreground hover:scale-105 hover:border-primary/50'
+                          isActive ? `scale-110 ${pinMeta.activePinClass}` : `${pinMeta.pinClass} hover:scale-105`
                         }`}
                       >
-                        <MapPin className="h-4 w-4" />
+                        <Icon className="h-4 w-4" />
                       </span>
                       <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/60 bg-background/95 px-2.5 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
                         {pin.name || `Location ${index + 1}`}

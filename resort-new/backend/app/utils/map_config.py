@@ -26,6 +26,7 @@ def _default_map_config() -> Dict[str, Any]:
                 "description": "Main arrival point with concierge welcome and quick ferry access.",
                 "x": 18,
                 "y": 72,
+                "kind": "custom",
                 "images": [
                     {
                         "id": "arrival-jetty-1",
@@ -41,6 +42,7 @@ def _default_map_config() -> Dict[str, Any]:
                 "description": "Wellness pavilion for sunrise treatments and evening rituals.",
                 "x": 56,
                 "y": 34,
+                "kind": "custom",
                 "images": [
                     {
                         "id": "lagoon-spa-1",
@@ -56,6 +58,7 @@ def _default_map_config() -> Dict[str, Any]:
                 "description": "Signature dinner spot for golden-hour meals over the water.",
                 "x": 78,
                 "y": 58,
+                "kind": "custom",
                 "images": [
                     {
                         "id": "sunset-dining-1",

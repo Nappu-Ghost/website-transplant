@@ -11,6 +11,8 @@
       "description": "Main arrival point with concierge welcome and quick ferry access.",
       "x": 77.96,
       "y": 44.3,
+      "kind": "custom",
+      "source_id": null,
       "images": [
         {
           "id": "arrival-jetty-1",
@@ -26,6 +28,8 @@
       "description": "Wellness pavilion for sunrise treatments and evening rituals.",
       "x": 36.59,
       "y": 24.09,
+      "kind": "custom",
+      "source_id": null,
       "images": [
         {
           "id": "lagoon-spa-1",
@@ -41,12 +45,31 @@
       "description": "Signature dinner spot for golden-hour meals over the water.",
       "x": 78.0,
       "y": 58.0,
+      "kind": "custom",
+      "source_id": null,
       "images": [
         {
           "id": "sunset-dining-1",
           "url": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=1200&q=80",
           "alt": "Sunset dining deck",
           "caption": "Chef-led dinners with panoramic lagoon views."
+        }
+      ]
+    },
+    {
+      "id": "pin-1775736701576-8gqxf0",
+      "name": "Lagoon Suite",
+      "description": "Lagoon-facing suite with private deck and sunrise view.",
+      "x": 40.85,
+      "y": 66.98,
+      "kind": "accommodation",
+      "source_id": 1,
+      "images": [
+        {
+          "id": "image-1775736701576-stb6hl",
+          "url": "https://plus.unsplash.com/premium_photo-1687960116497-0dc41e1808a2?q=80&w=1171&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+          "alt": "Lagoon Suite",
+          "caption": "Lagoon Suite \u2022 Azure Paradise Resort"
         }
       ]
     }
