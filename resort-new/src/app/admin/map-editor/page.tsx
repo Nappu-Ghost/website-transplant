@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/shared';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -40,6 +40,11 @@ const createEmptyImage = (): MapPinImage => ({
   caption: '',
 });
 
+const clonePin = (pin: MapPin): MapPin => ({
+  ...pin,
+  images: pin.images.map((image) => ({ ...image })),
+});
+
 export default function AdminMapEditorPage() {
   const { toast } = useToast();
   const [config, setConfig] = useState<ResortMapConfig>(defaultMapConfig);
@@ -47,6 +52,7 @@ export default function AdminMapEditorPage() {
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
   const [pendingNewPinId, setPendingNewPinId] = useState<string | null>(null);
+  const [draftPin, setDraftPin] = useState<MapPin | null>(null);
   const [imgAspect, setImgAspect] = useState(16 / 9);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
@@ -131,8 +137,9 @@ export default function AdminMapEditorPage() {
     [config.pins, selectedPinId],
   );
 
-  const isCreatingPin = Boolean(selectedPin && pendingNewPinId === selectedPin.id);
-  const selectedPreviewImage = resolveImageUrl(selectedPin?.images[0]?.url);
+  const editingPin = draftPin ?? selectedPin;
+  const isCreatingPin = Boolean(editingPin && pendingNewPinId === editingPin.id);
+  const selectedPreviewImage = resolveImageUrl(editingPin?.images[0]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
 
   const coverMapFrame = useMemo(() => {
@@ -195,26 +202,37 @@ export default function AdminMapEditorPage() {
     }));
   };
 
-  const updatePinField = (pinId: string, field: keyof MapPin, value: string | number | MapPinImage[]) => {
-    updatePin(pinId, (pin) => ({ ...pin, [field]: value }));
+  const updateDraftPin = (updater: (pin: MapPin) => MapPin) => {
+    setDraftPin((prev) => (prev ? updater(prev) : prev));
   };
 
-  const updatePinCoordinate = (pinId: string, field: 'x' | 'y', value: string) => {
+  const updatePinField = (_pinId: string, field: keyof MapPin, value: string | number | MapPinImage[]) => {
+    updateDraftPin((pin) => ({ ...pin, [field]: value }));
+  };
+
+  const updatePinCoordinate = (_pinId: string, field: 'x' | 'y', value: string) => {
     const numericValue = Number.parseFloat(value);
     if (!Number.isFinite(numericValue)) return;
-    updatePin(pinId, (pin) => ({ ...pin, [field]: clampPercent(numericValue) }));
+    updateDraftPin((pin) => ({ ...pin, [field]: clampPercent(numericValue) }));
   };
 
   const openPinEditor = (pinId: string, options?: { isNew?: boolean }) => {
+    const pin = config.pins.find((item) => item.id === pinId);
+    if (!pin) return;
+
     setSelectedPinId(pinId);
     setPendingNewPinId(options?.isNew ? pinId : null);
+    setDraftPin(clonePin(pin));
     setIsPinDialogOpen(true);
   };
 
   const addPin = () => {
     const newPin = createEmptyPin(50, 50, config.pins.length);
     setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
-    openPinEditor(newPin.id, { isNew: true });
+    setSelectedPinId(newPin.id);
+    setPendingNewPinId(newPin.id);
+    setDraftPin(clonePin(newPin));
+    setIsPinDialogOpen(true);
   };
 
   const updatePinPositionFromPointer = (pinId: string, clientX: number, clientY: number) => {
@@ -224,6 +242,7 @@ export default function AdminMapEditorPage() {
     const x = clampPercent(((clientX - rect.left - pan.x) / rect.width) * 100);
     const y = clampPercent(((clientY - rect.top - pan.y) / rect.height) * 100);
     updatePin(pinId, (pin) => ({ ...pin, x, y }));
+    setDraftPin((prev) => (prev?.id === pinId ? { ...prev, x, y } : prev));
   };
 
   const handlePinPointerDown = (event: React.PointerEvent<HTMLButtonElement>, pinId: string) => {
@@ -298,6 +317,7 @@ export default function AdminMapEditorPage() {
   const removePin = (pinId: string) => {
     const nextPins = config.pins.filter((pin) => pin.id !== pinId);
     setConfig((prev) => ({ ...prev, pins: prev.pins.filter((pin) => pin.id !== pinId) }));
+    setDraftPin((prev) => (prev?.id === pinId ? null : prev));
     if (pendingNewPinId === pinId) {
       setPendingNewPinId(null);
     }
@@ -308,36 +328,45 @@ export default function AdminMapEditorPage() {
   };
 
   const handlePinDialogOpenChange = (open: boolean) => {
-    if (!open && isCreatingPin && selectedPin) {
-      removePin(selectedPin.id);
+    if (!open && isCreatingPin && editingPin) {
+      removePin(editingPin.id);
       return;
     }
 
     if (!open) {
       setPendingNewPinId(null);
+      setDraftPin(null);
     }
 
     setIsPinDialogOpen(open);
   };
 
-  const addImage = (pinId: string) => {
-    updatePin(pinId, (pin) => ({ ...pin, images: [...pin.images, createEmptyImage()] }));
+  const savePinDraft = () => {
+    if (!draftPin) return;
+    updatePin(draftPin.id, () => clonePin(draftPin));
+    setPendingNewPinId(null);
+    setDraftPin(null);
+    setIsPinDialogOpen(false);
+  };
+
+  const addImage = (_pinId: string) => {
+    updateDraftPin((pin) => ({ ...pin, images: [...pin.images, createEmptyImage()] }));
   };
 
   const updateImageField = (
-    pinId: string,
+    _pinId: string,
     imageId: string,
     field: keyof MapPinImage,
     value: string,
   ) => {
-    updatePin(pinId, (pin) => ({
+    updateDraftPin((pin) => ({
       ...pin,
       images: pin.images.map((image) => (image.id === imageId ? { ...image, [field]: value } : image)),
     }));
   };
 
-  const removeImage = (pinId: string, imageId: string) => {
-    updatePin(pinId, (pin) => ({
+  const removeImage = (_pinId: string, imageId: string) => {
+    updateDraftPin((pin) => ({
       ...pin,
       images: pin.images.filter((image) => image.id !== imageId),
     }));
@@ -651,39 +680,28 @@ export default function AdminMapEditorPage() {
         </div>
       </div>
 
-      <Dialog open={Boolean(selectedPin && isPinDialogOpen)} onOpenChange={handlePinDialogOpenChange}>
-        <DialogContent className="overflow-hidden p-0 sm:max-w-2xl">
-          {selectedPin ? (
+      <Dialog open={Boolean(editingPin && isPinDialogOpen)} onOpenChange={handlePinDialogOpenChange}>
+        <DialogContent className={`overflow-hidden p-0 sm:max-w-2xl ${isCreatingPin ? '[&>button]:hidden' : ''}`}>
+          {editingPin ? (
             <div className="flex max-h-[85vh] flex-col">
-              <div className="border-b border-border/60 px-6 py-4">
-                <div className="flex items-start justify-between gap-3 pr-10 sm:pr-12">
-                  <DialogHeader className="space-y-1 text-left">
-                    <DialogTitle>{isCreatingPin ? 'Add pin' : selectedPin.name || 'Edit pin'}</DialogTitle>
-                    <DialogDescription>
-                      {isCreatingPin
-                        ? 'Set up this new pin here. Drag it on the map to place it, or cancel to discard it.'
-                        : 'Update this pin here. Drag it on the map to change its position, then save to publish.'}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <Button
-                    type="button"
-                    variant={isCreatingPin ? 'outline' : 'destructive'}
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => (isCreatingPin ? removePin(selectedPin.id) : removePin(selectedPin.id))}
-                  >
-                    {isCreatingPin ? 'Cancel' : 'Remove pin'}
-                  </Button>
-                </div>
+              <div className="border-b border-border/60 px-6 py-4 pr-14">
+                <DialogHeader className="space-y-1 text-left">
+                  <DialogTitle>{isCreatingPin ? 'Add pin' : editingPin.name || 'Edit pin'}</DialogTitle>
+                  <DialogDescription>
+                    {isCreatingPin
+                      ? 'Set up this new pin here, then save it to the map layout.'
+                      : 'Update this pin here, then save your edits to the map layout.'}
+                  </DialogDescription>
+                </DialogHeader>
               </div>
 
-              <ScrollArea className="max-h-[calc(85vh-5rem)]">
+              <ScrollArea className="max-h-[calc(85vh-9.5rem)]">
                 <div className="space-y-5 px-6 py-5">
                   <div className="overflow-hidden rounded-2xl border border-border/60 bg-background/70">
                     {selectedPreviewImage ? (
                       <img
                         src={selectedPreviewImage}
-                        alt={selectedPin.images[0]?.alt || selectedPin.name}
+                        alt={editingPin.images[0]?.alt || editingPin.name}
                         className="h-48 w-full object-cover"
                       />
                     ) : (
@@ -699,8 +717,8 @@ export default function AdminMapEditorPage() {
                       <Label htmlFor="pin-name">Name</Label>
                       <Input
                         id="pin-name"
-                        value={selectedPin.name}
-                        onChange={(event) => updatePinField(selectedPin.id, 'name', event.target.value)}
+                        value={editingPin.name}
+                        onChange={(event) => updatePinField(editingPin.id, 'name', event.target.value)}
                       />
                     </div>
 
@@ -709,8 +727,8 @@ export default function AdminMapEditorPage() {
                       <Textarea
                         id="pin-description"
                         rows={4}
-                        value={selectedPin.description ?? ''}
-                        onChange={(event) => updatePinField(selectedPin.id, 'description', event.target.value)}
+                        value={editingPin.description ?? ''}
+                        onChange={(event) => updatePinField(editingPin.id, 'description', event.target.value)}
                       />
                     </div>
 
@@ -722,8 +740,8 @@ export default function AdminMapEditorPage() {
                         min={0}
                         max={100}
                         step={0.1}
-                        value={selectedPin.x}
-                        onChange={(event) => updatePinCoordinate(selectedPin.id, 'x', event.target.value)}
+                        value={editingPin.x}
+                        onChange={(event) => updatePinCoordinate(editingPin.id, 'x', event.target.value)}
                       />
                     </div>
                     <div className="space-y-2">
@@ -734,8 +752,8 @@ export default function AdminMapEditorPage() {
                         min={0}
                         max={100}
                         step={0.1}
-                        value={selectedPin.y}
-                        onChange={(event) => updatePinCoordinate(selectedPin.id, 'y', event.target.value)}
+                        value={editingPin.y}
+                        onChange={(event) => updatePinCoordinate(editingPin.id, 'y', event.target.value)}
                       />
                     </div>
                   </div>
@@ -746,14 +764,14 @@ export default function AdminMapEditorPage() {
                         <p className="text-sm font-medium text-foreground">Photo gallery</p>
                         <p className="text-xs text-muted-foreground">These images appear in the guest-facing info card.</p>
                       </div>
-                      <Button type="button" size="sm" variant="secondary" onClick={() => addImage(selectedPin.id)}>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => addImage(editingPin.id)}>
                         Add image
                       </Button>
                     </div>
 
                     <div className="space-y-3">
-                      {selectedPin.images.length ? (
-                        selectedPin.images.map((image, index) => (
+                      {editingPin.images.length ? (
+                        editingPin.images.map((image, index) => (
                           <div key={image.id} className="space-y-3 rounded-xl border border-border/60 bg-background p-3">
                             <div className="flex items-center justify-between gap-3">
                               <p className="text-sm font-medium text-foreground">Image {index + 1}</p>
@@ -761,7 +779,7 @@ export default function AdminMapEditorPage() {
                                 type="button"
                                 size="sm"
                                 variant="ghost"
-                                onClick={() => removeImage(selectedPin.id, image.id)}
+                                onClick={() => removeImage(editingPin.id, image.id)}
                               >
                                 Remove
                               </Button>
@@ -771,7 +789,7 @@ export default function AdminMapEditorPage() {
                               <Label>Image URL</Label>
                               <Input
                                 value={image.url}
-                                onChange={(event) => updateImageField(selectedPin.id, image.id, 'url', event.target.value)}
+                                onChange={(event) => updateImageField(editingPin.id, image.id, 'url', event.target.value)}
                                 placeholder="https://... or /uploads/..."
                               />
                             </div>
@@ -781,14 +799,14 @@ export default function AdminMapEditorPage() {
                                 <Label>Alt text</Label>
                                 <Input
                                   value={image.alt ?? ''}
-                                  onChange={(event) => updateImageField(selectedPin.id, image.id, 'alt', event.target.value)}
+                                  onChange={(event) => updateImageField(editingPin.id, image.id, 'alt', event.target.value)}
                                 />
                               </div>
                               <div className="space-y-2">
                                 <Label>Caption</Label>
                                 <Input
                                   value={image.caption ?? ''}
-                                  onChange={(event) => updateImageField(selectedPin.id, image.id, 'caption', event.target.value)}
+                                  onChange={(event) => updateImageField(editingPin.id, image.id, 'caption', event.target.value)}
                                 />
                               </div>
                             </div>
@@ -801,6 +819,25 @@ export default function AdminMapEditorPage() {
                   </div>
                 </div>
               </ScrollArea>
+
+              <DialogFooter className="border-t border-border/60 px-6 py-4 sm:flex-row sm:items-center sm:justify-between sm:space-x-0">
+                <div className="text-xs text-muted-foreground">
+                  This form updates the pin in the editor. Use the page-level Save changes button to publish live.
+                </div>
+                <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center">
+                  {!isCreatingPin ? (
+                    <Button type="button" variant="destructive" onClick={() => removePin(editingPin.id)}>
+                      Remove pin
+                    </Button>
+                  ) : null}
+                  <Button type="button" variant="outline" onClick={() => handlePinDialogOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="button" onClick={savePinDraft}>
+                    Save pin
+                  </Button>
+                </div>
+              </DialogFooter>
             </div>
           ) : null}
         </DialogContent>
