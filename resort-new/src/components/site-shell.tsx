@@ -16,6 +16,15 @@ export function SiteShell({ children }: SiteShellProps) {
     return <>{children}</>;
   }
 
+  if (pathname === '/map') {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <AppHeader />
+        <div className="flex-1 overflow-hidden">{children}</div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
       <AppHeader />
