@@ -122,7 +122,7 @@ export default function AdminMapEditorPage() {
   const selectedPreviewImage = resolveImageUrl(selectedPin?.images[0]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
 
-  const fittedMapFrame = useMemo(() => {
+  const coverMapFrame = useMemo(() => {
     const { width, height } = mapViewportSize;
 
     if (!width || !height) {
@@ -132,24 +132,24 @@ export default function AdminMapEditorPage() {
     const viewportAspect = width / height;
 
     if (viewportAspect > imgAspect) {
-      const frameHeight = height;
-      const frameWidth = frameHeight * imgAspect;
+      const coverWidth = width;
+      const coverHeight = coverWidth / imgAspect;
       return {
-        width: frameWidth,
-        height: frameHeight,
-        left: (width - frameWidth) / 2,
-        top: 0,
+        width: coverWidth,
+        height: coverHeight,
+        left: 0,
+        top: (height - coverHeight) / 2,
       };
     }
 
-    const frameWidth = width;
-    const frameHeight = frameWidth / imgAspect;
+    const coverHeight = height;
+    const coverWidth = coverHeight * imgAspect;
 
     return {
-      width: frameWidth,
-      height: frameHeight,
-      left: 0,
-      top: (height - frameHeight) / 2,
+      width: coverWidth,
+      height: coverHeight,
+      left: (width - coverWidth) / 2,
+      top: 0,
     };
   }, [imgAspect, mapViewportSize]);
 
@@ -498,10 +498,10 @@ export default function AdminMapEditorPage() {
                 ref={mapFrameRef}
                 className="absolute overflow-hidden rounded-[22px] border border-border/50 bg-muted/20 shadow-inner"
                 style={{
-                  left: fittedMapFrame.left,
-                  top: fittedMapFrame.top,
-                  width: fittedMapFrame.width,
-                  height: fittedMapFrame.height,
+                  left: coverMapFrame.left,
+                  top: coverMapFrame.top,
+                  width: coverMapFrame.width,
+                  height: coverMapFrame.height,
                 }}
               >
                 {previewImage ? (
@@ -510,7 +510,7 @@ export default function AdminMapEditorPage() {
                     alt={config.title || 'Custom resort map'}
                     draggable={false}
                     className="absolute inset-0 h-full w-full select-none"
-                    style={{ objectFit: 'fill', userSelect: 'none' }}
+                    style={{ objectFit: 'cover', userSelect: 'none' }}
                     onLoad={(event) => {
                       const { naturalWidth, naturalHeight } = event.currentTarget;
                       if (naturalWidth > 0 && naturalHeight > 0) {
