@@ -46,6 +46,7 @@ export default function AdminMapEditorPage() {
   const [selectedPinId, setSelectedPinId] = useState<string | null>(defaultMapConfig.pins[0]?.id ?? null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
   const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [pendingNewPinId, setPendingNewPinId] = useState<string | null>(null);
   const [imgAspect, setImgAspect] = useState(16 / 9);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const mapViewportRef = useRef<HTMLDivElement | null>(null);
@@ -112,6 +113,7 @@ export default function AdminMapEditorPage() {
     onSuccess: (payload) => {
       const nextConfig = payload as ResortMapConfig;
       setConfig(nextConfig);
+      setPendingNewPinId(null);
       setLastSavedAt(new Date().toLocaleTimeString());
       toast({ title: 'Map updated', description: 'The public Map tab now uses your saved layout.' });
     },
@@ -129,6 +131,7 @@ export default function AdminMapEditorPage() {
     [config.pins, selectedPinId],
   );
 
+  const isCreatingPin = Boolean(selectedPin && pendingNewPinId === selectedPin.id);
   const selectedPreviewImage = resolveImageUrl(selectedPin?.images[0]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
 
@@ -202,15 +205,16 @@ export default function AdminMapEditorPage() {
     updatePin(pinId, (pin) => ({ ...pin, [field]: clampPercent(numericValue) }));
   };
 
-  const openPinEditor = (pinId: string) => {
+  const openPinEditor = (pinId: string, options?: { isNew?: boolean }) => {
     setSelectedPinId(pinId);
+    setPendingNewPinId(options?.isNew ? pinId : null);
     setIsPinDialogOpen(true);
   };
 
   const addPin = () => {
     const newPin = createEmptyPin(50, 50, config.pins.length);
     setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
-    openPinEditor(newPin.id);
+    openPinEditor(newPin.id, { isNew: true });
   };
 
   const updatePinPositionFromPointer = (pinId: string, clientX: number, clientY: number) => {
@@ -294,10 +298,26 @@ export default function AdminMapEditorPage() {
   const removePin = (pinId: string) => {
     const nextPins = config.pins.filter((pin) => pin.id !== pinId);
     setConfig((prev) => ({ ...prev, pins: prev.pins.filter((pin) => pin.id !== pinId) }));
+    if (pendingNewPinId === pinId) {
+      setPendingNewPinId(null);
+    }
     if (selectedPinId === pinId) {
       setSelectedPinId(nextPins[0]?.id ?? null);
       setIsPinDialogOpen(false);
     }
+  };
+
+  const handlePinDialogOpenChange = (open: boolean) => {
+    if (!open && isCreatingPin && selectedPin) {
+      removePin(selectedPin.id);
+      return;
+    }
+
+    if (!open) {
+      setPendingNewPinId(null);
+    }
+
+    setIsPinDialogOpen(open);
   };
 
   const addImage = (pinId: string) => {
@@ -631,20 +651,28 @@ export default function AdminMapEditorPage() {
         </div>
       </div>
 
-      <Dialog open={Boolean(selectedPin && isPinDialogOpen)} onOpenChange={setIsPinDialogOpen}>
+      <Dialog open={Boolean(selectedPin && isPinDialogOpen)} onOpenChange={handlePinDialogOpenChange}>
         <DialogContent className="overflow-hidden p-0 sm:max-w-2xl">
           {selectedPin ? (
             <div className="flex max-h-[85vh] flex-col">
               <div className="border-b border-border/60 px-6 py-4">
-                <div className="flex items-start justify-between gap-3">
+                <div className="flex items-start justify-between gap-3 pr-10 sm:pr-12">
                   <DialogHeader className="space-y-1 text-left">
-                    <DialogTitle>{selectedPin.name || 'Edit pin'}</DialogTitle>
+                    <DialogTitle>{isCreatingPin ? 'Add pin' : selectedPin.name || 'Edit pin'}</DialogTitle>
                     <DialogDescription>
-                      Update this pin here. Drag it on the map to change its position, then save to publish.
+                      {isCreatingPin
+                        ? 'Set up this new pin here. Drag it on the map to place it, or cancel to discard it.'
+                        : 'Update this pin here. Drag it on the map to change its position, then save to publish.'}
                     </DialogDescription>
                   </DialogHeader>
-                  <Button type="button" variant="destructive" size="sm" onClick={() => removePin(selectedPin.id)}>
-                    Remove pin
+                  <Button
+                    type="button"
+                    variant={isCreatingPin ? 'outline' : 'destructive'}
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => (isCreatingPin ? removePin(selectedPin.id) : removePin(selectedPin.id))}
+                  >
+                    {isCreatingPin ? 'Cancel' : 'Remove pin'}
                   </Button>
                 </div>
               </div>
