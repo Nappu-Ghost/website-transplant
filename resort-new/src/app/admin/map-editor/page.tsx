@@ -1,15 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { Eye, ImageIcon, MapPin as MapPinIcon, MousePointerClick } from 'lucide-react';
+import { Eye, ImageIcon, MapPin as MapPinIcon, MousePointerClick, Plus } from 'lucide-react';
 
 import { PageHeader } from '@/components/shared';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +45,19 @@ export default function AdminMapEditorPage() {
   const [config, setConfig] = useState<ResortMapConfig>(defaultMapConfig);
   const [selectedPinId, setSelectedPinId] = useState<string | null>(defaultMapConfig.pins[0]?.id ?? null);
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
-  const [placementMode, setPlacementMode] = useState<'add' | 'move' | null>('add');
+  const [isPinDialogOpen, setIsPinDialogOpen] = useState(false);
+  const [imgAspect, setImgAspect] = useState(16 / 9);
+  const mapViewportRef = useRef<HTMLDivElement | null>(null);
+  const mapFrameRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef({
+    isDragging: false,
+    pinId: null as string | null,
+    pointerId: -1,
+    startX: 0,
+    startY: 0,
+    moved: false,
+  });
+  const [mapViewportSize, setMapViewportSize] = useState({ width: 0, height: 0 });
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin', 'map-page'],
@@ -54,7 +69,6 @@ export default function AdminMapEditorPage() {
       const nextConfig = data as ResortMapConfig;
       setConfig(nextConfig);
       setSelectedPinId(nextConfig.pins[0]?.id ?? null);
-      setPlacementMode(nextConfig.pins.length ? null : 'add');
     }
   }, [data]);
 
@@ -63,6 +77,25 @@ export default function AdminMapEditorPage() {
       setSelectedPinId(config.pins[0]?.id ?? null);
     }
   }, [config.pins, selectedPinId]);
+
+  useEffect(() => {
+    const element = mapViewportRef.current;
+    if (!element) return;
+
+    const updateSize = () => {
+      setMapViewportSize({
+        width: element.clientWidth,
+        height: element.clientHeight,
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
 
   const mutation = useMutation({
     mutationFn: (payload: ResortMapConfig) => adminService.updateMapSettings(payload),
@@ -87,6 +120,38 @@ export default function AdminMapEditorPage() {
   );
 
   const selectedPreviewImage = resolveImageUrl(selectedPin?.images[0]?.url);
+  const previewImage = resolveImageUrl(config.backgroundImageUrl);
+
+  const fittedMapFrame = useMemo(() => {
+    const { width, height } = mapViewportSize;
+
+    if (!width || !height) {
+      return { width: 0, height: 0, left: 0, top: 0 };
+    }
+
+    const viewportAspect = width / height;
+
+    if (viewportAspect > imgAspect) {
+      const frameHeight = height;
+      const frameWidth = frameHeight * imgAspect;
+      return {
+        width: frameWidth,
+        height: frameHeight,
+        left: (width - frameWidth) / 2,
+        top: 0,
+      };
+    }
+
+    const frameWidth = width;
+    const frameHeight = frameWidth / imgAspect;
+
+    return {
+      width: frameWidth,
+      height: frameHeight,
+      left: 0,
+      top: (height - frameHeight) / 2,
+    };
+  }, [imgAspect, mapViewportSize]);
 
   const updateConfig = <K extends keyof ResortMapConfig>(field: K, value: ResortMapConfig[K]) => {
     setConfig((prev) => ({ ...prev, [field]: value }));
@@ -109,31 +174,101 @@ export default function AdminMapEditorPage() {
     updatePin(pinId, (pin) => ({ ...pin, [field]: clampPercent(numericValue) }));
   };
 
-  const addPinAt = (x: number, y: number) => {
-    const newPin = createEmptyPin(x, y, config.pins.length);
-    setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
-    setSelectedPinId(newPin.id);
-    setPlacementMode(null);
+  const openPinEditor = (pinId: string) => {
+    setSelectedPinId(pinId);
+    setIsPinDialogOpen(true);
   };
 
-  const handleCanvasClick = (event: React.MouseEvent<HTMLDivElement>) => {
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = clampPercent(((event.clientX - rect.left) / rect.width) * 100);
-    const y = clampPercent(((event.clientY - rect.top) / rect.height) * 100);
+  const addPin = () => {
+    const newPin = createEmptyPin(50, 50, config.pins.length);
+    setConfig((prev) => ({ ...prev, pins: [...prev.pins, newPin] }));
+    openPinEditor(newPin.id);
+  };
 
-    if (placementMode === 'move' && selectedPinId) {
-      updatePin(selectedPinId, (pin) => ({ ...pin, x, y }));
-      setPlacementMode(null);
-      return;
+  const updatePinPositionFromPointer = (pinId: string, clientX: number, clientY: number) => {
+    const rect = mapFrameRef.current?.getBoundingClientRect();
+    if (!rect || !rect.width || !rect.height) return;
+
+    const x = clampPercent(((clientX - rect.left) / rect.width) * 100);
+    const y = clampPercent(((clientY - rect.top) / rect.height) * 100);
+    updatePin(pinId, (pin) => ({ ...pin, x, y }));
+  };
+
+  const handlePinPointerDown = (event: React.PointerEvent<HTMLButtonElement>, pinId: string) => {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setSelectedPinId(pinId);
+
+    dragStateRef.current = {
+      isDragging: true,
+      pinId,
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+
+    event.currentTarget.setPointerCapture(event.pointerId);
+  };
+
+  const handlePinPointerMove = (event: React.PointerEvent<HTMLButtonElement>, pinId: string) => {
+    const dragState = dragStateRef.current;
+    if (!dragState.isDragging || dragState.pinId !== pinId || dragState.pointerId !== event.pointerId) return;
+
+    const dx = Math.abs(event.clientX - dragState.startX);
+    const dy = Math.abs(event.clientY - dragState.startY);
+
+    if (!dragState.moved && dx < 4 && dy < 4) return;
+
+    dragStateRef.current.moved = true;
+    event.preventDefault();
+    updatePinPositionFromPointer(pinId, event.clientX, event.clientY);
+  };
+
+  const handlePinPointerUp = (event: React.PointerEvent<HTMLButtonElement>, pinId: string) => {
+    const wasMoved = dragStateRef.current.moved;
+
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
 
-    addPinAt(x, y);
+    dragStateRef.current = {
+      isDragging: false,
+      pinId: null,
+      pointerId: -1,
+      startX: 0,
+      startY: 0,
+      moved: false,
+    };
+
+    if (!wasMoved) {
+      openPinEditor(pinId);
+    }
+  };
+
+  const handlePinPointerCancel = (event: React.PointerEvent<HTMLButtonElement>) => {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+
+    dragStateRef.current = {
+      isDragging: false,
+      pinId: null,
+      pointerId: -1,
+      startX: 0,
+      startY: 0,
+      moved: false,
+    };
   };
 
   const removePin = (pinId: string) => {
+    const nextPins = config.pins.filter((pin) => pin.id !== pinId);
     setConfig((prev) => ({ ...prev, pins: prev.pins.filter((pin) => pin.id !== pinId) }));
     if (selectedPinId === pinId) {
-      setSelectedPinId(config.pins.find((pin) => pin.id !== pinId)?.id ?? null);
+      setSelectedPinId(nextPins[0]?.id ?? null);
+      setIsPinDialogOpen(false);
     }
   };
 
@@ -162,15 +297,12 @@ export default function AdminMapEditorPage() {
 
   const isSaving = mutation.isPending;
   const isDisabled = isSaving || isLoading;
-  const previewImage = resolveImageUrl(config.backgroundImageUrl);
-  // Track natural image aspect ratio so canvas matches the image exactly (no letterboxing)
-  const [canvasAspect, setCanvasAspect] = useState('16 / 9');
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Map Editor"
-        description="Tune the public map image, default zoom, visibility, and interactive pin cards."
+        description="Tune the public map image, then manage pins from the sidebar and drag them directly on the preview."
       />
 
       <div className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border/70 bg-background/95 px-4 py-3 shadow-sm backdrop-blur">
@@ -212,168 +344,102 @@ export default function AdminMapEditorPage() {
         </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.3fr_0.95fr]">
-        <div className="space-y-6">
-          <Card className="border-border/70 bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-lg">Map settings</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/60 px-4 py-3 md:col-span-2">
-                <div>
-                  <p className="text-sm font-medium text-foreground">Display map on the public Map tab</p>
-                  <p className="text-xs text-muted-foreground">Turn this off to temporarily hide the map from guests.</p>
-                </div>
-                <Switch checked={config.enabled} onCheckedChange={(checked) => updateConfig('enabled', checked)} />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="map-title">Map title</Label>
-                <Input
-                  id="map-title"
-                  value={config.title ?? ''}
-                  onChange={(event) => updateConfig('title', event.target.value)}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="map-image">Background image URL</Label>
-                <Input
-                  id="map-image"
-                  value={config.backgroundImageUrl ?? ''}
-                  onChange={(event) => updateConfig('backgroundImageUrl', event.target.value)}
-                  placeholder="https://... or /uploads/..."
-                />
-              </div>
-
-              <div className="space-y-2 md:col-span-2">
-                <Label htmlFor="map-description">Description</Label>
-                <Textarea
-                  id="map-description"
-                  value={config.description ?? ''}
-                  onChange={(event) => updateConfig('description', event.target.value)}
-                  rows={3}
-                />
-              </div>
-
-              <div className="space-y-3 md:col-span-2">
-                <div className="flex items-center justify-between gap-3">
-                  <Label>Default zoom on Map tab</Label>
-                  <span className="text-sm text-muted-foreground">{config.defaultZoom.toFixed(1)}x</span>
-                </div>
-                <Slider
-                  value={[config.defaultZoom]}
-                  min={0.8}
-                  max={2.5}
-                  step={0.1}
-                  onValueChange={(value) => updateConfig('defaultZoom', Number((value[0] ?? 1).toFixed(1)))}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="overflow-hidden border-border/70 bg-card/90">
-            <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="space-y-6">
+        <Card className="border-border/70 bg-card/90">
+          <CardHeader>
+            <CardTitle className="text-lg">Map settings</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
+            <div className="flex items-center justify-between rounded-2xl border border-border/60 bg-background/60 px-4 py-3 md:col-span-2">
               <div>
-                <CardTitle className="text-lg">Map canvas</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  {placementMode === 'move'
-                    ? 'Click the preview to reposition the selected pin.'
-                    : 'Click directly on the map to add a new pin.'}
-                </p>
+                <p className="text-sm font-medium text-foreground">Display map on the public Map tab</p>
+                <p className="text-xs text-muted-foreground">Turn this off to temporarily hide the map from guests.</p>
               </div>
-              <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="secondary" onClick={() => setPlacementMode('add')}>
-                  Add pin by click
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={!selectedPin}
-                  onClick={() => setPlacementMode('move')}
-                >
-                  Move selected pin
-                </Button>
+              <Switch checked={config.enabled} onCheckedChange={(checked) => updateConfig('enabled', checked)} />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="map-title">Map title</Label>
+              <Input
+                id="map-title"
+                value={config.title ?? ''}
+                onChange={(event) => updateConfig('title', event.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="map-image">Background image URL</Label>
+              <Input
+                id="map-image"
+                value={config.backgroundImageUrl ?? ''}
+                onChange={(event) => updateConfig('backgroundImageUrl', event.target.value)}
+                placeholder="https://... or /uploads/..."
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <Label htmlFor="map-description">Description</Label>
+              <Textarea
+                id="map-description"
+                value={config.description ?? ''}
+                onChange={(event) => updateConfig('description', event.target.value)}
+                rows={3}
+              />
+            </div>
+
+            <div className="space-y-3 md:col-span-2">
+              <div className="flex items-center justify-between gap-3">
+                <Label>Default zoom on Map tab</Label>
+                <span className="text-sm text-muted-foreground">{config.defaultZoom.toFixed(1)}x</span>
               </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div
-                className="relative cursor-crosshair overflow-hidden rounded-[28px] border border-dashed border-border/80 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.18),_transparent_45%),linear-gradient(135deg,_rgba(15,23,42,0.03),_rgba(59,130,246,0.06))]"
-                style={{ aspectRatio: canvasAspect, minHeight: '320px' }}
-                onClick={handleCanvasClick}
-              >
-                <div
-                  className="absolute inset-0 transition-transform duration-200"
-                  style={{ transform: `scale(${config.defaultZoom || 1})`, transformOrigin: 'center center' }}
-                >
-                  {previewImage ? (
-                    <img
-                      src={previewImage}
-                      alt={config.title || 'Custom resort map'}
-                      className="absolute inset-0 h-full w-full"
-                      style={{ objectFit: 'fill' }}
-                      onLoad={(e) => {
-                        const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
-                        if (w > 0 && h > 0) setCanvasAspect(`${w} / ${h}`);
-                      }}
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-sm text-muted-foreground">
-                      Add a background image later and start plotting your resort landmarks here.
-                    </div>
-                  )}
+              <Slider
+                value={[config.defaultZoom]}
+                min={0.8}
+                max={2.5}
+                step={0.1}
+                onValueChange={(value) => updateConfig('defaultZoom', Number((value[0] ?? 1).toFixed(1)))}
+              />
+            </div>
+          </CardContent>
+        </Card>
 
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/10 via-transparent to-transparent" />
-
-                  {config.pins.map((pin, index) => {
-                    const isSelected = pin.id === selectedPinId;
-                    return (
-                      <button
-                        key={pin.id}
-                        type="button"
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          setSelectedPinId(pin.id);
-                        }}
-                        className="group absolute -translate-x-1/2 -translate-y-full"
-                        style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
-                        aria-label={`Select ${pin.name || `pin ${index + 1}`}`}
-                      >
-                        <span
-                          className={`flex h-9 w-9 items-center justify-center rounded-full border-2 text-xs font-semibold shadow-lg transition ${
-                            isSelected
-                              ? 'scale-110 border-primary bg-primary text-primary-foreground'
-                              : 'border-white bg-slate-950 text-white hover:scale-105'
-                          }`}
-                        >
-                          {index + 1}
-                        </span>
-                        <span className="pointer-events-none absolute left-1/2 top-[-0.45rem] hidden -translate-x-1/2 whitespace-nowrap rounded-full bg-background/95 px-2 py-1 text-[11px] font-medium text-foreground shadow group-hover:block">
-                          {pin.name || `Pin ${index + 1}`}
-                        </span>
-                      </button>
-                    );
-                  })}
+        <div className="grid min-h-[720px] overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_12px_40px_rgba(15,23,42,0.08)] xl:grid-cols-[340px_minmax(0,1fr)]">
+          <aside className="flex min-h-0 flex-col border-b border-border/60 bg-background/80 xl:border-b-0 xl:border-r">
+            <div className="space-y-4 p-4 sm:p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-primary/80">Pin editor</p>
+                  <h2 className="text-xl font-semibold text-foreground">Manage map pins</h2>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    Add a pin from here, then drag it freely on the map and save when you are done.
+                  </p>
                 </div>
+                <Badge variant="secondary" className="shrink-0 rounded-full">
+                  {config.pins.length} pins
+                </Badge>
+              </div>
 
-                <div className="absolute left-3 top-3 rounded-2xl border border-white/70 bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-lg backdrop-blur">
-                  {placementMode === 'move'
-                    ? 'Move mode is on — click the map to place the selected pin.'
-                    : 'Tip: click anywhere on the map preview to add a new pin.'}
+              <div className="rounded-2xl border border-border/60 bg-muted/40 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">Add a new pin</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      New pins start in the center and can be dragged anywhere on the map.
+                    </p>
+                  </div>
+                  <Button type="button" size="sm" className="rounded-full" onClick={addPin}>
+                    <Plus className="mr-1 h-3.5 w-3.5" />
+                    Add pin
+                  </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </div>
 
-        <div className="space-y-6">
-          <Card className="border-border/70 bg-card/90">
-            <CardHeader>
-              <CardTitle className="text-lg">Pin list</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-56 rounded-2xl border border-border/60 bg-background/50">
-                <div className="space-y-2 p-3">
+            <Separator />
+
+            <div className="min-h-0 flex-1">
+              <ScrollArea className="h-full">
+                <div className="space-y-2 p-3 sm:p-4">
                   {config.pins.length ? (
                     config.pins.map((pin, index) => {
                       const isSelected = pin.id === selectedPinId;
@@ -381,21 +447,30 @@ export default function AdminMapEditorPage() {
                         <button
                           key={pin.id}
                           type="button"
-                          onClick={() => setSelectedPinId(pin.id)}
-                          className={`w-full rounded-xl border px-3 py-2 text-left transition ${
+                          onClick={() => openPinEditor(pin.id)}
+                          className={`w-full rounded-[20px] border p-3 text-left transition ${
                             isSelected
-                              ? 'border-primary bg-primary/5'
-                              : 'border-border/60 bg-background/60 hover:border-primary/40'
+                              ? 'border-primary/40 bg-primary/5 shadow-sm'
+                              : 'border-border/60 bg-card hover:border-primary/30 hover:bg-muted/40'
                           }`}
                         >
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="flex items-center gap-2">
-                              <span className={`flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold ${isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-foreground'}`}>
-                                {index + 1}
-                              </span>
-                              <p className="text-sm font-medium text-foreground">{pin.name || `Pin ${index + 1}`}</p>
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${
+                                    isSelected ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                                  }`}
+                                >
+                                  {index + 1}
+                                </span>
+                                <p className="truncate text-sm font-semibold text-foreground">
+                                  {pin.name || `Pin ${index + 1}`}
+                                </p>
+                              </div>
+                              <p className="mt-1 text-[11px] text-muted-foreground">Click to edit details</p>
                             </div>
-                            <span className="text-[11px] text-muted-foreground">
+                            <span className="shrink-0 text-[11px] text-muted-foreground">
                               {pin.x.toFixed(1)}%, {pin.y.toFixed(1)}%
                             </span>
                           </div>
@@ -403,155 +478,245 @@ export default function AdminMapEditorPage() {
                       );
                     })
                   ) : (
-                    <p className="p-3 text-sm text-muted-foreground">No pins yet. Click the map preview to add one.</p>
+                    <p className="rounded-2xl border border-dashed border-border/60 bg-muted/30 px-3 py-4 text-sm text-muted-foreground">
+                      No pins yet. Use the button above to create your first one.
+                    </p>
                   )}
                 </div>
               </ScrollArea>
-            </CardContent>
-          </Card>
+            </div>
+          </aside>
 
+          <div className="relative min-h-[420px] bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
+            <div
+              ref={mapViewportRef}
+              className="absolute inset-0 overflow-hidden p-2 select-none sm:p-3 lg:p-4 touch-none"
+              onDragStart={(event) => event.preventDefault()}
+              onClick={() => setSelectedPinId(null)}
+            >
+              <div
+                ref={mapFrameRef}
+                className="absolute overflow-hidden rounded-[22px] border border-border/50 bg-muted/20 shadow-inner"
+                style={{
+                  left: fittedMapFrame.left,
+                  top: fittedMapFrame.top,
+                  width: fittedMapFrame.width,
+                  height: fittedMapFrame.height,
+                }}
+              >
+                {previewImage ? (
+                  <img
+                    src={previewImage}
+                    alt={config.title || 'Custom resort map'}
+                    draggable={false}
+                    className="absolute inset-0 h-full w-full select-none"
+                    style={{ objectFit: 'fill', userSelect: 'none' }}
+                    onLoad={(event) => {
+                      const { naturalWidth, naturalHeight } = event.currentTarget;
+                      if (naturalWidth > 0 && naturalHeight > 0) {
+                        setImgAspect(naturalWidth / naturalHeight);
+                      }
+                    }}
+                  />
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm text-muted-foreground">
+                    Add a background image in Map settings to start plotting your resort landmarks here.
+                  </div>
+                )}
+
+                <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-white/5" />
+
+                {config.pins.map((pin, index) => {
+                  const isSelected = pin.id === selectedPinId;
+                  return (
+                    <button
+                      key={pin.id}
+                      type="button"
+                      onClick={(event) => event.stopPropagation()}
+                      onPointerDown={(event) => handlePinPointerDown(event, pin.id)}
+                      onPointerMove={(event) => handlePinPointerMove(event, pin.id)}
+                      onPointerUp={(event) => handlePinPointerUp(event, pin.id)}
+                      onPointerCancel={handlePinPointerCancel}
+                      className="group absolute -translate-x-1/2 -translate-y-full touch-none"
+                      style={{ left: `${pin.x}%`, top: `${pin.y}%` }}
+                      aria-label={`Select ${pin.name || `pin ${index + 1}`}`}
+                      title={pin.name || `Pin ${index + 1}`}
+                    >
+                      <span
+                        className={`relative flex h-10 w-10 cursor-grab items-center justify-center rounded-full border-2 shadow-[0_10px_24px_rgba(15,23,42,0.18)] transition-all duration-150 active:cursor-grabbing ${
+                          isSelected
+                            ? 'scale-110 border-primary bg-primary text-primary-foreground'
+                            : 'border-background bg-card text-foreground hover:scale-105 hover:border-primary/50'
+                        }`}
+                      >
+                        {index + 1}
+                      </span>
+                      <span className="pointer-events-none absolute bottom-full left-1/2 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-full border border-border/60 bg-background/95 px-2.5 py-1 text-[11px] font-medium text-foreground opacity-0 shadow-lg transition-opacity group-hover:opacity-100">
+                        {pin.name || `Pin ${index + 1}`}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="absolute left-5 top-5 max-w-xs rounded-2xl border border-white/80 bg-background/92 px-3 py-2 text-xs text-muted-foreground shadow-lg backdrop-blur">
+                Drag any pin to reposition it, or click a pin to open its edit form.
+              </div>
+
+              <div className="absolute bottom-5 right-5 rounded-full border border-border/60 bg-background/92 px-3 py-1.5 text-xs text-muted-foreground shadow-sm">
+                Public map default zoom: {config.defaultZoom.toFixed(1)}×
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <Dialog open={Boolean(selectedPin && isPinDialogOpen)} onOpenChange={setIsPinDialogOpen}>
+        <DialogContent className="overflow-hidden p-0 sm:max-w-2xl">
           {selectedPin ? (
-            <Card className="border-border/70 bg-card/90">
-              <CardHeader>
-                <div className="flex items-center justify-between gap-3">
-                  <CardTitle className="text-lg">Selected pin</CardTitle>
+            <div className="flex max-h-[85vh] flex-col">
+              <div className="border-b border-border/60 px-6 py-4">
+                <div className="flex items-start justify-between gap-3">
+                  <DialogHeader className="space-y-1 text-left">
+                    <DialogTitle>{selectedPin.name || 'Edit pin'}</DialogTitle>
+                    <DialogDescription>
+                      Update this pin here. Drag it on the map to change its position, then save to publish.
+                    </DialogDescription>
+                  </DialogHeader>
                   <Button type="button" variant="destructive" size="sm" onClick={() => removePin(selectedPin.id)}>
                     Remove pin
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="overflow-hidden rounded-2xl border border-border/60 bg-background/70">
-                  {selectedPreviewImage ? (
-                    <img
-                      src={selectedPreviewImage}
-                      alt={selectedPin.images[0]?.alt || selectedPin.name}
-                      className="h-40 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-32 items-center justify-center gap-2 text-sm text-muted-foreground">
-                      <ImageIcon className="h-4 w-4" />
-                      No image preview yet for this pin.
-                    </div>
-                  )}
-                </div>
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="pin-name">Name</Label>
-                  <Input
-                    id="pin-name"
-                    value={selectedPin.name}
-                    onChange={(event) => updatePinField(selectedPin.id, 'name', event.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pin-description">Description</Label>
-                  <Textarea
-                    id="pin-description"
-                    rows={4}
-                    value={selectedPin.description ?? ''}
-                    onChange={(event) => updatePinField(selectedPin.id, 'description', event.target.value)}
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="pin-x">X position (%)</Label>
-                    <Input
-                      id="pin-x"
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={selectedPin.x}
-                      onChange={(event) => updatePinCoordinate(selectedPin.id, 'x', event.target.value)}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="pin-y">Y position (%)</Label>
-                    <Input
-                      id="pin-y"
-                      type="number"
-                      min={0}
-                      max={100}
-                      step={0.1}
-                      value={selectedPin.y}
-                      onChange={(event) => updatePinCoordinate(selectedPin.id, 'y', event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Photo gallery</p>
-                      <p className="text-xs text-muted-foreground">These images appear in the guest-facing info card.</p>
-                    </div>
-                    <Button type="button" size="sm" variant="secondary" onClick={() => addImage(selectedPin.id)}>
-                      Add image
-                    </Button>
-                  </div>
-
-                  <div className="space-y-3">
-                    {selectedPin.images.length ? (
-                      selectedPin.images.map((image, index) => (
-                        <div key={image.id} className="space-y-3 rounded-xl border border-border/60 bg-background p-3">
-                          <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-medium text-foreground">Image {index + 1}</p>
-                            <Button
-                              type="button"
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => removeImage(selectedPin.id, image.id)}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label>Image URL</Label>
-                            <Input
-                              value={image.url}
-                              onChange={(event) => updateImageField(selectedPin.id, image.id, 'url', event.target.value)}
-                              placeholder="https://... or /uploads/..."
-                            />
-                          </div>
-
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="space-y-2">
-                              <Label>Alt text</Label>
-                              <Input
-                                value={image.alt ?? ''}
-                                onChange={(event) => updateImageField(selectedPin.id, image.id, 'alt', event.target.value)}
-                              />
-                            </div>
-                            <div className="space-y-2">
-                              <Label>Caption</Label>
-                              <Input
-                                value={image.caption ?? ''}
-                                onChange={(event) => updateImageField(selectedPin.id, image.id, 'caption', event.target.value)}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      ))
+              <ScrollArea className="max-h-[calc(85vh-5rem)]">
+                <div className="space-y-5 px-6 py-5">
+                  <div className="overflow-hidden rounded-2xl border border-border/60 bg-background/70">
+                    {selectedPreviewImage ? (
+                      <img
+                        src={selectedPreviewImage}
+                        alt={selectedPin.images[0]?.alt || selectedPin.name}
+                        className="h-48 w-full object-cover"
+                      />
                     ) : (
-                      <p className="text-sm text-muted-foreground">No images yet for this pin.</p>
+                      <div className="flex h-32 items-center justify-center gap-2 text-sm text-muted-foreground">
+                        <ImageIcon className="h-4 w-4" />
+                        No image preview yet for this pin.
+                      </div>
                     )}
                   </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="pin-name">Name</Label>
+                      <Input
+                        id="pin-name"
+                        value={selectedPin.name}
+                        onChange={(event) => updatePinField(selectedPin.id, 'name', event.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2 sm:col-span-2">
+                      <Label htmlFor="pin-description">Description</Label>
+                      <Textarea
+                        id="pin-description"
+                        rows={4}
+                        value={selectedPin.description ?? ''}
+                        onChange={(event) => updatePinField(selectedPin.id, 'description', event.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="pin-x">X position (%)</Label>
+                      <Input
+                        id="pin-x"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={selectedPin.x}
+                        onChange={(event) => updatePinCoordinate(selectedPin.id, 'x', event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="pin-y">Y position (%)</Label>
+                      <Input
+                        id="pin-y"
+                        type="number"
+                        min={0}
+                        max={100}
+                        step={0.1}
+                        value={selectedPin.y}
+                        onChange={(event) => updatePinCoordinate(selectedPin.id, 'y', event.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-3 rounded-2xl border border-border/60 bg-background/50 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-medium text-foreground">Photo gallery</p>
+                        <p className="text-xs text-muted-foreground">These images appear in the guest-facing info card.</p>
+                      </div>
+                      <Button type="button" size="sm" variant="secondary" onClick={() => addImage(selectedPin.id)}>
+                        Add image
+                      </Button>
+                    </div>
+
+                    <div className="space-y-3">
+                      {selectedPin.images.length ? (
+                        selectedPin.images.map((image, index) => (
+                          <div key={image.id} className="space-y-3 rounded-xl border border-border/60 bg-background p-3">
+                            <div className="flex items-center justify-between gap-3">
+                              <p className="text-sm font-medium text-foreground">Image {index + 1}</p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeImage(selectedPin.id, image.id)}
+                              >
+                                Remove
+                              </Button>
+                            </div>
+
+                            <div className="space-y-2">
+                              <Label>Image URL</Label>
+                              <Input
+                                value={image.url}
+                                onChange={(event) => updateImageField(selectedPin.id, image.id, 'url', event.target.value)}
+                                placeholder="https://... or /uploads/..."
+                              />
+                            </div>
+
+                            <div className="grid gap-3 sm:grid-cols-2">
+                              <div className="space-y-2">
+                                <Label>Alt text</Label>
+                                <Input
+                                  value={image.alt ?? ''}
+                                  onChange={(event) => updateImageField(selectedPin.id, image.id, 'alt', event.target.value)}
+                                />
+                              </div>
+                              <div className="space-y-2">
+                                <Label>Caption</Label>
+                                <Input
+                                  value={image.caption ?? ''}
+                                  onChange={(event) => updateImageField(selectedPin.id, image.id, 'caption', event.target.value)}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-sm text-muted-foreground">No images yet for this pin.</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-border/70 bg-card/90">
-              <CardContent className="p-4 text-sm text-muted-foreground">
-                Select a pin from the list or click the canvas to create one.
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </div>
+              </ScrollArea>
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
