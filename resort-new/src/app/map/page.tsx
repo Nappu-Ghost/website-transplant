@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { MapPin, Minus, Plus, X } from 'lucide-react';
 
@@ -19,7 +19,9 @@ export default function MapPage() {
   const [activePinId, setActivePinId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [zoom, setZoom] = useState(1);
-  const [imgAspect, setImgAspect] = useState('16 / 9');
+  const [imgAspect, setImgAspect] = useState(16 / 9);
+  const mapViewportRef = useRef<HTMLDivElement | null>(null);
+  const [mapViewportSize, setMapViewportSize] = useState({ width: 0, height: 0 });
 
   const { data, isLoading } = useQuery({
     queryKey: ['meta', 'map'],
@@ -36,6 +38,25 @@ export default function MapPage() {
     }
   }, [data]);
 
+  useEffect(() => {
+    const element = mapViewportRef.current;
+    if (!element) return;
+
+    const updateSize = () => {
+      setMapViewportSize({
+        width: element.clientWidth,
+        height: element.clientHeight,
+      });
+    };
+
+    updateSize();
+
+    const observer = new ResizeObserver(() => updateSize());
+    observer.observe(element);
+
+    return () => observer.disconnect();
+  }, []);
+
   const activePin = useMemo(
     () => config.pins.find((pin) => pin.id === activePinId) ?? null,
     [activePinId, config.pins],
@@ -44,6 +65,37 @@ export default function MapPage() {
   const activeImages = activePin?.images ?? [];
   const featuredImage = resolveImageUrl(activeImages[activeImageIndex]?.url);
   const previewImage = resolveImageUrl(config.backgroundImageUrl);
+
+  const fittedMapFrame = useMemo(() => {
+    const { width, height } = mapViewportSize;
+
+    if (!width || !height) {
+      return { width: 0, height: 0, left: 0, top: 0 };
+    }
+
+    const viewportAspect = width / height;
+
+    if (viewportAspect > imgAspect) {
+      const fittedHeight = height;
+      const fittedWidth = fittedHeight * imgAspect;
+      return {
+        width: fittedWidth,
+        height: fittedHeight,
+        left: (width - fittedWidth) / 2,
+        top: 0,
+      };
+    }
+
+    const fittedWidth = width;
+    const fittedHeight = fittedWidth / imgAspect;
+
+    return {
+      width: fittedWidth,
+      height: fittedHeight,
+      left: 0,
+      top: (height - fittedHeight) / 2,
+    };
+  }, [imgAspect, mapViewportSize]);
 
   if (!config.enabled) {
     return (
@@ -57,7 +109,7 @@ export default function MapPage() {
 
   return (
     <section className="h-[calc(100vh-4.5rem)] bg-background px-2 py-2 sm:px-4 sm:py-4">
-      <div className="grid h-full min-h-0 overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_12px_40px_rgba(15,23,42,0.08)] lg:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid h-full min-h-0 overflow-hidden rounded-[28px] border border-border/70 bg-card shadow-[0_12px_40px_rgba(15,23,42,0.08)] lg:grid-cols-[320px_minmax(0,1fr)]">
         <aside className="flex min-h-0 flex-col border-b border-border/60 bg-background/80 lg:border-b-0 lg:border-r">
           <div className="space-y-4 p-4 sm:p-5">
             <div className="flex items-start justify-between gap-3">
@@ -239,10 +291,15 @@ export default function MapPage() {
         </aside>
 
         <div className="relative min-h-0 bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
-          <div className="absolute inset-0 flex items-center justify-center p-3 sm:p-5 lg:p-6">
+          <div ref={mapViewportRef} className="absolute inset-0 overflow-hidden p-2 sm:p-3 lg:p-4">
             <div
-              className="relative h-full max-w-full overflow-hidden rounded-[26px] border border-border/60 bg-muted/40 shadow-inner"
-              style={{ aspectRatio: imgAspect }}
+              className="absolute overflow-hidden rounded-[26px] border border-border/60 bg-muted/30 shadow-inner"
+              style={{
+                left: fittedMapFrame.left,
+                top: fittedMapFrame.top,
+                width: fittedMapFrame.width,
+                height: fittedMapFrame.height,
+              }}
             >
               <div
                 className="absolute inset-0 transition-transform duration-200"
@@ -253,11 +310,11 @@ export default function MapPage() {
                     src={previewImage}
                     alt={config.title || 'Resort map'}
                     className="absolute inset-0 h-full w-full"
-                    style={{ objectFit: 'fill' }}
+                    style={{ objectFit: 'cover' }}
                     onLoad={(event) => {
                       const { naturalWidth, naturalHeight } = event.currentTarget;
                       if (naturalWidth > 0 && naturalHeight > 0) {
-                        setImgAspect(`${naturalWidth} / ${naturalHeight}`);
+                        setImgAspect(naturalWidth / naturalHeight);
                       }
                     }}
                   />
