@@ -324,7 +324,8 @@ export default function MapPage() {
         <div className="relative min-h-0 bg-[linear-gradient(180deg,rgba(120,113,108,0.08),rgba(231,229,228,0.18))]">
           <div
             ref={mapViewportRef}
-            className="absolute inset-0 overflow-hidden p-0 sm:p-1 lg:p-2 touch-none"
+            className="absolute inset-0 overflow-hidden p-0 select-none sm:p-1 lg:p-2 touch-none"
+            onDragStart={(event) => event.preventDefault()}
             onWheel={(event) => {
               event.preventDefault();
               setZoom((value) => clampZoom(value + (event.deltaY < 0 ? 0.1 : -0.1)));
@@ -374,8 +375,9 @@ export default function MapPage() {
                   <img
                     src={previewImage}
                     alt={config.title || 'Resort map'}
-                    className="absolute inset-0 h-full w-full"
-                    style={{ objectFit: 'cover' }}
+                    draggable={false}
+                    className="absolute inset-0 h-full w-full select-none"
+                    style={{ objectFit: 'cover', userSelect: 'none', WebkitUserDrag: 'none' as any }}
                     onLoad={(event) => {
                       const { naturalWidth, naturalHeight } = event.currentTarget;
                       if (naturalWidth > 0 && naturalHeight > 0) {
