@@ -306,6 +306,12 @@ export class ApiClient {
   }
   async createBooking(data: any, token?: string | null) { return this.request('/bookings/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
   async updateBooking(id: string, data: any, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'PUT', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
+  async requestBookingCancellation(id: string, data: any = {}, token?: string | null) {
+    return this.request(`/bookings/${id}/request-cancellation`, { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
+  }
+  async reviewBookingCancellation(id: string, data: any, token?: string | null) {
+    return this.request(`/bookings/${id}/review-cancellation`, { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token);
+  }
   async deleteBooking(id: string, token?: string | null) { return this.request(`/bookings/${id}`, { method: 'DELETE' }, undefined, true, token); }
 
   async getAdminOverview(token?: string | null) {

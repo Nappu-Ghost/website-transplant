@@ -18,6 +18,13 @@ def apply_migrations(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE users ADD COLUMN refresh_token_jti VARCHAR"))
             conn.execute(text("ALTER TABLE users ADD COLUMN refresh_token_expiresAt DATETIME"))
 
+    if _has_column(engine, "bookings", "id") and not _has_column(engine, "bookings", "cancellation_request_status"):
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_request_status VARCHAR NOT NULL DEFAULT 'NONE'"))
+            conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_requested_at DATETIME"))
+            conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_reviewed_at DATETIME"))
+            conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_note TEXT"))
+
     with engine.begin() as conn:
         conn.execute(
             text(

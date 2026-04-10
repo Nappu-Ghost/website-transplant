@@ -32,6 +32,7 @@ from app.models import (
     RoleEnum,
     StatusEnum,
     BookingStatusEnum,
+    CancellationRequestStatusEnum,
     PaymentStatusEnum,
     PaymentMethodEnum,
 )
@@ -317,16 +318,45 @@ class BookingCreate(BaseModel):
 class BookingUpdate(BaseModel):
     number_of_guests: Optional[int] = Field(None, ge=1)
     status: Optional[BookingStatusEnum] = None
+    cancellation_request_status: Optional[CancellationRequestStatusEnum] = None
+    cancellation_requested_at: Optional[datetime] = None
+    cancellation_reviewed_at: Optional[datetime] = None
+    cancellation_note: Optional[str] = None
     total_price: Optional[float] = Field(None, ge=0)
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     is_premium: Optional[bool] = None
+
+
+class BookingCancellationRequest(BaseModel):
+    pass
+
+
+class BookingCancellationReview(BaseModel):
+    decision: CancellationRequestStatusEnum
+    note: Optional[str] = Field(None, max_length=1000)
+
+    @model_validator(mode="after")
+    def _validate_decision(self):
+        if self.decision not in [
+            CancellationRequestStatusEnum.APPROVED,
+            CancellationRequestStatusEnum.REJECTED,
+        ]:
+            raise ValueError("decision must be APPROVED or REJECTED")
+        if self.decision == CancellationRequestStatusEnum.REJECTED and not (self.note or "").strip():
+            raise ValueError("A rejection note is required")
+        return self
+
 
 class BookingResponse(BaseModel):
     id: int
     user_id: int
     number_of_guests: int
     status: BookingStatusEnum
+    cancellation_request_status: CancellationRequestStatusEnum = CancellationRequestStatusEnum.NONE
+    cancellation_requested_at: Optional[datetime] = None
+    cancellation_reviewed_at: Optional[datetime] = None
+    cancellation_note: Optional[str] = None
     total_price: float
     start_date: datetime
     end_date: datetime

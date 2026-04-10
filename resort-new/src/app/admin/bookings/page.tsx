@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 import { ModalDialog, PageHeader, SectionHeader } from '@/components/shared';
 import { bookingService, paymentService } from '@/lib/api-service';
 
@@ -21,12 +22,17 @@ type ApiBookingStatus =
   | 'CHECKED_OUT'
   | 'CANCELLED';
 
+type CancellationRequestStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
+
 interface ApiBooking {
   id: number;
   status: ApiBookingStatus;
+  totalPrice?: number;
   startDate?: string;
   endDate?: string;
   numberOfGuests?: number;
+  cancellationRequestStatus?: CancellationRequestStatus;
+  cancellationNote?: string | null;
   user?: { name?: string | null; email?: string | null } | null;
   rooms?: { room?: { name?: string } }[];
   payments?: { id: number; status: string; method: string; amount: number; currency: string; createdAt?: string; paidAt?: string | null }[];
@@ -40,9 +46,12 @@ interface BookingSummary {
   guests: number;
   status: BookingStatus;
   apiStatus: ApiBookingStatus;
+  cancellationRequestStatus: CancellationRequestStatus;
+  cancellationNote?: string;
   paymentStatus: string;
   paymentMethod: string;
   paymentAmountLabel: string;
+  paymentCollectedLabel?: string;
   paymentId?: number;
 }
 
@@ -56,6 +65,18 @@ const statusTone: Record<BookingStatus, string> = {
 };
 
 const getBookingCode = (id: number) => `ALR-${String(id).padStart(6, '0')}`;
+
+const formatCurrency = (amount: number, currency = 'USD') =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+
+const formatEnumLabel = (value?: string | null) => {
+  if (!value) return 'Not recorded';
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
 
 const formatDateRange = (startDate?: string, endDate?: string) => {
   if (!startDate || !endDate) return 'Dates pending';
@@ -88,6 +109,7 @@ export default function AdminBookingsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<'All' | BookingStatus>('All');
   const [statusEdits, setStatusEdits] = useState<Record<number, ApiBookingStatus>>({});
+  const [rejectionNotes, setRejectionNotes] = useState<Record<number, string>>({});
   const queryClient = useQueryClient();
 
   const bookingsQuery = useQuery<ApiBooking[]>({
@@ -113,6 +135,17 @@ export default function AdminBookingsPage() {
       queryClient.invalidateQueries({ queryKey: ['bookings', 'admin'] });
     },
   });
+
+  const reviewCancellationMutation = useMutation({
+    mutationFn: ({ bookingId, decision, note }: { bookingId: number; decision: 'APPROVED' | 'REJECTED'; note?: string }) =>
+      bookingService.reviewCancellation(String(bookingId), { decision, note }),
+    onSuccess: (_data, variables) => {
+      setRejectionNotes((current) => ({ ...current, [variables.bookingId]: '' }));
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'admin'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'user'] });
+    },
+  });
+
   const bookings = useMemo<BookingSummary[]>(() => {
     return (bookingsQuery.data ?? []).map((booking) => {
       const roomName = booking.rooms?.[0]?.room?.name ?? 'Room pending';
@@ -123,9 +156,13 @@ export default function AdminBookingsPage() {
         const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return tb - ta;
       })[0];
-      const paymentStatus = primaryPayment?.status ?? '—';
-      const paymentMethod = primaryPayment?.method ?? '—';
-      const paymentAmountLabel = primaryPayment ? `${primaryPayment.amount.toFixed(2)} ${primaryPayment.currency}` : '—';
+      const paymentCurrency = primaryPayment?.currency ?? 'USD';
+      const paymentStatus = primaryPayment ? formatEnumLabel(primaryPayment.status) : 'Pending';
+      const paymentMethod = primaryPayment ? formatEnumLabel(primaryPayment.method) : 'Not recorded';
+      const paymentAmountLabel = formatCurrency(booking.totalPrice ?? primaryPayment?.amount ?? 0, paymentCurrency);
+      const paymentCollectedLabel = primaryPayment
+        ? formatCurrency(primaryPayment.amount, paymentCurrency)
+        : undefined;
       return {
         id: booking.id,
         code: getBookingCode(booking.id),
@@ -135,9 +172,12 @@ export default function AdminBookingsPage() {
         guests: booking.numberOfGuests ?? 1,
         status: labelStatus,
         apiStatus: booking.status,
+        cancellationRequestStatus: booking.cancellationRequestStatus ?? 'NONE',
+        cancellationNote: booking.cancellationNote ?? undefined,
         paymentStatus,
         paymentMethod,
         paymentAmountLabel,
+        paymentCollectedLabel,
         paymentId: primaryPayment?.id,
       };
     });
@@ -223,14 +263,14 @@ export default function AdminBookingsPage() {
                 <TableHead>Room</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Payment</TableHead>
-                <TableHead>Amount</TableHead>
+                <TableHead>Total</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {bookingsQuery.isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-sm text-muted-foreground">
+                  <TableCell colSpan={8} className="text-sm text-muted-foreground">
                     Loading bookings...
                   </TableCell>
                 </TableRow>
@@ -241,7 +281,15 @@ export default function AdminBookingsPage() {
                   <TableCell>{booking.dates}</TableCell>
                   <TableCell>{booking.room}</TableCell>
                   <TableCell>
-                    <Badge className={statusTone[booking.status]}>{booking.status}</Badge>
+                    <div className="space-y-1">
+                      <Badge className={statusTone[booking.status]}>{booking.status}</Badge>
+                      {booking.cancellationRequestStatus === 'PENDING' ? (
+                        <p className="text-xs font-medium text-amber-700">Cancellation requested</p>
+                      ) : null}
+                      {booking.cancellationRequestStatus === 'REJECTED' ? (
+                        <p className="text-xs text-rose-700">Cancellation rejected</p>
+                      ) : null}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex flex-col">
@@ -261,7 +309,65 @@ export default function AdminBookingsPage() {
                         <p>Special requests: <span className="text-foreground">Welcome amenity</span></p>
                         <p>Status: <span className="text-foreground">{booking.status}</span></p>
                         <p>Payment: <span className="text-foreground">{booking.paymentStatus}</span> <span className="text-muted-foreground">({booking.paymentMethod})</span></p>
-                        <p>Amount: <span className="text-foreground">{booking.paymentAmountLabel}</span></p>
+                        <p>Total price: <span className="text-foreground">{booking.paymentAmountLabel}</span></p>
+                        <p>Paid amount: <span className="text-foreground">{booking.paymentCollectedLabel ?? 'Not paid yet'}</span></p>
+                        {booking.cancellationRequestStatus !== 'NONE' ? (
+                          <div className="rounded-lg border border-border/70 bg-muted/40 p-3">
+                            <p>
+                              Cancellation request: <span className="text-foreground">{formatEnumLabel(booking.cancellationRequestStatus)}</span>
+                            </p>
+                            {booking.cancellationNote ? (
+                              <p className="mt-1">Admin note: <span className="text-foreground">{booking.cancellationNote}</span></p>
+                            ) : null}
+                          </div>
+                        ) : null}
+                        {booking.cancellationRequestStatus === 'PENDING' ? (
+                          <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                            <p className="font-medium text-amber-900">Review cancellation request</p>
+                            <Textarea
+                              value={rejectionNotes[booking.id] ?? ''}
+                              onChange={(event) =>
+                                setRejectionNotes((current) => ({
+                                  ...current,
+                                  [booking.id]: event.target.value,
+                                }))
+                              }
+                              placeholder="Add a note if you reject this request"
+                            />
+                            <div className="flex flex-wrap gap-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="destructive"
+                                disabled={reviewCancellationMutation.isPending}
+                                onClick={() =>
+                                  reviewCancellationMutation.mutate({
+                                    bookingId: booking.id,
+                                    decision: 'APPROVED',
+                                    note: '',
+                                  })
+                                }
+                              >
+                                {reviewCancellationMutation.isPending ? 'Saving...' : 'Approve cancellation'}
+                              </Button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                variant="outline"
+                                disabled={reviewCancellationMutation.isPending || !(rejectionNotes[booking.id] ?? '').trim()}
+                                onClick={() =>
+                                  reviewCancellationMutation.mutate({
+                                    bookingId: booking.id,
+                                    decision: 'REJECTED',
+                                    note: rejectionNotes[booking.id],
+                                  })
+                                }
+                              >
+                                Reject with note
+                              </Button>
+                            </div>
+                          </div>
+                        ) : null}
                         <div className="flex flex-wrap gap-2 pt-1">
                           <Button
                             type="button"

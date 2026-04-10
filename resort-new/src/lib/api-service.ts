@@ -33,6 +33,8 @@ export const bookingService = {
   listForUser: (userId?: string, token?: string | null) => api.getUserBookings(userId, token),
   create: (data: any, token?: string | null) => api.createBooking(data, token),
   update: (id: string, data: any, token?: string | null) => api.updateBooking(id, data, token),
+  requestCancellation: (id: string, data?: any, token?: string | null) => api.requestBookingCancellation(id, data, token),
+  reviewCancellation: (id: string, data: any, token?: string | null) => api.reviewBookingCancellation(id, data, token),
   remove: (id: string, token?: string | null) => api.deleteBooking(id, token),
   listPaymentsForUser: (token?: string | null) => api.getUserPayments(token),
 };

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
@@ -113,6 +115,89 @@ def read_booking(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this booking")
 
     return booking
+
+
+@router.post("/{booking_id}/request-cancellation", response_model=schemas.BookingResponse)
+def request_booking_cancellation(
+    booking_id: int,
+    payload: schemas.BookingCancellationRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user),
+):
+    db_booking = crud.get_db_obj(db, model=models.Booking, obj_id=booking_id)
+    if not db_booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER] and db_booking.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to update this booking")
+
+    if db_booking.status == models.BookingStatusEnum.CANCELLED:
+        raise HTTPException(status_code=400, detail="Booking is already cancelled")
+
+    if db_booking.status == models.BookingStatusEnum.CHECKED_OUT:
+        raise HTTPException(status_code=400, detail="Checked-out bookings cannot be cancelled")
+
+    db_booking.cancellation_request_status = models.CancellationRequestStatusEnum.PENDING
+    db_booking.cancellation_requested_at = datetime.utcnow()
+    db_booking.cancellation_reviewed_at = None
+    db_booking.cancellation_note = None
+    db.add(db_booking)
+    db.commit()
+    db.refresh(db_booking)
+
+    return (
+        db.query(models.Booking)
+        .options(
+            joinedload(models.Booking.user),
+            joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
+            joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
+            joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
+        )
+        .filter(models.Booking.id == db_booking.id)
+        .first()
+    )
+
+
+@router.post("/{booking_id}/review-cancellation", response_model=schemas.BookingResponse)
+def review_booking_cancellation(
+    booking_id: int,
+    review: schemas.BookingCancellationReview,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(
+        require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])
+    ),
+):
+    db_booking = crud.get_db_obj(db, model=models.Booking, obj_id=booking_id)
+    if not db_booking:
+        raise HTTPException(status_code=404, detail="Booking not found")
+
+    if db_booking.cancellation_request_status != models.CancellationRequestStatusEnum.PENDING:
+        raise HTTPException(status_code=400, detail="This booking has no pending cancellation request")
+
+    db_booking.cancellation_request_status = review.decision
+    db_booking.cancellation_reviewed_at = datetime.utcnow()
+    db_booking.cancellation_note = (review.note or "").strip() or None
+
+    if review.decision == models.CancellationRequestStatusEnum.APPROVED:
+        db_booking.status = models.BookingStatusEnum.CANCELLED
+
+    db.add(db_booking)
+    db.commit()
+    db.refresh(db_booking)
+
+    return (
+        db.query(models.Booking)
+        .options(
+            joinedload(models.Booking.user),
+            joinedload(models.Booking.rooms).joinedload(models.BookingRoom.room),
+            joinedload(models.Booking.activities).joinedload(models.BookingActivity.activity),
+            joinedload(models.Booking.ferry_ticket),
+            joinedload(models.Booking.payments),
+        )
+        .filter(models.Booking.id == db_booking.id)
+        .first()
+    )
 
 
 @router.put("/{booking_id}", response_model=schemas.BookingResponse)

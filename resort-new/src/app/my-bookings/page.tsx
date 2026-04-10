@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -19,6 +19,8 @@ type ApiBookingStatus =
   | 'CHECKED_IN'
   | 'CHECKED_OUT'
   | 'CANCELLED';
+
+type CancellationRequestStatus = 'NONE' | 'PENDING' | 'APPROVED' | 'REJECTED';
 
 interface ApiPayment {
   id: number;
@@ -39,6 +41,10 @@ interface ApiBooking {
   startDate: string;
   endDate: string;
   status: ApiBookingStatus;
+  cancellationRequestStatus?: CancellationRequestStatus;
+  cancellationRequestedAt?: string | null;
+  cancellationReviewedAt?: string | null;
+  cancellationNote?: string | null;
   rooms?: { room?: { name?: string } }[];
   activities?: { activity?: { name?: string } }[];
   payments?: ApiPayment[];
@@ -52,10 +58,12 @@ interface BookingSummary {
   guests: number;
   total: string;
   status: BookingStatus;
+  cancellationRequestStatus: CancellationRequestStatus;
   activity?: string;
   notes?: string;
   amountPaid?: string;
   paymentStatus?: string;
+  paymentMethod?: string;
 }
 
 const statusStyles: Record<BookingStatus, string> = {
@@ -66,6 +74,15 @@ const statusStyles: Record<BookingStatus, string> = {
 
 const formatCurrency = (amount: number, currency = 'USD') =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
+
+const formatEnumLabel = (value?: string | null) => {
+  if (!value) return undefined;
+  return value
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+};
 
 const formatDateRange = (startDate?: string, endDate?: string) => {
   if (!startDate || !endDate) return 'Dates pending';
@@ -102,7 +119,7 @@ const calculatePaidTotal = (payments: ApiPayment[]) =>
 export default function MyBookingsPage() {
   const { user } = useAuth();
   const [filter, setFilter] = useState<'All' | BookingStatus>('All');
-  const [cancelledIds, setCancelledIds] = useState<string[]>([]);
+  const queryClient = useQueryClient();
 
   const bookingsQuery = useQuery<ApiBooking[]>({
     queryKey: ['bookings', 'user', user?.id],
@@ -114,6 +131,14 @@ export default function MyBookingsPage() {
     queryKey: ['payments', 'user', user?.id],
     queryFn: () => bookingService.listPaymentsForUser(),
     enabled: Boolean(user?.id),
+  });
+
+  const requestCancellationMutation = useMutation({
+    mutationFn: (bookingId: string) => bookingService.requestCancellation(bookingId, {}),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'user', user?.id] });
+      queryClient.invalidateQueries({ queryKey: ['bookings', 'admin'] });
+    },
   });
 
   const bookings = useMemo(() => {
@@ -138,7 +163,8 @@ export default function MyBookingsPage() {
       const paidTotal = calculatePaidTotal(bookingPayments);
       const paymentCurrency = latestPayment?.currency ?? 'USD';
       const baseStatus = mapBookingStatus(booking.status);
-      const status = cancelledIds.includes(String(booking.id)) ? 'Cancelled' : baseStatus;
+      const cancellationRequestStatus = booking.cancellationRequestStatus ?? 'NONE';
+      const status = cancellationRequestStatus === 'APPROVED' ? 'Cancelled' : baseStatus;
 
       return {
         id: String(booking.id),
@@ -148,14 +174,17 @@ export default function MyBookingsPage() {
         guests: booking.numberOfGuests ?? 1,
         total: formatCurrency(booking.totalPrice ?? 0, paymentCurrency),
         status,
+        cancellationRequestStatus,
         activity: activityName,
-        amountPaid: bookingPayments.length > 0
+        notes: booking.cancellationNote ?? undefined,
+        amountPaid: paidTotal > 0
           ? formatCurrency(paidTotal, paymentCurrency)
           : undefined,
-        paymentStatus: latestPayment?.status,
+        paymentStatus: formatEnumLabel(latestPayment?.status),
+        paymentMethod: formatEnumLabel(latestPayment?.method),
       } as BookingSummary;
     });
-  }, [bookingsQuery.data, paymentsQuery.data, paymentsQuery.isSuccess, cancelledIds]);
+  }, [bookingsQuery.data, paymentsQuery.data, paymentsQuery.isSuccess]);
 
   const filtered = useMemo(() => {
     if (filter === 'All') return bookings;
@@ -166,7 +195,7 @@ export default function MyBookingsPage() {
   const completedCount = bookings.filter((booking) => booking.status === 'Completed').length;
 
   const handleCancel = (id: string) => {
-    setCancelledIds((current) => (current.includes(id) ? current : [...current, id]));
+    requestCancellationMutation.mutate(id);
   };
 
   if (!user) {
@@ -301,9 +330,22 @@ export default function MyBookingsPage() {
                   {booking.amountPaid ? (
                     <p>Paid: <span className="text-foreground">{booking.amountPaid}</span></p>
                   ) : null}
+                  {booking.paymentMethod ? (
+                    <p>Payment method: <span className="text-foreground">{booking.paymentMethod}</span></p>
+                  ) : null}
                   {booking.activity && (
                     <p>Activity: <span className="text-foreground">{booking.activity}</span></p>
                   )}
+                  {booking.cancellationRequestStatus === 'PENDING' ? (
+                    <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-amber-800">
+                      Cancellation request sent. Our team will review it shortly.
+                    </p>
+                  ) : null}
+                  {booking.cancellationRequestStatus === 'REJECTED' && booking.notes ? (
+                    <p className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-rose-800">
+                      Cancellation request not approved: {booking.notes}
+                    </p>
+                  ) : null}
                 </div>
                 <div className="flex flex-col gap-3">
                   <ModalDialog
@@ -318,20 +360,39 @@ export default function MyBookingsPage() {
                       <p>Guests: <span className="text-foreground">{booking.guests}</span></p>
                       <p>Activity: <span className="text-foreground">{booking.activity ?? 'None selected'}</span></p>
                       <p>Notes: <span className="text-foreground">{booking.notes ?? 'No additional notes'}</span></p>
-                      <p>Total paid: <span className="text-foreground">{booking.amountPaid ?? booking.total}</span></p>
+                      <p>Total price: <span className="text-foreground">{booking.total}</span></p>
+                      <p>Total paid: <span className="text-foreground">{booking.amountPaid ?? 'Not paid yet'}</span></p>
                       {booking.paymentStatus ? (
                         <p>Payment status: <span className="text-foreground">{booking.paymentStatus}</span></p>
+                      ) : null}
+                      {booking.paymentMethod ? (
+                        <p>Payment method: <span className="text-foreground">{booking.paymentMethod}</span></p>
+                      ) : null}
+                      {booking.cancellationRequestStatus !== 'NONE' ? (
+                        <p>
+                          Cancellation request: <span className="text-foreground">{formatEnumLabel(booking.cancellationRequestStatus)}</span>
+                        </p>
                       ) : null}
                     </div>
                   </ModalDialog>
                   {booking.status === 'Upcoming' ? (
-                    <ConfirmDialog
-                      title="Request cancellation"
-                      description="A concierge will confirm any cancellation fees before processing."
-                      confirmLabel="Submit request"
-                      trigger={<Button variant="outline">Request cancellation</Button>}
-                      onConfirm={() => handleCancel(booking.id)}
-                    />
+                    booking.cancellationRequestStatus === 'PENDING' ? (
+                      <Button variant="outline" disabled>
+                        Cancellation request sent
+                      </Button>
+                    ) : (
+                      <ConfirmDialog
+                        title="Request cancellation"
+                        description="A concierge will review your request and confirm any applicable cancellation fees."
+                        confirmLabel={requestCancellationMutation.isPending ? 'Sending...' : 'Submit request'}
+                        trigger={
+                          <Button variant="outline" disabled={requestCancellationMutation.isPending}>
+                            {booking.cancellationRequestStatus === 'REJECTED' ? 'Request cancellation again' : 'Request cancellation'}
+                          </Button>
+                        }
+                        onConfirm={() => handleCancel(booking.id)}
+                      />
+                    )
                   ) : null}
                 </div>
               </CardContent>

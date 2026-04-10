@@ -83,6 +83,13 @@ class BookingStatusEnum(str, enum.Enum):
     CANCELLED = "CANCELLED"
 
 
+class CancellationRequestStatusEnum(str, enum.Enum):
+    NONE = "NONE"
+    PENDING = "PENDING"
+    APPROVED = "APPROVED"
+    REJECTED = "REJECTED"
+
+
 class PaymentStatusEnum(str, enum.Enum):
     PENDING = "PENDING"
     AUTHORIZED = "AUTHORIZED"
@@ -168,6 +175,14 @@ class Booking(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     number_of_guests = Column(Integer, nullable=False)
     status = Column(SQLAlchemyEnum(BookingStatusEnum), default=BookingStatusEnum.PENDING, nullable=False)
+    cancellation_request_status = Column(
+        SQLAlchemyEnum(CancellationRequestStatusEnum),
+        default=CancellationRequestStatusEnum.NONE,
+        nullable=False,
+    )
+    cancellation_requested_at = Column(DateTime, nullable=True)
+    cancellation_reviewed_at = Column(DateTime, nullable=True)
+    cancellation_note = Column(Text, nullable=True)
     total_price = Column(Float, nullable=False)
     start_date = Column(DateTime, nullable=False)
     end_date = Column(DateTime, nullable=False)
