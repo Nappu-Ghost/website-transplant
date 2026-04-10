@@ -5,15 +5,16 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { Menu, LogOut, UserCircle } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { CalendarDays, LogOut, Menu, UserCircle } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
 import { ThemeToggleButton } from './theme-toggle-button';
 import { useAuth } from '@/hooks/auth/useAuth';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { NavLink } from '@/components/shared';
 
 export function AppHeader() {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
 
   const navItems = [
@@ -76,6 +77,15 @@ export function AppHeader() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onSelect={() => router.push('/profile')} className="cursor-pointer">
+                    <UserCircle className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => router.push('/my-bookings')} className="cursor-pointer">
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    My Bookings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Logout
@@ -138,7 +148,19 @@ export function AppHeader() {
                     <div className="mt-4 text-lg font-medium">
                       Signed in as: {user.name || user.email}
                     </div>
-                    
+
+                    <Button variant="outline" className="mt-2" asChild>
+                      <Link href="/profile">
+                        <UserCircle className="h-4 w-4 mr-2" />
+                        Profile
+                      </Link>
+                    </Button>
+                    <Button variant="outline" className="mt-2" asChild>
+                      <Link href="/my-bookings">
+                        <CalendarDays className="h-4 w-4 mr-2" />
+                        My Bookings
+                      </Link>
+                    </Button>
                     <Button variant="outline" className="mt-2" onClick={handleLogout}>
                       <LogOut className="h-4 w-4 mr-2" />
                       Logout

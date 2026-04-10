@@ -43,6 +43,26 @@ def read_payments(
     return query.offset(skip).limit(limit).all()
 
 
+@router.get("/user", response_model=List[schemas.PaymentResponse])
+def read_user_payments(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_active_user),
+    user_id: Optional[int] = None,
+):
+    target_user_id = user_id or current_user.id
+    if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER] and target_user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view these payments")
+
+    return (
+        db.query(models.Payment)
+        .join(models.Booking)
+        .options(joinedload(models.Payment.booking))
+        .filter(models.Booking.user_id == target_user_id)
+        .order_by(models.Payment.createdAt.desc())
+        .all()
+    )
+
+
 @router.get("/{payment_id}", response_model=schemas.PaymentResponse)
 def read_payment(
     payment_id: int,
@@ -62,26 +82,6 @@ def read_payment(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view this payment")
 
     return payment
-
-
-@router.get("/user", response_model=List[schemas.PaymentResponse])
-def read_user_payments(
-    db: Session = Depends(get_db),
-    current_user: models.User = Depends(get_current_active_user),
-    user_id: Optional[int] = None,
-):
-    target_user_id = user_id or current_user.id
-    if current_user.role not in [models.RoleEnum.ADMIN, models.RoleEnum.MANAGER] and target_user_id != current_user.id:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized to view these payments")
-
-    return (
-        db.query(models.Payment)
-        .join(models.Booking)
-        .options(joinedload(models.Payment.booking))
-        .filter(models.Booking.user_id == target_user_id)
-        .order_by(models.Payment.createdAt.desc())
-        .all()
-    )
 
 
 @router.put("/{payment_id}", response_model=schemas.PaymentResponse)

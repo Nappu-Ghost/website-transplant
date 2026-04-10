@@ -1,10 +1,12 @@
 "use client";
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/hooks/auth/useAuth';
 import { ConfirmDialog, ModalDialog, PageHeader, PageShell, SectionHeader } from '@/components/shared';
 import { bookingService } from '@/lib/api-service';
 
@@ -98,17 +100,20 @@ const calculatePaidTotal = (payments: ApiPayment[]) =>
     .reduce((sum, payment) => sum + (payment.amount || 0), 0);
 
 export default function MyBookingsPage() {
+  const { user } = useAuth();
   const [filter, setFilter] = useState<'All' | BookingStatus>('All');
   const [cancelledIds, setCancelledIds] = useState<string[]>([]);
 
   const bookingsQuery = useQuery<ApiBooking[]>({
-    queryKey: ['bookings', 'user'],
+    queryKey: ['bookings', 'user', user?.id],
     queryFn: () => bookingService.listForUser(),
+    enabled: Boolean(user?.id),
   });
 
   const paymentsQuery = useQuery<ApiPayment[]>({
-    queryKey: ['payments', 'user'],
+    queryKey: ['payments', 'user', user?.id],
     queryFn: () => bookingService.listPaymentsForUser(),
+    enabled: Boolean(user?.id),
   });
 
   const bookings = useMemo(() => {
@@ -163,6 +168,28 @@ export default function MyBookingsPage() {
   const handleCancel = (id: string) => {
     setCancelledIds((current) => (current.includes(id) ? current : [...current, id]));
   };
+
+  if (!user) {
+    return (
+      <PageShell className="max-w-3xl">
+        <PageHeader
+          title="My bookings"
+          description="Sign in to review your upcoming stays and past reservations."
+        />
+        <Card className="border-border/70 bg-card/90">
+          <CardHeader>
+            <CardTitle className="text-lg">Sign in required</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-muted-foreground">
+            <p>Your booking history and payment details will appear here after you sign in.</p>
+            <Button asChild>
+              <Link href="/login?redirect=/my-bookings">Go to login</Link>
+            </Button>
+          </CardContent>
+        </Card>
+      </PageShell>
+    );
+  }
 
   return (
     <PageShell>
@@ -249,8 +276,11 @@ export default function MyBookingsPage() {
             <CardHeader>
               <CardTitle className="text-lg">No bookings found</CardTitle>
             </CardHeader>
-            <CardContent className="text-sm text-muted-foreground">
-              Try another filter or plan a new stay with our concierge team.
+            <CardContent className="space-y-4 text-sm text-muted-foreground">
+              <p>Try another filter or plan a new stay with our concierge team.</p>
+              <Button variant="outline" asChild>
+                <Link href="/booking">Plan a stay</Link>
+              </Button>
             </CardContent>
           </Card>
         ) : (
