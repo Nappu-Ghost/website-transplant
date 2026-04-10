@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader, SectionHeader } from '@/components/shared';
-import { adminService, bookingService, roomService } from '@/lib/api-service';
+import { adminService, bookingService, hotelService, roomService } from '@/lib/api-service';
 
 interface AdminOverview {
   totals: {
@@ -47,8 +47,14 @@ interface AdminBooking {
   }>;
 }
 
+interface HotelSummary {
+  id: number;
+  name: string;
+}
+
 interface RoomSummary {
   id: number;
+  hotelId: number;
   name: string;
   type: string;
   available?: boolean;
@@ -66,18 +72,6 @@ const formatBookingStatus = (status: ApiBookingStatus) =>
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 
-const normalizeRoomCategory = (roomType?: string | null) => {
-  const value = roomType?.trim() || 'Other rooms';
-  const normalized = value.toLowerCase();
-
-  if (normalized.includes('suite')) return 'Suites';
-  if (normalized.includes('villa')) return 'Villas';
-  if (normalized.includes('residence')) return 'Residences';
-  if (normalized.includes('twin') || normalized.includes('standard')) return 'Standard rooms';
-
-  return value;
-};
-
 export default function AdminDashboardPage() {
   const overviewQuery = useQuery<AdminOverview>({
     queryKey: ['admin', 'overview'],
@@ -87,6 +81,11 @@ export default function AdminDashboardPage() {
   const bookingsQuery = useQuery<AdminBooking[]>({
     queryKey: ['admin', 'dashboard-bookings'],
     queryFn: () => bookingService.list(),
+  });
+
+  const hotelsQuery = useQuery<HotelSummary[]>({
+    queryKey: ['admin', 'dashboard-hotels'],
+    queryFn: () => hotelService.list(),
   });
 
   const roomsQuery = useQuery<RoomSummary[]>({
@@ -134,11 +133,16 @@ export default function AdminDashboardPage() {
     [bookingsQuery.data],
   );
 
+  const hotelNamesById = useMemo(
+    () => new Map((hotelsQuery.data ?? []).map((hotel) => [hotel.id, hotel.name])),
+    [hotelsQuery.data],
+  );
+
   const occupancySegments = useMemo(() => {
     const grouped = new Map<string, { total: number; occupied: number }>();
 
     (roomsQuery.data ?? []).forEach((room) => {
-      const label = normalizeRoomCategory(room.type);
+      const label = hotelNamesById.get(room.hotelId) ?? `Hotel ${room.hotelId}`;
       const current = grouped.get(label) ?? { total: 0, occupied: 0 };
       current.total += 1;
       if (activeRoomIds.has(room.id)) {
@@ -154,22 +158,21 @@ export default function AdminDashboardPage() {
         occupied: value.occupied,
         total: value.total,
       }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 4);
-  }, [activeRoomIds, roomsQuery.data]);
+      .sort((a, b) => b.value - a.value || a.label.localeCompare(b.label));
+  }, [activeRoomIds, hotelNamesById, roomsQuery.data]);
 
   const occupancyNote = useMemo(() => {
     const topSegment = occupancySegments[0];
 
     if (!topSegment) {
-      return 'Add rooms and bookings to begin tracking occupancy trends here.';
+      return 'Add hotels, rooms, and bookings to begin tracking hotel occupancy here.';
     }
 
     if (topSegment.value === 0) {
-      return 'No current or upcoming stays are affecting room occupancy right now.';
+      return 'No current or upcoming stays are affecting hotel occupancy right now.';
     }
 
-    return `${topSegment.label} are currently the most in demand at ${topSegment.value}% occupancy.`;
+    return `${topSegment.label} is currently at ${topSegment.value}% occupancy (${topSegment.occupied}/${topSegment.total} rooms).`;
   }, [occupancySegments]);
 
   const metrics = useMemo(() => {
@@ -207,7 +210,7 @@ export default function AdminDashboardPage() {
         description="Operational snapshot, arrivals, and performance indicators."
       />
 
-      {overviewQuery.isError || bookingsQuery.isError || roomsQuery.isError ? (
+      {overviewQuery.isError || bookingsQuery.isError || hotelsQuery.isError || roomsQuery.isError ? (
         <Card className="border-border/70 bg-card/90">
           <CardHeader>
             <CardTitle className="text-lg">Unable to load dashboard data</CardTitle>
@@ -215,6 +218,7 @@ export default function AdminDashboardPage() {
           <CardContent className="text-sm text-muted-foreground">
             {(overviewQuery.error instanceof Error && overviewQuery.error.message)
               || (bookingsQuery.error instanceof Error && bookingsQuery.error.message)
+              || (hotelsQuery.error instanceof Error && hotelsQuery.error.message)
               || (roomsQuery.error instanceof Error && roomsQuery.error.message)
               || 'Please try again shortly.'}
           </CardContent>
@@ -288,10 +292,10 @@ export default function AdminDashboardPage() {
 
         <Card className="border-border/70 bg-secondary/60">
           <CardHeader>
-            <CardTitle className="text-lg">Occupancy by category</CardTitle>
+            <CardTitle className="text-lg">Occupancy by hotel</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            {roomsQuery.isLoading ? (
+            {roomsQuery.isLoading || hotelsQuery.isLoading ? (
               <p>Loading occupancy data...</p>
             ) : occupancySegments.length ? (
               occupancySegments.map((segment) => (
