@@ -17,12 +17,16 @@ from app.models import (
     Booking,
     BookingRoom,
     BookingActivity,
+    Payment,
     BookingStatusEnum,
+    PaymentStatusEnum,
+    PaymentMethodEnum,
 )
 from app.utils.security import get_password_hash
 
 
 def reset_db(db):
+    db.query(Payment).delete()
     db.query(BookingActivity).delete()
     db.query(BookingRoom).delete()
     db.query(Booking).delete()
@@ -312,6 +316,7 @@ def create_seed_booking(
 def seed_bookings(db, users, rooms, activities):
     booking_blueprints = [
         {
+            "key": "demo",
             "user": users["demo"],
             "room": rooms[0],
             "activities": [activities[0], activities[3]],
@@ -321,6 +326,7 @@ def seed_bookings(db, users, rooms, activities):
             "guests": 2,
         },
         {
+            "key": "admin",
             "user": users["admin"],
             "room": rooms[5],
             "activities": [activities[4]],
@@ -330,6 +336,7 @@ def seed_bookings(db, users, rooms, activities):
             "guests": 2,
         },
         {
+            "key": "manager",
             "user": users["manager"],
             "room": rooms[2],
             "activities": [activities[5]],
@@ -339,6 +346,7 @@ def seed_bookings(db, users, rooms, activities):
             "guests": 3,
         },
         {
+            "key": "maya",
             "user": users["maya"],
             "room": rooms[1],
             "activities": [activities[1]],
@@ -348,6 +356,7 @@ def seed_bookings(db, users, rooms, activities):
             "guests": 2,
         },
         {
+            "key": "noah",
             "user": users["noah"],
             "room": rooms[4],
             "activities": [activities[2]],
@@ -357,6 +366,7 @@ def seed_bookings(db, users, rooms, activities):
             "guests": 2,
         },
         {
+            "key": "ava",
             "user": users["ava"],
             "room": rooms[3],
             "activities": [],
@@ -367,8 +377,9 @@ def seed_bookings(db, users, rooms, activities):
         },
     ]
 
+    seeded_bookings = {}
     for blueprint in booking_blueprints:
-        create_seed_booking(
+        seeded_bookings[blueprint["key"]] = create_seed_booking(
             db,
             user=blueprint["user"],
             room=blueprint["room"],
@@ -378,6 +389,83 @@ def seed_bookings(db, users, rooms, activities):
             status=blueprint["status"],
             guests=blueprint["guests"],
         )
+
+    return seeded_bookings
+
+
+def seed_payments(db, bookings):
+    payment_blueprints = [
+        {
+            "booking": bookings["demo"],
+            "amount": bookings["demo"].total_price,
+            "status": PaymentStatusEnum.CAPTURED,
+            "method": PaymentMethodEnum.CARD,
+            "provider": "Stripe",
+            "provider_reference": "seed-card-demo-001",
+            "paid_at": datetime.utcnow() - timedelta(days=2),
+        },
+        {
+            "booking": bookings["admin"],
+            "amount": bookings["admin"].total_price,
+            "status": PaymentStatusEnum.CAPTURED,
+            "method": PaymentMethodEnum.CASH,
+            "provider": "Front Desk",
+            "provider_reference": "seed-cash-admin-001",
+            "paid_at": datetime.utcnow() - timedelta(hours=8),
+        },
+        {
+            "booking": bookings["manager"],
+            "amount": round(float(bookings["manager"].total_price) * 0.5, 2),
+            "status": PaymentStatusEnum.AUTHORIZED,
+            "method": PaymentMethodEnum.BANK_TRANSFER,
+            "provider": "Island Bank",
+            "provider_reference": "seed-bank-manager-001",
+            "paid_at": None,
+        },
+        {
+            "booking": bookings["maya"],
+            "amount": bookings["maya"].total_price,
+            "status": PaymentStatusEnum.CAPTURED,
+            "method": PaymentMethodEnum.CARD,
+            "provider": "Stripe",
+            "provider_reference": "seed-card-maya-001",
+            "paid_at": datetime.utcnow() - timedelta(days=12),
+        },
+        {
+            "booking": bookings["noah"],
+            "amount": round(float(bookings["noah"].total_price) * 0.4, 2),
+            "status": PaymentStatusEnum.PENDING,
+            "method": PaymentMethodEnum.BANK_TRANSFER,
+            "provider": "Island Bank",
+            "provider_reference": "seed-bank-noah-001",
+            "paid_at": None,
+        },
+        {
+            "booking": bookings["ava"],
+            "amount": bookings["ava"].total_price,
+            "status": PaymentStatusEnum.REFUNDED,
+            "method": PaymentMethodEnum.CARD,
+            "provider": "Stripe",
+            "provider_reference": "seed-card-ava-001",
+            "paid_at": datetime.utcnow() - timedelta(days=1),
+        },
+    ]
+
+    for blueprint in payment_blueprints:
+        db.add(
+            Payment(
+                booking_id=blueprint["booking"].id,
+                amount=float(blueprint["amount"]),
+                currency="USD",
+                status=blueprint["status"],
+                method=blueprint["method"],
+                provider=blueprint["provider"],
+                provider_reference=blueprint["provider_reference"],
+                paid_at=blueprint["paid_at"],
+            )
+        )
+
+    db.commit()
 
 
 def run_seed():
@@ -390,7 +478,8 @@ def run_seed():
         hotels = seed_hotels(db)
         rooms = seed_rooms(db, hotels)
         activities = seed_activities(db)
-        seed_bookings(db, users, rooms, activities)
+        bookings = seed_bookings(db, users, rooms, activities)
+        seed_payments(db, bookings)
 
         print("Seeding completed.")
         print("Users:")
@@ -401,6 +490,7 @@ def run_seed():
         print("  noah.bennett@example.com / C0ral!Drift#5731")
         print("  ava.chen@example.com / Palm!Voyage#4628")
         print("Bookings seeded: 6 example reservations across the existing hotels and rooms.")
+        print("Payments seeded: demo rows now include CARD, CASH, and BANK_TRANSFER examples.")
     finally:
         db.close()
 
