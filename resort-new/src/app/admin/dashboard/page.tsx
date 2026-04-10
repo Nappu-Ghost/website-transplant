@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PageHeader, SectionHeader } from '@/components/shared';
-import { adminService } from '@/lib/api-service';
+import { adminService, bookingService, roomService } from '@/lib/api-service';
 
 interface AdminOverview {
   totals: {
@@ -21,21 +21,62 @@ interface AdminOverview {
   revenueCollected: number;
 }
 
-const recentBookings = [
-  { code: 'ALR-512483', guest: 'Avery Jordan', room: 'Lagoon Suite 201', status: 'Confirmed' },
-  { code: 'ALR-439112', guest: 'Noah Lee', room: 'Ocean Breeze Suite', status: 'Pending' },
-  { code: 'ALR-398210', guest: 'Maya Ortiz', room: 'Garden Villa 102', status: 'Arriving' },
-  { code: 'ALR-512900', guest: 'Eli Parker', room: 'Harbor Residence', status: 'Confirmed' },
-];
+type ApiBookingStatus =
+  | 'PENDING'
+  | 'PAYMENT_COMPLETED'
+  | 'CONFIRMED'
+  | 'CHECKED_IN'
+  | 'CHECKED_OUT'
+  | 'CANCELLED';
 
-const occupancySegments = [
-  { label: 'Suites', value: 78 },
-  { label: 'Villas', value: 85 },
-  { label: 'Residences', value: 69 },
-];
+interface AdminBooking {
+  id: number;
+  createdAt?: string;
+  endDate?: string;
+  status: ApiBookingStatus;
+  user?: {
+    name?: string | null;
+    email?: string | null;
+  };
+  rooms?: Array<{
+    room?: {
+      id?: number;
+      name?: string | null;
+      type?: string | null;
+    } | null;
+  }>;
+}
+
+interface RoomSummary {
+  id: number;
+  name: string;
+  type: string;
+  available?: boolean;
+}
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+
+const getBookingCode = (id: number) => `ALR-${String(id).padStart(6, '0')}`;
+
+const formatBookingStatus = (status: ApiBookingStatus) =>
+  status
+    .toLowerCase()
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+
+const normalizeRoomCategory = (roomType?: string | null) => {
+  const value = roomType?.trim() || 'Other rooms';
+  const normalized = value.toLowerCase();
+
+  if (normalized.includes('suite')) return 'Suites';
+  if (normalized.includes('villa')) return 'Villas';
+  if (normalized.includes('residence')) return 'Residences';
+  if (normalized.includes('twin') || normalized.includes('standard')) return 'Standard rooms';
+
+  return value;
+};
 
 export default function AdminDashboardPage() {
   const overviewQuery = useQuery<AdminOverview>({
@@ -43,8 +84,98 @@ export default function AdminDashboardPage() {
     queryFn: () => adminService.getOverview(),
   });
 
+  const bookingsQuery = useQuery<AdminBooking[]>({
+    queryKey: ['admin', 'dashboard-bookings'],
+    queryFn: () => bookingService.list(),
+  });
+
+  const roomsQuery = useQuery<RoomSummary[]>({
+    queryKey: ['admin', 'dashboard-rooms'],
+    queryFn: () => roomService.list(),
+  });
+
+  const activeRoomIds = useMemo(() => {
+    const now = Date.now();
+    const activeStatuses: ApiBookingStatus[] = ['PENDING', 'PAYMENT_COMPLETED', 'CONFIRMED', 'CHECKED_IN'];
+
+    return new Set(
+      (bookingsQuery.data ?? []).flatMap((booking) => {
+        if (!activeStatuses.includes(booking.status)) return [];
+
+        const endTime = booking.endDate ? new Date(booking.endDate).getTime() : Number.NaN;
+        if (Number.isFinite(endTime) && endTime < now) return [];
+
+        return (booking.rooms ?? [])
+          .map((entry) => entry.room?.id)
+          .filter((roomId): roomId is number => typeof roomId === 'number');
+      }),
+    );
+  }, [bookingsQuery.data]);
+
+  const availableRoomsCount = useMemo(
+    () =>
+      (roomsQuery.data ?? []).filter(
+        (room) => room.available !== false && !activeRoomIds.has(room.id),
+      ).length,
+    [activeRoomIds, roomsQuery.data],
+  );
+
+  const recentBookings = useMemo(
+    () =>
+      [...(bookingsQuery.data ?? [])]
+        .sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime())
+        .slice(0, 5)
+        .map((booking) => ({
+          code: getBookingCode(booking.id),
+          guest: booking.user?.name || booking.user?.email || 'Guest pending',
+          room: booking.rooms?.[0]?.room?.name || 'Room pending',
+          status: booking.status,
+        })),
+    [bookingsQuery.data],
+  );
+
+  const occupancySegments = useMemo(() => {
+    const grouped = new Map<string, { total: number; occupied: number }>();
+
+    (roomsQuery.data ?? []).forEach((room) => {
+      const label = normalizeRoomCategory(room.type);
+      const current = grouped.get(label) ?? { total: 0, occupied: 0 };
+      current.total += 1;
+      if (activeRoomIds.has(room.id)) {
+        current.occupied += 1;
+      }
+      grouped.set(label, current);
+    });
+
+    return [...grouped.entries()]
+      .map(([label, value]) => ({
+        label,
+        value: value.total > 0 ? Math.round((value.occupied / value.total) * 100) : 0,
+        occupied: value.occupied,
+        total: value.total,
+      }))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 4);
+  }, [activeRoomIds, roomsQuery.data]);
+
+  const occupancyNote = useMemo(() => {
+    const topSegment = occupancySegments[0];
+
+    if (!topSegment) {
+      return 'Add rooms and bookings to begin tracking occupancy trends here.';
+    }
+
+    if (topSegment.value === 0) {
+      return 'No current or upcoming stays are affecting room occupancy right now.';
+    }
+
+    return `${topSegment.label} are currently the most in demand at ${topSegment.value}% occupancy.`;
+  }, [occupancySegments]);
+
   const metrics = useMemo(() => {
     const totals = overviewQuery.data?.totals;
+    const totalRooms = roomsQuery.data?.length ?? totals?.rooms ?? 0;
+
     return [
       {
         label: 'Total bookings',
@@ -53,8 +184,8 @@ export default function AdminDashboardPage() {
       },
       {
         label: 'Available rooms',
-        value: totals ? String(totals.rooms) : '—',
-        delta: 'Across properties',
+        value: roomsQuery.data ? String(availableRoomsCount) : totals ? String(totals.rooms) : '—',
+        delta: `${totalRooms} total room${totalRooms === 1 ? '' : 's'}`,
       },
       {
         label: 'Active experiences',
@@ -67,7 +198,7 @@ export default function AdminDashboardPage() {
         delta: 'Captured payments',
       },
     ];
-  }, [overviewQuery.data]);
+  }, [availableRoomsCount, overviewQuery.data, roomsQuery.data]);
 
   return (
     <div className="space-y-8">
@@ -76,15 +207,16 @@ export default function AdminDashboardPage() {
         description="Operational snapshot, arrivals, and performance indicators."
       />
 
-      {overviewQuery.isError ? (
+      {overviewQuery.isError || bookingsQuery.isError || roomsQuery.isError ? (
         <Card className="border-border/70 bg-card/90">
           <CardHeader>
-            <CardTitle className="text-lg">Unable to load overview</CardTitle>
+            <CardTitle className="text-lg">Unable to load dashboard data</CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            {overviewQuery.error instanceof Error
-              ? overviewQuery.error.message
-              : 'Please try again shortly.'}
+            {(overviewQuery.error instanceof Error && overviewQuery.error.message)
+              || (bookingsQuery.error instanceof Error && bookingsQuery.error.message)
+              || (roomsQuery.error instanceof Error && roomsQuery.error.message)
+              || 'Please try again shortly.'}
           </CardContent>
         </Card>
       ) : null}
@@ -121,18 +253,34 @@ export default function AdminDashboardPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentBookings.map((booking) => (
-                  <TableRow key={booking.code}>
-                    <TableCell className="text-xs text-muted-foreground">{booking.code}</TableCell>
-                    <TableCell>{booking.guest}</TableCell>
-                    <TableCell>{booking.room}</TableCell>
-                    <TableCell>
-                      <Badge variant={booking.status === 'Pending' ? 'outline' : 'secondary'}>
-                        {booking.status}
-                      </Badge>
+                {bookingsQuery.isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                      Loading recent bookings...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : recentBookings.length ? (
+                  recentBookings.map((booking) => (
+                    <TableRow key={booking.code}>
+                      <TableCell className="text-xs text-muted-foreground">{booking.code}</TableCell>
+                      <TableCell>{booking.guest}</TableCell>
+                      <TableCell>{booking.room}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant={booking.status === 'PENDING' ? 'outline' : booking.status === 'CANCELLED' ? 'destructive' : 'secondary'}
+                        >
+                          {formatBookingStatus(booking.status)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                      No bookings have been created yet.
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </CardContent>
@@ -143,18 +291,26 @@ export default function AdminDashboardPage() {
             <CardTitle className="text-lg">Occupancy by category</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-muted-foreground">
-            {occupancySegments.map((segment) => (
-              <div key={segment.label} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span>{segment.label}</span>
-                  <span className="text-foreground">{segment.value}%</span>
+            {roomsQuery.isLoading ? (
+              <p>Loading occupancy data...</p>
+            ) : occupancySegments.length ? (
+              occupancySegments.map((segment) => (
+                <div key={segment.label} className="space-y-2">
+                  <div className="flex items-center justify-between gap-3">
+                    <span>{segment.label}</span>
+                    <span className="text-foreground">
+                      {segment.value}% ({segment.occupied}/{segment.total})
+                    </span>
+                  </div>
+                  <Progress value={segment.value} />
                 </div>
-                <Progress value={segment.value} />
-              </div>
-            ))}
+              ))
+            ) : (
+              <p>No room inventory data is available yet.</p>
+            )}
             <SectionHeader
               title="Notes"
-              description="Villa demand is trending higher for the next two weeks."
+              description={occupancyNote}
             />
           </CardContent>
         </Card>
