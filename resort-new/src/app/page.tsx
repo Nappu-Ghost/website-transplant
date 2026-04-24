@@ -159,7 +159,7 @@ export default function Home() {
 
       <PageShell>
         <motion.section
-          className="mt-14 grid gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-start"
+          className="mt-14 space-y-6"
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
@@ -170,73 +170,70 @@ export default function Home() {
               title={homepage.twoIsland.title || ''}
               description={homepage.twoIsland.description || undefined}
             />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
-                <div className="relative h-40">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Card className="overflow-hidden border-border/70 shadow-md">
+                <div className="relative h-[480px]">
                   {homepage.twoIsland.resort.imageUrl ? (
                     <img
                       src={homepage.twoIsland.resort.imageUrl}
                       alt="Resort island beaches"
-                      className="h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
                       decoding="async"
                     />
                   ) : (
-                    <div className="h-full w-full bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.5),_hsl(var(--background))_80%)]" />
                   )}
-                  <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(0,0,0,0.2),_transparent_60%)]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-white/70" style={{textShadow:'0 1px 4px rgba(0,0,0,0.6)'}}>Resort island</p>
+                    <p className="mt-1 text-xl font-semibold text-white" style={{textShadow:'0 2px 8px rgba(0,0,0,0.7)'}}>{homepage.twoIsland.resort.title}</p>
+                    <p className="mt-1 text-sm text-white/80" style={{textShadow:'0 1px 4px rgba(0,0,0,0.6)'}}>{homepage.twoIsland.resort.description}</p>
+                  </div>
                 </div>
-                <CardContent className="space-y-2 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Resort island</p>
-                  <p className="text-lg font-semibold text-foreground">{homepage.twoIsland.resort.title}</p>
-                  <p className="text-sm text-muted-foreground">{homepage.twoIsland.resort.description}</p>
-                </CardContent>
               </Card>
-              <Card className="overflow-hidden border-border/70 bg-card/90 shadow-sm">
-                <div className="relative h-40">
+              <Card className="overflow-hidden border-border/70 shadow-md">
+                <div className="relative h-[480px]">
                   {homepage.twoIsland.park.imageUrl ? (
                     <img
                       src={homepage.twoIsland.park.imageUrl}
                       alt="Azure Land attractions"
-                      className="h-full w-full object-cover"
+                      className="absolute inset-0 h-full w-full object-cover"
                       loading="lazy"
                       decoding="async"
                     />
                   ) : (
-                    <div className="h-full w-full bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.35),_transparent_60%)]" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_hsl(var(--accent)/0.5),_hsl(var(--background))_80%)]" />
                   )}
-                  <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(0,0,0,0.2),_transparent_60%)]" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-5">
+                    <p className="text-[11px] uppercase tracking-[0.25em] text-white/70" style={{textShadow:'0 1px 4px rgba(0,0,0,0.6)'}}>Azure Land</p>
+                    <p className="mt-1 text-xl font-semibold text-white" style={{textShadow:'0 2px 8px rgba(0,0,0,0.7)'}}>{homepage.twoIsland.park.title}</p>
+                    <p className="mt-1 text-sm text-white/80" style={{textShadow:'0 1px 4px rgba(0,0,0,0.6)'}}>{homepage.twoIsland.park.description}</p>
+                  </div>
                 </div>
-                <CardContent className="space-y-2 p-4">
-                  <p className="text-xs uppercase tracking-[0.25em] text-muted-foreground">Azure Land</p>
-                  <p className="text-lg font-semibold text-foreground">{homepage.twoIsland.park.title}</p>
-                  <p className="text-sm text-muted-foreground">{homepage.twoIsland.park.description}</p>
-                </CardContent>
               </Card>
             </div>
           </motion.div>
           <motion.div variants={fadeIn}>
-            <Card className="flex flex-col border-border/70 bg-secondary/60">
+            <Card className="border-border/70 bg-secondary/45">
               <CardHeader className="px-5 pb-2 pt-5">
-                <CardTitle className="text-lg">{homepage.ferry.title}</CardTitle>
+                <CardTitle className="text-base">{homepage.ferry.title}</CardTitle>
               </CardHeader>
-              <CardContent className="flex flex-col gap-3 px-5 pb-5 text-sm text-muted-foreground">
+              <CardContent className="grid gap-3 px-5 pb-5 text-sm text-muted-foreground sm:grid-cols-2">
                 {homepage.ferry.items.map((item, index) => (
-                  <div key={item.id} className="rounded-2xl border border-border/70 bg-background/60 px-4 py-2.5">
-                    <span className="inline-flex h-14 w-14 items-center justify-center rounded-full bg-primary/12 text-primary">
-                      {index === 0 ? <Waves className="h-6 w-6" /> : <CalendarCheck className="h-6 w-6" />}
-                    </span>
-                    <div className="mt-3 space-y-1">
-                      <p className="text-base font-semibold text-foreground">{item.title}</p>
-                      <p className="text-sm text-muted-foreground">{item.description}</p>
+                  <div key={item.id} className="rounded-xl border border-border/70 bg-background/55 px-3 py-2.5">
+                    <div className="flex items-start gap-2.5">
+                      <span className="mt-0.5 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/12 text-primary">
+                        {index === 0 ? <Waves className="h-4 w-4" /> : <CalendarCheck className="h-4 w-4" />}
+                      </span>
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                        <p className="text-xs text-muted-foreground">{item.description}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
-                {homepage.ferry.cta?.url && homepage.ferry.cta.label ? (
-                  <Button asChild className="mt-1 w-fit">
-                    <Link href={homepage.ferry.cta.url}>{homepage.ferry.cta.label}</Link>
-                  </Button>
-                ) : null}
               </CardContent>
             </Card>
           </motion.div>

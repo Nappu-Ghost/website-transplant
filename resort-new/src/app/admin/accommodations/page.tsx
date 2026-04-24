@@ -365,9 +365,9 @@ export default function AdminAccommodationsPage() {
                     </div>
 
                     {previewUrl ? (
-                      <a className="text-xs text-muted-foreground underline" href={previewUrl} target="_blank" rel="noreferrer">
-                        Preview
-                      </a>
+                      <div className="mt-1 overflow-hidden rounded-md border border-border/70">
+                        <img src={previewUrl} alt="Image preview" className="h-32 w-full object-cover" />
+                      </div>
                     ) : null}
                   </div>
                 </div>
@@ -553,7 +553,13 @@ export default function AdminAccommodationsPage() {
                                 id={`room-image-${room.id}`}
                                 value={draft.imageUrl}
                                 onChange={(event) => setDraft((current) => ({ ...current, imageUrl: event.target.value }))}
+                                placeholder="https://... or /images/..."
                               />
+                              {previewUrl ? (
+                                <div className="mt-1 overflow-hidden rounded-md border border-border/70">
+                                  <img src={previewUrl} alt="Image preview" className="h-32 w-full object-cover" />
+                                </div>
+                              ) : null}
                             </div>
                           </div>
                           <div className="grid gap-4 sm:grid-cols-2">
