@@ -378,10 +378,32 @@ export default function AdminCustomizeHomePage() {
           <div className="space-y-2">
             <Label>Resort image URL</Label>
             <Input value={config.twoIsland.resort.imageUrl ?? ''} onChange={(event) => updateTwoIslandCard('resort', 'imageUrl', event.target.value)} />
+            {config.twoIsland.resort.imageUrl ? (
+              <div className="overflow-hidden rounded-xl border border-border/60">
+                <img
+                  src={config.twoIsland.resort.imageUrl}
+                  alt={config.twoIsland.resort.title || 'Resort image preview'}
+                  className="h-36 w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            ) : null}
           </div>
           <div className="space-y-2">
             <Label>Azure Land image URL</Label>
             <Input value={config.twoIsland.park.imageUrl ?? ''} onChange={(event) => updateTwoIslandCard('park', 'imageUrl', event.target.value)} />
+            {config.twoIsland.park.imageUrl ? (
+              <div className="overflow-hidden rounded-xl border border-border/60">
+                <img
+                  src={config.twoIsland.park.imageUrl}
+                  alt={config.twoIsland.park.title || 'Azure Land image preview'}
+                  className="h-36 w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
+                />
+              </div>
+            ) : null}
           </div>
         </CardContent>
       </Card>
