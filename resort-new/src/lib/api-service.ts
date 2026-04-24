@@ -69,6 +69,14 @@ export const adminService = {
   updateMapSettings: (data: any, token?: string | null) => api.updateMapSettings(data, token),
 };
 
+export const roleService = {
+  getMyPermissions: (token?: string | null) => api.getMyPermissions(token),
+  list: (token?: string | null) => api.getRoles(token),
+  create: (data: any, token?: string | null) => api.createRole(data, token),
+  update: (id: string, data: any, token?: string | null) => api.updateRole(id, data, token),
+  remove: (id: string, token?: string | null) => api.deleteRole(id, token),
+};
+
 export const metaService = {
   get: () => api.getMeta(),
   getHomepage: () => api.getHomepageConfig(),

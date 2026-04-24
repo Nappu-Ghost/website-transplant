@@ -78,6 +78,7 @@ class UserUpdate(BaseModel):
     status: Optional[StatusEnum] = None
     profileImage: Optional[str] = Field(None, validation_alias=AliasChoices("profileImage", "profile_image"))
     password: Optional[str] = None
+    custom_role: Optional[str] = None
 
     @model_validator(mode="after")
     def validate_password(self):
@@ -91,6 +92,7 @@ class UserResponse(UserBase):
     createdAt: datetime
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
+    custom_role: Optional[str] = None
 
 class HotelBase(BaseModel):
     name: str

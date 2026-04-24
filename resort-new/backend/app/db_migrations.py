@@ -25,6 +25,10 @@ def apply_migrations(engine: Engine) -> None:
             conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_reviewed_at DATETIME"))
             conn.execute(text("ALTER TABLE bookings ADD COLUMN cancellation_note TEXT"))
 
+    if _has_column(engine, "users", "id") and not _has_column(engine, "users", "custom_role"):
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN custom_role VARCHAR"))
+
     with engine.begin() as conn:
         conn.execute(
             text(

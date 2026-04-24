@@ -1,0 +1,51 @@
+{
+  "roles": [
+    {
+      "id": "ADMIN",
+      "label": "Admin",
+      "isSystem": true,
+      "adminAccess": true,
+      "allPages": true,
+      "pages": []
+    },
+    {
+      "id": "MANAGER",
+      "label": "Manager",
+      "isSystem": false,
+      "adminAccess": true,
+      "allPages": false,
+      "pages": [
+        "dashboard",
+        "bookings",
+        "activities",
+        "payments",
+        "map-editor",
+        "users",
+        "reports",
+        "settings",
+        "hotels",
+        "accommodations",
+        "customize-pages"
+      ]
+    },
+    {
+      "id": "CUSTOMER",
+      "label": "Customer",
+      "isSystem": false,
+      "adminAccess": false,
+      "allPages": false,
+      "pages": []
+    },
+    {
+      "id": "event-organizer",
+      "label": "Event Organizer",
+      "isSystem": false,
+      "adminAccess": true,
+      "allPages": false,
+      "pages": [
+        "activities",
+        "map-editor"
+      ]
+    }
+  ]
+}

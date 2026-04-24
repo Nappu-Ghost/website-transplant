@@ -413,6 +413,23 @@ export class ApiClient {
     return this.request(`/ferry-tickets?booking_id=${encodeURIComponent(bookingId)}`, {}, undefined, true, token);
   }
   async createFerryTicket(data: any, token?: string | null) { return this.request('/ferry-tickets/', { method: 'POST', body: JSON.stringify(toSnakeCase(data)) }, 'application/json', true, token); }
+
+  // Role management
+  async getMyPermissions(token?: string | null) {
+    return this.request('/admin/roles/my-permissions', {}, undefined, true, token);
+  }
+  async getRoles(token?: string | null) {
+    return this.request('/admin/roles', {}, undefined, true, token);
+  }
+  async createRole(data: any, token?: string | null) {
+    return this.request('/admin/roles', { method: 'POST', body: JSON.stringify(data) }, 'application/json', true, token);
+  }
+  async updateRole(id: string, data: any, token?: string | null) {
+    return this.request(`/admin/roles/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(data) }, 'application/json', true, token);
+  }
+  async deleteRole(id: string, token?: string | null) {
+    return this.request(`/admin/roles/${encodeURIComponent(id)}`, { method: 'DELETE' }, undefined, true, token);
+  }
 }
 
 export const api = new ApiClient();

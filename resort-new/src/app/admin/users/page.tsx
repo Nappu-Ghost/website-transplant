@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,7 @@ import { PageHeader } from '@/components/shared';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/auth/useAuth';
 import api from '@/lib/api';
+import { roleService } from '@/lib/api-service';
 
 type Role = 'ADMIN' | 'MANAGER' | 'CUSTOMER';
 type Status = 'ACTIVE' | 'INACTIVE';
@@ -22,10 +24,26 @@ type UserRow = {
   name?: string | null;
   email: string;
   role: Role;
+  customRole?: string | null;
   status: Status;
   createdAt?: string;
   updatedAt?: string;
 };
+
+type UserDraft = {
+  name: string;
+  email: string;
+  roleValue: string;
+  status: Status;
+  password: string;
+};
+
+interface RoleConfig {
+  id: string;
+  label: string;
+  isSystem: boolean;
+  adminAccess: boolean;
+}
 
 function normalizeRole(value: any): Role {
   if (value === 'ADMIN' || value === 'MANAGER' || value === 'CUSTOMER') return value;
@@ -47,6 +65,29 @@ function prettyStatus(status: Status) {
   return status === 'ACTIVE' ? 'Active' : 'Inactive';
 }
 
+function resolveRoleLabel(row: UserRow, allRoles: RoleConfig[]): string {
+  if (row.customRole) {
+    const found = allRoles.find((r) => r.id === row.customRole);
+    return found ? found.label : row.customRole;
+  }
+  return prettyRole(row.role);
+}
+
+function toRolePayload(roleValue: string): { role?: Role; customRole: string | null } {
+  if (roleValue === 'ADMIN' || roleValue === 'MANAGER' || roleValue === 'CUSTOMER') {
+    return { role: roleValue, customRole: null };
+  }
+  return { customRole: roleValue };
+}
+
+const EMPTY_DRAFT: UserDraft = {
+  name: '',
+  email: '',
+  roleValue: 'CUSTOMER',
+  status: 'ACTIVE',
+  password: '',
+};
+
 export default function AdminUsersPage() {
   const { toast } = useToast();
   const { user: me } = useAuth();
@@ -57,21 +98,8 @@ export default function AdminUsersPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [selected, setSelected] = useState<UserRow | null>(null);
 
-  const [createDraft, setCreateDraft] = useState({
-    name: '',
-    email: '',
-    role: 'CUSTOMER' as Role,
-    status: 'ACTIVE' as Status,
-    password: '',
-  });
-
-  const [editDraft, setEditDraft] = useState({
-    name: '',
-    email: '',
-    role: 'CUSTOMER' as Role,
-    status: 'ACTIVE' as Status,
-    password: '',
-  });
+  const [createDraft, setCreateDraft] = useState<UserDraft>(EMPTY_DRAFT);
+  const [editDraft, setEditDraft] = useState<UserDraft>(EMPTY_DRAFT);
 
   const canManageUsers = useMemo(() => {
     const r = me?.role;
@@ -79,6 +107,15 @@ export default function AdminUsersPage() {
   }, [me?.role]);
 
   const canDeleteUsers = useMemo(() => me?.role === 'ADMIN', [me?.role]);
+
+  const allRolesQuery = useQuery<RoleConfig[]>({
+    queryKey: ['admin', 'roles'],
+    queryFn: () => roleService.list(),
+    enabled: canManageUsers,
+  });
+
+  const allRoles = allRolesQuery.data ?? [];
+  const customRoles = useMemo(() => allRoles.filter((r) => !r.isSystem), [allRoles]);
 
   const fetchUsers = useCallback(async () => {
     if (!canManageUsers) return;
@@ -91,6 +128,7 @@ export default function AdminUsersPage() {
             name: u.name ?? '',
             email: String(u.email ?? ''),
             role: normalizeRole(u.role),
+            customRole: u.customRole ?? null,
             status: normalizeStatus(u.status),
             createdAt: u.createdAt,
             updatedAt: u.updatedAt,
@@ -117,7 +155,7 @@ export default function AdminUsersPage() {
     setEditDraft({
       name: u.name ?? '',
       email: u.email,
-      role: u.role,
+      roleValue: u.customRole || u.role,
       status: u.status,
       password: '',
     });
@@ -127,16 +165,19 @@ export default function AdminUsersPage() {
   const handleInvite = async () => {
     setIsLoading(true);
     try {
+      const rolePayload = toRolePayload(createDraft.roleValue);
       const payload: any = {
         name: createDraft.name?.trim() || undefined,
         email: createDraft.email?.trim().toLowerCase(),
-        role: createDraft.role,
         status: createDraft.status,
         password: createDraft.password,
+        customRole: rolePayload.customRole,
       };
+      if (rolePayload.role) payload.role = rolePayload.role;
+
       await api.createUser(payload);
       setInviteOpen(false);
-      setCreateDraft({ name: '', email: '', role: 'CUSTOMER', status: 'ACTIVE', password: '' });
+      setCreateDraft(EMPTY_DRAFT);
       toast({ title: 'User created', description: 'The user can now log in with their credentials.' });
       await fetchUsers();
     } catch (e: any) {
@@ -154,19 +195,22 @@ export default function AdminUsersPage() {
     if (!selected) return;
     setIsLoading(true);
     try {
+      const rolePayload = toRolePayload(editDraft.roleValue);
       const payload: any = {
         name: editDraft.name?.trim() || null,
         email: editDraft.email?.trim().toLowerCase(),
-        role: editDraft.role,
         status: editDraft.status,
+        customRole: rolePayload.customRole,
       };
+      if (rolePayload.role) payload.role = rolePayload.role;
       if (editDraft.password?.trim()) {
         payload.password = editDraft.password;
       }
+
       await api.updateUser(String(selected.id), payload);
       setEditOpen(false);
       setSelected(null);
-      setEditDraft({ name: '', email: '', role: 'CUSTOMER', status: 'ACTIVE', password: '' });
+      setEditDraft(EMPTY_DRAFT);
       toast({ title: 'User updated', description: 'Changes have been saved.' });
       await fetchUsers();
     } catch (e: any) {
@@ -244,7 +288,10 @@ export default function AdminUsersPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="grid gap-2">
                     <Label>Role</Label>
-                    <Select value={createDraft.role} onValueChange={(v) => setCreateDraft((c) => ({ ...c, role: normalizeRole(v) }))}>
+                    <Select
+                      value={createDraft.roleValue}
+                      onValueChange={(v) => setCreateDraft((c) => ({ ...c, roleValue: v }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select role" />
                       </SelectTrigger>
@@ -252,12 +299,20 @@ export default function AdminUsersPage() {
                         <SelectItem value="CUSTOMER">Customer</SelectItem>
                         <SelectItem value="MANAGER">Manager</SelectItem>
                         <SelectItem value="ADMIN">Admin</SelectItem>
+                        {customRoles.map((role) => (
+                          <SelectItem key={role.id} value={role.id}>
+                            {role.label}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label>Status</Label>
-                    <Select value={createDraft.status} onValueChange={(v) => setCreateDraft((c) => ({ ...c, status: normalizeStatus(v) }))}>
+                    <Select
+                      value={createDraft.status}
+                      onValueChange={(v) => setCreateDraft((c) => ({ ...c, status: normalizeStatus(v) }))}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
@@ -295,7 +350,7 @@ export default function AdminUsersPage() {
               {users.map((u) => (
                 <TableRow key={u.id}>
                   <TableCell>{u.name || '—'}</TableCell>
-                  <TableCell>{prettyRole(u.role)}</TableCell>
+                  <TableCell>{resolveRoleLabel(u, allRoles)}</TableCell>
                   <TableCell>
                     <Badge variant={u.status === 'ACTIVE' ? 'outline' : 'secondary'}>{prettyStatus(u.status)}</Badge>
                   </TableCell>
@@ -361,7 +416,7 @@ export default function AdminUsersPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label>Role</Label>
-                <Select value={editDraft.role} onValueChange={(v) => setEditDraft((c) => ({ ...c, role: normalizeRole(v) }))}>
+                <Select value={editDraft.roleValue} onValueChange={(v) => setEditDraft((c) => ({ ...c, roleValue: v }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
@@ -369,6 +424,11 @@ export default function AdminUsersPage() {
                     <SelectItem value="CUSTOMER">Customer</SelectItem>
                     <SelectItem value="MANAGER">Manager</SelectItem>
                     <SelectItem value="ADMIN">Admin</SelectItem>
+                    {customRoles.map((role) => (
+                      <SelectItem key={role.id} value={role.id}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

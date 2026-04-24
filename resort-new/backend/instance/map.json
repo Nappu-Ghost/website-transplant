@@ -2,15 +2,15 @@
   "enabled": true,
   "title": "Explore the resort map",
   "description": "Preview key locations across Azure Lagoon Resort. Hover over a pin for the name, then click to view details and gallery images.",
-  "background_image_url": "https://media.craiyon.com/2025-07-26/eZSWVqkcQfyNpSigWckyfA.webp",
+  "background_image_url": "/images/map.jpg",
   "default_zoom": 1.0,
   "pins": [
     {
       "id": "arrival-jetty",
-      "name": "Arrival Jetty",
+      "name": "Lagoon Jetty",
       "description": "Main arrival point with concierge welcome and quick ferry access.",
-      "x": 77.96,
-      "y": 44.3,
+      "x": 40.64,
+      "y": 55.17,
       "kind": "custom",
       "source_id": null,
       "images": [
@@ -26,8 +26,8 @@
       "id": "lagoon-spa",
       "name": "Lagoon Spa",
       "description": "Wellness pavilion for sunrise treatments and evening rituals.",
-      "x": 36.59,
-      "y": 24.09,
+      "x": 20.29,
+      "y": 48.94,
       "kind": "custom",
       "source_id": null,
       "images": [
@@ -60,8 +60,8 @@
       "id": "pin-1775736701576-8gqxf0",
       "name": "Lagoon Suite",
       "description": "Lagoon-facing suite with private deck and sunrise view.",
-      "x": 40.85,
-      "y": 66.98,
+      "x": 38.26,
+      "y": 41.25,
       "kind": "accommodation",
       "source_id": 1,
       "images": [

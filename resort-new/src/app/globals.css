@@ -96,3 +96,27 @@ body {
   h3 { @apply text-2xl; }
   p { @apply leading-relaxed; } /* Improved readability */
 }
+
+@media print {
+  /* Hide non-content chrome */
+  header, nav, aside, footer,
+  [data-sidebar], [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* Reset backgrounds for legibility */
+  body, .bg-background, .bg-card\/90, .bg-card {
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure cards render with a visible border */
+  .border-border\/70 {
+    border: 1px solid #ccc !important;
+  }
+
+  /* Break cards across pages gracefully */
+  .space-y-8 > * {
+    break-inside: avoid;
+  }
+}

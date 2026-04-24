@@ -98,6 +98,22 @@ def update_user(db: Session, db_user: models.User, user_in: schemas.UserUpdate) 
         existing_email_user = get_user_by_email(db, email=update_data["email"])
         if existing_email_user and existing_email_user.id != db_user.id:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered by another user.")
+        # When custom_role is assigned, auto-set the base role from the role config
+        if "custom_role" in update_data:
+            custom_role_id = update_data.get("custom_role")
+            if custom_role_id:
+                try:
+                    from app.utils.roles import get_role as _get_role
+                    role_cfg = _get_role(custom_role_id)
+                    if role_cfg and role_cfg.get("adminAccess"):
+                        update_data["role"] = models.RoleEnum.MANAGER
+                    else:
+                        update_data["role"] = models.RoleEnum.CUSTOMER
+                except Exception:
+                    pass
+            else:
+                # Clearing custom_role — keep existing base role unless explicitly changed
+                update_data["custom_role"] = None
     for key, value in update_data.items():
         if hasattr(db_user, key):
             setattr(db_user, key, value)

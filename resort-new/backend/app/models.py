@@ -44,6 +44,8 @@ class User(Base):
 
     role = Column(SQLAlchemyEnum(RoleEnum), default=RoleEnum.CUSTOMER, nullable=False)
     status = Column(SQLAlchemyEnum(StatusEnum), default=StatusEnum.ACTIVE, nullable=False)
+    # Fine-grained role override (references a custom role id in roles.json)
+    custom_role = Column(String, nullable=True)
 
     profileImage = Column(String, nullable=True)
 

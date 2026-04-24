@@ -20,6 +20,7 @@ from .routers import (
     admin,
     places,
 )
+from .routers import roles as roles_router
 from .db import engine, Base
 from .db import SessionLocal
 from .seed_defaults import ensure_bootstrap_admin, ensure_default_users, ensure_default_catalog
@@ -109,6 +110,7 @@ app.include_router(
 )
 app.include_router(payments.router, prefix=f"{API_PREFIX}/payments", tags=["Payments"])
 app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Admin"])
+app.include_router(roles_router.router, prefix=f"{API_PREFIX}/admin/roles", tags=["Roles"])
 
 
 @app.get(f"{API_PREFIX}/health", tags=["Health Check"])
