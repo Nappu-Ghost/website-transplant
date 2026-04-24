@@ -171,6 +171,21 @@ class Event(Base):
     )
 
 
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    actor_user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    actor_name = Column(String, nullable=False)
+    action = Column(String, nullable=False)
+    entity_type = Column(String, nullable=False)
+    entity_id = Column(String, nullable=True)
+    description = Column(Text, nullable=False)
+    createdAt = Column(DateTime, default=datetime.utcnow, nullable=False)
+
+    actor = relationship("User")
+
+
 class Booking(Base):
     __tablename__ = "bookings"
     id = Column(Integer, primary_key=True, index=True)

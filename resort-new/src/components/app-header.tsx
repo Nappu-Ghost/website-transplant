@@ -3,6 +3,7 @@
 import type React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { CalendarDays, LogOut, Menu, UserCircle } from 'lucide-react';
@@ -11,21 +12,23 @@ import { ThemeToggleButton } from './theme-toggle-button';
 import { useAuth } from '@/hooks/auth/useAuth';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from './ui/dropdown-menu';
 import { NavLink } from '@/components/shared';
+import { metaService } from '@/lib/api-service';
+import { DEFAULT_NAVBAR_VISIBILITY, NAVBAR_ITEMS } from '@/lib/navbar-items';
 
 export function AppHeader() {
   const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const navbarQuery = useQuery({
+    queryKey: ['public', 'navbar'],
+    queryFn: () => metaService.getNavbar(),
+    staleTime: 60_000,
+  });
 
-  const navItems = [
-    { href: '/', label: 'Home' },
-    { href: '/about', label: 'About' },
-    { href: '/accommodations', label: 'Accommodations' },
-    { href: '/activities', label: 'Activities' },
-    { href: '/booking', label: 'Booking' },
-    { href: '/map', label: 'Map'},
-    { href: '/contact', label: 'Contact' },
-  ];
+  const visibility = { ...DEFAULT_NAVBAR_VISIBILITY, ...(navbarQuery.data ?? {}) };
+  const navItems = [{ href: '/', label: 'Home' }].concat(
+    NAVBAR_ITEMS.filter((item) => visibility[item.key]).map((item) => ({ href: item.href, label: item.label })),
+  );
 
   // Helper to check if a link is active
   const isActive = (href: string) => pathname === href;

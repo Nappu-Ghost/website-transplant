@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from app import models, schemas
+from app import crud, models, schemas
 from app.db import get_db
 from app.dependencies import require_role
 from app.utils.homepage import load_homepage_config, save_homepage_config
@@ -10,6 +10,7 @@ from app.utils.accommodations import load_accommodations_config, save_accommodat
 from app.utils.activities import load_activities_config, save_activities_config
 from app.utils.about import load_about_config, save_about_config
 from app.utils.map_config import load_map_config, save_map_config
+from app.utils.site_settings import load_navbar_settings, save_navbar_settings
 
 router = APIRouter(tags=["Admin"], responses={404: {"description": "Not found"}})
 
@@ -128,3 +129,39 @@ def update_map_settings(
     config = payload.model_dump()
     save_map_config(config)
     return config
+
+
+@router.get("/site-settings/navbar", response_model=schemas.SiteNavbarSettings)
+def get_navbar_settings(
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    return load_navbar_settings()
+
+
+@router.put("/site-settings/navbar", response_model=schemas.SiteNavbarSettings)
+def update_navbar_settings(
+    payload: schemas.SiteNavbarSettings,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])),
+):
+    updated = save_navbar_settings(payload.model_dump())
+
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    enabled_items = [k for k, v in updated.items() if v]
+    disabled_items = [k for k, v in updated.items() if not v]
+    description = (
+        f"{actor_name} updated navbar visibility. "
+        f"Enabled: {', '.join(enabled_items) if enabled_items else 'none'}. "
+        f"Disabled: {', '.join(disabled_items) if disabled_items else 'none'}."
+    )
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="navbar",
+        entity_id="site-navbar",
+        description=description,
+    )
+
+    return updated

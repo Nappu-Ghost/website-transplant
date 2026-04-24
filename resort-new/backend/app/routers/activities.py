@@ -19,7 +19,18 @@ def create_activity(
         require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])
     ),
 ):
-    return crud.create_activity(db=db, activity=activity)
+    created = crud.create_activity(db=db, activity=activity)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="create",
+        entity_type="activity",
+        entity_id=str(created.id),
+        description=f"{actor_name} created activity {created.name}.",
+    )
+    return created
 
 
 @router.get("", response_model=List[schemas.ActivityResponse])
@@ -48,7 +59,18 @@ def update_activity_full(
     db_activity = crud.get_db_obj(db, model=models.Activity, obj_id=activity_id)
     if not db_activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    return crud.update_db_obj_generic(db=db, db_obj=db_activity, obj_in=activity)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_activity, obj_in=activity)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="activity",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated activity {updated.name}.",
+    )
+    return updated
 
 
 @router.patch("/{activity_id}", response_model=schemas.ActivityResponse)
@@ -63,7 +85,18 @@ def update_activity_partial(
     db_activity = crud.get_db_obj(db, model=models.Activity, obj_id=activity_id)
     if not db_activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    return crud.update_db_obj_generic(db=db, db_obj=db_activity, obj_in=activity)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_activity, obj_in=activity)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="activity",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated activity {updated.name}.",
+    )
+    return updated
 
 
 @router.delete("/{activity_id}", response_model=schemas.ActivityResponse)
@@ -77,7 +110,19 @@ def delete_activity(
     db_activity = crud.get_db_obj(db, model=models.Activity, obj_id=activity_id)
     if not db_activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-    return crud.remove_db_obj_generic(db=db, db_obj=db_activity)
+    activity_name = db_activity.name
+    deleted = crud.remove_db_obj_generic(db=db, db_obj=db_activity)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="delete",
+        entity_type="activity",
+        entity_id=str(activity_id),
+        description=f"{actor_name} deleted activity {activity_name}.",
+    )
+    return deleted
 @router.get("/{activity_id}/image")
 def get_activitie_image(activity_id: int, db: Session = Depends(get_db)):
     obj = crud.get_db_obj(db, model=models.Activity, obj_id=activity_id)

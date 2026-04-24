@@ -69,6 +69,30 @@ def remove_db_obj_generic(db: Session, db_obj: ModelType) -> ModelType:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=f"Cannot delete item. It might be referenced by other records: {e.orig}")
     return db_obj 
 
+
+def create_audit_log(
+    db: Session,
+    *,
+    actor_user_id: Optional[int],
+    actor_name: str,
+    action: str,
+    entity_type: str,
+    entity_id: Optional[str],
+    description: str,
+) -> models.AuditLog:
+    log = models.AuditLog(
+        actor_user_id=actor_user_id,
+        actor_name=actor_name,
+        action=action,
+        entity_type=entity_type,
+        entity_id=entity_id,
+        description=description,
+    )
+    db.add(log)
+    db.commit()
+    db.refresh(log)
+    return log
+
 def get_user_by_email(db: Session, email: str) -> Optional[models.User]:
     return db.query(models.User).filter(models.User.email == email).first()
 

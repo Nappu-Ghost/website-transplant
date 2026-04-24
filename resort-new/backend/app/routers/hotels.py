@@ -22,7 +22,18 @@ def create_hotel(
     existing = db.query(models.Hotel).filter(models.Hotel.name == hotel.name).first()
     if existing:
         raise HTTPException(status_code=400, detail="Hotel name already exists")
-    return crud.create_hotel(db=db, hotel=hotel)
+    created = crud.create_hotel(db=db, hotel=hotel)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="create",
+        entity_type="hotel",
+        entity_id=str(created.id),
+        description=f"{actor_name} created hotel {created.name}.",
+    )
+    return created
 
 
 @router.get("", response_model=List[schemas.HotelResponse])
@@ -55,7 +66,18 @@ def update_hotel_full(
         existing = db.query(models.Hotel).filter(models.Hotel.name == hotel.name).first()
         if existing and existing.id != hotel_id:
             raise HTTPException(status_code=400, detail="Hotel name already exists")
-    return crud.update_db_obj_generic(db=db, db_obj=db_hotel, obj_in=hotel)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_hotel, obj_in=hotel)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="hotel",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated hotel {updated.name}.",
+    )
+    return updated
 
 
 @router.patch("/{hotel_id}", response_model=schemas.HotelResponse)
@@ -74,7 +96,18 @@ def update_hotel_partial(
         existing = db.query(models.Hotel).filter(models.Hotel.name == hotel.name).first()
         if existing and existing.id != hotel_id:
             raise HTTPException(status_code=400, detail="Hotel name already exists")
-    return crud.update_db_obj_generic(db=db, db_obj=db_hotel, obj_in=hotel)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_hotel, obj_in=hotel)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="hotel",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated hotel {updated.name}.",
+    )
+    return updated
 
 
 @router.delete("/{hotel_id}", response_model=schemas.HotelResponse)
@@ -88,7 +121,19 @@ def delete_hotel(
     db_hotel = crud.get_db_obj(db, model=models.Hotel, obj_id=hotel_id)
     if not db_hotel:
         raise HTTPException(status_code=404, detail="Hotel not found")
-    return crud.remove_db_obj_generic(db=db, db_obj=db_hotel)
+    hotel_name = db_hotel.name
+    deleted = crud.remove_db_obj_generic(db=db, db_obj=db_hotel)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="delete",
+        entity_type="hotel",
+        entity_id=str(hotel_id),
+        description=f"{actor_name} deleted hotel {hotel_name}.",
+    )
+    return deleted
 @router.get("/{hotel_id}/image")
 def get_hotel_image(hotel_id: int, db: Session = Depends(get_db)):
     obj = crud.get_db_obj(db, model=models.Hotel, obj_id=hotel_id)

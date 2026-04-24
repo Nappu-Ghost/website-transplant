@@ -7,6 +7,7 @@ from app.utils.accommodations import load_accommodations_config
 from app.utils.activities import load_activities_config
 from app.utils.about import load_about_config
 from app.utils.map_config import load_map_config
+from app.utils.site_settings import load_navbar_settings
 
 router = APIRouter()
 
@@ -39,3 +40,8 @@ def get_about() -> dict:
 @router.get("/meta/map")
 def get_map() -> dict:
     return load_map_config()
+
+
+@router.get("/meta/navbar")
+def get_navbar() -> dict:
+    return load_navbar_settings()

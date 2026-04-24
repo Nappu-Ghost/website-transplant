@@ -4,7 +4,8 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 from typing import List, Optional
 
-from app import models
+from app import crud, models
+from app.db import get_db
 from app.dependencies import get_current_active_user, require_role
 from app.utils.roles import (
     ADMIN_PAGES,
@@ -74,6 +75,7 @@ def list_roles(
 @router.post("", response_model=RoleOut, status_code=status.HTTP_201_CREATED)
 def create_role(
     payload: RoleCreate,
+    db=Depends(get_db),
     current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN])),
 ):
     roles = load_roles()
@@ -105,6 +107,16 @@ def create_role(
     }
     roles.append(new_role)
     save_roles(roles)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="create",
+        entity_type="role",
+        entity_id=new_role["id"],
+        description=f"{actor_name} created role {new_role['label']}.",
+    )
     return new_role
 
 
@@ -112,6 +124,7 @@ def create_role(
 def update_role(
     role_id: str,
     payload: RoleUpdate,
+    db=Depends(get_db),
     current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN])),
 ):
     if role_id == "ADMIN":
@@ -138,6 +151,16 @@ def update_role(
                     )
                 role["pages"] = payload.pages
             save_roles(roles)
+            actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+            crud.create_audit_log(
+                db,
+                actor_user_id=current_user.id,
+                actor_name=actor_name,
+                action="update",
+                entity_type="role",
+                entity_id=role["id"],
+                description=f"{actor_name} updated role {role['label']}.",
+            )
             return role
 
     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Role not found.")
@@ -146,6 +169,7 @@ def update_role(
 @router.delete("/{role_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_role(
     role_id: str,
+    db=Depends(get_db),
     current_user: models.User = Depends(require_role([models.RoleEnum.ADMIN])),
 ):
     roles = load_roles()
@@ -160,6 +184,16 @@ def delete_role(
         )
 
     save_roles([r for r in roles if r["id"] != role_id])
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="delete",
+        entity_type="role",
+        entity_id=role_id,
+        description=f"{actor_name} deleted role {role.get('label', role_id)}.",
+    )
 
 
 @router.get("/pages", response_model=List[str])

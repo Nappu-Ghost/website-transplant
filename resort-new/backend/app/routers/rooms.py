@@ -19,7 +19,18 @@ def create_room(
         require_role([models.RoleEnum.ADMIN, models.RoleEnum.MANAGER])
     ),
 ):
-    return crud.create_room(db=db, room=room)
+    created = crud.create_room(db=db, room=room)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="create",
+        entity_type="room",
+        entity_id=str(created.id),
+        description=f"{actor_name} created room {created.room_number}.",
+    )
+    return created
 
 
 @router.get("", response_model=List[schemas.RoomResponse])
@@ -56,7 +67,18 @@ def update_room_full(
     db_room = crud.get_db_obj(db, model=models.Room, obj_id=room_id)
     if not db_room:
         raise HTTPException(status_code=404, detail="Room not found")
-    return crud.update_db_obj_generic(db=db, db_obj=db_room, obj_in=room)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_room, obj_in=room)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="room",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated room {updated.room_number}.",
+    )
+    return updated
 
 
 @router.patch("/{room_id}", response_model=schemas.RoomResponse)
@@ -71,7 +93,18 @@ def update_room_partial(
     db_room = crud.get_db_obj(db, model=models.Room, obj_id=room_id)
     if not db_room:
         raise HTTPException(status_code=404, detail="Room not found")
-    return crud.update_db_obj_generic(db=db, db_obj=db_room, obj_in=room)
+    updated = crud.update_db_obj_generic(db=db, db_obj=db_room, obj_in=room)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="update",
+        entity_type="room",
+        entity_id=str(updated.id),
+        description=f"{actor_name} updated room {updated.room_number}.",
+    )
+    return updated
 
 
 @router.delete("/{room_id}", response_model=schemas.RoomResponse)
@@ -85,7 +118,19 @@ def delete_room(
     db_room = crud.get_db_obj(db, model=models.Room, obj_id=room_id)
     if not db_room:
         raise HTTPException(status_code=404, detail="Room not found")
-    return crud.remove_db_obj_generic(db=db, db_obj=db_room)
+    room_number = db_room.room_number
+    deleted = crud.remove_db_obj_generic(db=db, db_obj=db_room)
+    actor_name = (current_user.name or current_user.email or f"user:{current_user.id}").strip()
+    crud.create_audit_log(
+        db,
+        actor_user_id=current_user.id,
+        actor_name=actor_name,
+        action="delete",
+        entity_type="room",
+        entity_id=str(room_id),
+        description=f"{actor_name} deleted room {room_number}.",
+    )
+    return deleted
 @router.get("/{room_id}/image")
 def get_room_image(room_id: int, db: Session = Depends(get_db)):
     obj = crud.get_db_obj(db, model=models.Room, obj_id=room_id)

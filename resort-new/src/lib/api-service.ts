@@ -67,6 +67,9 @@ export const adminService = {
   updateAboutSettings: (data: any, token?: string | null) => api.updateAboutSettings(data, token),
   getMapSettings: (token?: string | null) => api.getMapSettings(token),
   updateMapSettings: (data: any, token?: string | null) => api.updateMapSettings(data, token),
+  getNavbarSettings: (token?: string | null) => api.getNavbarSettings(token),
+  updateNavbarSettings: (data: any, token?: string | null) => api.updateNavbarSettings(data, token),
+  getAuditLogs: (filters?: Record<string, any>, token?: string | null) => api.getAuditLogs(filters, token),
 };
 
 export const roleService = {
@@ -84,5 +87,6 @@ export const metaService = {
   getActivities: () => api.getActivitiesConfig(),
   getAbout: () => api.getAboutConfig(),
   getMap: () => api.getMapConfig(),
+  getNavbar: () => api.getNavbarConfig(),
   toPublicUrl: (url: string) => api.toPublicUrl(url),
 };

@@ -19,6 +19,7 @@ from .routers import (
     payments,
     admin,
     places,
+    audit_logs,
 )
 from .routers import roles as roles_router
 from .db import engine, Base
@@ -111,6 +112,7 @@ app.include_router(
 app.include_router(payments.router, prefix=f"{API_PREFIX}/payments", tags=["Payments"])
 app.include_router(admin.router, prefix=f"{API_PREFIX}/admin", tags=["Admin"])
 app.include_router(roles_router.router, prefix=f"{API_PREFIX}/admin/roles", tags=["Roles"])
+app.include_router(audit_logs.router, prefix=f"{API_PREFIX}/admin/audit-logs", tags=["Audit Logs"])
 
 
 @app.get(f"{API_PREFIX}/health", tags=["Health Check"])

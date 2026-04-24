@@ -1,0 +1,10 @@
+{
+  "navbar": {
+    "about": true,
+    "accommodations": true,
+    "activities": true,
+    "booking": true,
+    "map": true,
+    "contact": true
+  }
+}

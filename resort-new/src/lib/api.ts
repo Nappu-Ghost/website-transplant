@@ -244,6 +244,7 @@ export class ApiClient {
   async getActivitiesConfig() { return this.request('/meta/activities', {}, undefined, false, null); }
   async getAboutConfig() { return this.request('/meta/about', {}, undefined, false, null); }
   async getMapConfig() { return this.request('/meta/map', {}, undefined, false, null); }
+  async getNavbarConfig() { return this.request('/meta/navbar', {}, undefined, false, null); }
 
   async getHotels(token?: string | null) { return this.request('/hotels/', {}, undefined, false, token); }
   async getHotelById(id: string, token?: string | null) { return this.request(`/hotels/${id}`, {}, undefined, false, token); }
@@ -386,6 +387,30 @@ export class ApiClient {
       true,
       token,
     );
+  }
+
+  async getNavbarSettings(token?: string | null) {
+    return this.request('/admin/site-settings/navbar', {}, undefined, true, token);
+  }
+
+  async updateNavbarSettings(data: any, token?: string | null) {
+    return this.request(
+      '/admin/site-settings/navbar',
+      { method: 'PUT', body: JSON.stringify(data) },
+      'application/json',
+      true,
+      token,
+    );
+  }
+
+  async getAuditLogs(filters?: Record<string, any>, token?: string | null) {
+    const normalized = filters
+      ? Object.fromEntries(
+          Object.entries(toSnakeCase(filters)).filter(([, value]) => value !== undefined && value !== null && value !== ''),
+        )
+      : undefined;
+    const queryParams = normalized ? `?${new URLSearchParams(normalized as Record<string, string>).toString()}` : '';
+    return this.request(`/admin/audit-logs${queryParams}`, {}, undefined, true, token);
   }
 
   async getEvents(token?: string | null) { return this.request('/events/', {}, undefined, false, token); }

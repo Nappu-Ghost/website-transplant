@@ -1,193 +1,233 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { PageHeader, SectionHeader } from '@/components/shared';
+import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '@/components/shared';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/auth/useAuth';
-import api from '@/lib/api';
+import { adminService } from '@/lib/api-service';
+import { DEFAULT_NAVBAR_VISIBILITY, NAVBAR_ITEMS, type NavbarVisibility } from '@/lib/navbar-items';
+
+type AuditLogEntry = {
+  id: number;
+  actorUserId?: number | null;
+  actorName: string;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  description: string;
+  createdAt: string;
+};
 
 export default function AdminSettingsPage() {
   const { toast } = useToast();
-  const { user, logout } = useAuth();
-  const [autoDeposits, setAutoDeposits] = useState(true);
-  const [arrivalReminders, setArrivalReminders] = useState(true);
-  const [experienceWaitlist, setExperienceWaitlist] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const qc = useQueryClient();
 
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [draft, setDraft] = useState<NavbarVisibility>(DEFAULT_NAVBAR_VISIBILITY);
+  const [q, setQ] = useState('');
+  const [actor, setActor] = useState('');
+  const [action, setAction] = useState<string>('all');
+  const [entityType, setEntityType] = useState<string>('all');
 
-  const getPasswordIssues = (password: string, email?: string) => {
-    const issues: string[] = [];
-    const pw = (password ?? '').trim();
+  const navbarQuery = useQuery<NavbarVisibility>({
+    queryKey: ['admin', 'settings', 'navbar'],
+    queryFn: () => adminService.getNavbarSettings(),
+  });
 
-    if (pw.length < 12) issues.push('Password must be at least 12 characters long.');
-    if (pw.length > 128) issues.push('Password must be at most 128 characters long.');
+  const auditQuery = useQuery<AuditLogEntry[]>({
+    queryKey: ['admin', 'settings', 'audit-logs', q, actor, action, entityType],
+    queryFn: () =>
+      adminService.getAuditLogs({
+        q: q || undefined,
+        actor: actor || undefined,
+        action: action === 'all' ? undefined : action,
+        entityType: entityType === 'all' ? undefined : entityType,
+        limit: 300,
+      }),
+  });
 
-    let classes = 0;
-    if (/[a-z]/.test(pw)) classes += 1;
-    if (/[A-Z]/.test(pw)) classes += 1;
-    if (/[0-9]/.test(pw)) classes += 1;
-    if (/[^a-zA-Z0-9]/.test(pw)) classes += 1;
-    if (pw && classes < 3) issues.push('Password must include at least 3 of: lowercase, uppercase, digit, symbol.');
+  const saveNavbarMutation = useMutation({
+    mutationFn: (payload: NavbarVisibility) => adminService.updateNavbarSettings(payload),
+    onSuccess: (updated) => {
+      setDraft(updated);
+      qc.invalidateQueries({ queryKey: ['admin', 'settings', 'navbar'] });
+      qc.invalidateQueries({ queryKey: ['public', 'navbar'] });
+      qc.invalidateQueries({ queryKey: ['admin', 'settings', 'audit-logs'] });
+      toast({ title: 'Navbar settings saved' });
+    },
+    onError: (err: any) => {
+      toast({ title: 'Failed to save navbar settings', description: err?.message, variant: 'destructive' });
+    },
+  });
 
-    if (email) {
-      const local = email.split('@', 1)[0]?.toLowerCase() ?? '';
-      if (local && pw.toLowerCase().includes(local)) {
-        issues.push('Password must not contain parts of your email address.');
-      }
-    }
+  const isDirty = useMemo(() => {
+    const source = navbarQuery.data ?? DEFAULT_NAVBAR_VISIBILITY;
+    return NAVBAR_ITEMS.some((item) => Boolean(draft[item.key]) !== Boolean(source[item.key]));
+  }, [draft, navbarQuery.data]);
 
-    return issues;
+  const actionOptions = ['all', 'create', 'update', 'delete'];
+  const entityOptions = ['all', 'user', 'hotel', 'room', 'activity', 'role', 'navbar'];
+
+  const hydrateDraftFromSource = (source: NavbarVisibility | undefined) => {
+    const merged = { ...DEFAULT_NAVBAR_VISIBILITY, ...(source ?? {}) };
+    setDraft(merged);
   };
 
-  const handleChangePassword = async () => {
-    if (!user?.id) return;
-    if (newPassword !== confirmPassword) {
-      toast({ title: 'Password update failed', description: 'Passwords do not match.', variant: 'destructive' });
-      return;
+  useEffect(() => {
+    if (navbarQuery.data) {
+      hydrateDraftFromSource(navbarQuery.data);
     }
-
-    const issues = getPasswordIssues(newPassword, user.email);
-    if (issues.length > 0) {
-      toast({ title: 'Password requirements', description: issues.join(' '), variant: 'destructive' });
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      await api.updateUser(String(user.id), { password: newPassword });
-      setNewPassword('');
-      setConfirmPassword('');
-      toast({ title: 'Password updated', description: 'Your password has been changed.' });
-      await api.logoutAll();
-      await logout();
-    } catch (e: any) {
-      toast({ title: 'Password update failed', description: e?.message || 'An unexpected error occurred.', variant: 'destructive' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleLogoutAll = async () => {
-    setIsSaving(true);
-    try {
-      await api.logoutAll();
-      await logout();
-    } catch (e: any) {
-      toast({ title: 'Could not log out all sessions', description: e?.message || 'An unexpected error occurred.', variant: 'destructive' });
-    } finally {
-      setIsSaving(false);
-    }
-  };
+  }, [navbarQuery.data]);
 
   return (
     <div className="space-y-8">
       <PageHeader
         title="Settings"
-        description="Configure policies, pricing defaults, and guest communications."
+        description="Manage public navbar visibility and review system activity logs."
       />
 
       <Card className="border-border/70 bg-card/90">
         <CardHeader>
-          <CardTitle className="text-lg">Pricing defaults</CardTitle>
+          <CardTitle className="text-lg">Navbar visibility</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="deposit">Deposit percentage</Label>
-            <Input id="deposit" defaultValue="20" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="service">Service fee</Label>
-            <Input id="service" defaultValue="45" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="tax">Tax rate</Label>
-            <Input id="tax" defaultValue="12" />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="hold">Hold window (hours)</Label>
-            <Input id="hold" defaultValue="48" />
-          </div>
-        </CardContent>
-      </Card>
+        <CardContent className="space-y-5">
+          <p className="text-sm text-muted-foreground">
+            Toggle which pages appear in the public site navigation.
+          </p>
 
-      <Card className="border-border/70 bg-card/90">
-        <CardHeader>
-          <CardTitle className="text-lg">Guest communications</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Auto-send deposit requests</p>
-              <p className="text-xs text-muted-foreground">Triggered after confirmation.</p>
-            </div>
-            <Switch checked={autoDeposits} onCheckedChange={setAutoDeposits} />
+          <div className="grid gap-3 md:grid-cols-2">
+            {NAVBAR_ITEMS.map((item) => (
+              <div
+                key={item.key}
+                className="flex items-center justify-between rounded-md border border-border/60 px-4 py-3"
+              >
+                <div>
+                  <p className="text-sm font-medium text-foreground">{item.label}</p>
+                  <p className="text-xs text-muted-foreground">{item.href}</p>
+                </div>
+                <Switch
+                  checked={Boolean(draft[item.key])}
+                  onCheckedChange={(checked) => setDraft((prev) => ({ ...prev, [item.key]: checked }))}
+                />
+              </div>
+            ))}
           </div>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Arrival reminders</p>
-              <p className="text-xs text-muted-foreground">Sent 7 days before check-in.</p>
-            </div>
-            <Switch checked={arrivalReminders} onCheckedChange={setArrivalReminders} />
-          </div>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">Experience waitlist</p>
-              <p className="text-xs text-muted-foreground">Enable waitlist for full sessions.</p>
-            </div>
-            <Switch checked={experienceWaitlist} onCheckedChange={setExperienceWaitlist} />
-          </div>
-        </CardContent>
-      </Card>
 
-      <SectionHeader
-        title="Permissions"
-        description="Create users, change roles, and manage access from the Users page."
-      />
-
-      <Card className="border-border/70 bg-card/90">
-        <CardHeader>
-          <CardTitle className="text-lg">Account security</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <div className="space-y-2">
-              <Label htmlFor="new-password">New password</Label>
-              <Input
-                id="new-password"
-                type="password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="confirm-password">Confirm new password</Label>
-              <Input
-                id="confirm-password"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <Button className="w-fit" onClick={handleChangePassword} disabled={isSaving || !newPassword || !confirmPassword}>
-              Change password
+          <div className="flex flex-wrap gap-2">
+            <Button
+              disabled={!isDirty || saveNavbarMutation.isPending || navbarQuery.isLoading}
+              onClick={() => saveNavbarMutation.mutate(draft)}
+            >
+              {saveNavbarMutation.isPending ? 'Saving…' : 'Save navbar settings'}
             </Button>
-            <Button variant="outline" className="w-fit" onClick={handleLogoutAll} disabled={isSaving}>
-              Log out all sessions
+            <Button
+              variant="outline"
+              disabled={saveNavbarMutation.isPending || navbarQuery.isLoading}
+              onClick={() => hydrateDraftFromSource(navbarQuery.data as NavbarVisibility | undefined)}
+            >
+              Reset
             </Button>
           </div>
         </CardContent>
       </Card>
 
-      <Button className="w-fit">Save settings</Button>
+      <Card className="border-border/70 bg-card/90">
+        <CardHeader>
+          <CardTitle className="text-lg">Event logs</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-4">
+            <div className="space-y-1">
+              <Label htmlFor="log-search">Contains text</Label>
+              <Input
+                id="log-search"
+                placeholder="created hotel"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label htmlFor="log-actor">Actor</Label>
+              <Input
+                id="log-actor"
+                placeholder="username or email"
+                value={actor}
+                onChange={(e) => setActor(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-1">
+              <Label>Action</Label>
+              <Select value={action} onValueChange={setAction}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All actions" />
+                </SelectTrigger>
+                <SelectContent>
+                  {actionOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt === 'all' ? 'All actions' : opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Entity</Label>
+              <Select value={entityType} onValueChange={setEntityType}>
+                <SelectTrigger>
+                  <SelectValue placeholder="All entities" />
+                </SelectTrigger>
+                <SelectContent>
+                  {entityOptions.map((opt) => (
+                    <SelectItem key={opt} value={opt}>{opt === 'all' ? 'All entities' : opt}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="rounded-md border border-border/60">
+            <div className="grid grid-cols-[140px_110px_110px_1fr] gap-3 border-b border-border/60 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              <span>Timestamp</span>
+              <span>Actor</span>
+              <span>Action</span>
+              <span>Details</span>
+            </div>
+
+            <div className="max-h-[460px] overflow-y-auto">
+              {auditQuery.isLoading && (
+                <p className="px-4 py-6 text-sm text-muted-foreground">Loading event logs…</p>
+              )}
+
+              {!auditQuery.isLoading && (auditQuery.data ?? []).length === 0 && (
+                <p className="px-4 py-6 text-sm text-muted-foreground">No matching events found.</p>
+              )}
+
+              {(auditQuery.data ?? []).map((log) => (
+                <div
+                  key={log.id}
+                  className="grid grid-cols-[140px_110px_110px_1fr] gap-3 border-b border-border/40 px-4 py-3 text-sm last:border-b-0"
+                >
+                  <span className="text-xs text-muted-foreground">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </span>
+                  <span className="truncate text-foreground">{log.actorName}</span>
+                  <span>
+                    <Badge variant="outline" className="text-[11px] capitalize">{log.action}</Badge>
+                  </span>
+                  <span className="text-muted-foreground">{log.description}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

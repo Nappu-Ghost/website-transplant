@@ -196,6 +196,28 @@ class EventResponse(EventBase):
     updatedAt: datetime
     model_config = ConfigDict(from_attributes=True)
 
+
+class SiteNavbarSettings(BaseModel):
+    about: bool = True
+    accommodations: bool = True
+    activities: bool = True
+    booking: bool = True
+    map: bool = True
+    contact: bool = True
+
+
+class AuditLogResponse(BaseModel):
+    id: int
+    actor_user_id: Optional[int] = None
+    actor_name: str
+    action: str
+    entity_type: str
+    entity_id: Optional[str] = None
+    description: str
+    createdAt: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
 class FerryBase(BaseModel):
     name: str
     description: Optional[str] = None
