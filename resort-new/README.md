@@ -1,129 +1,85 @@
-# Azure Lagoon Resort: Experience & Booking Platform
+# Azure Lagoon Resort Website
 
-> A modern resort experience platform with bookings, activities, and admin operations.
+Modern resort website and booking platform with guest-facing pages, a complete reservation flow, and admin operations.
 
-[![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js-black?style=for-the-badge&logo=next.js)](https://nextjs.org)
-[![Styled with Tailwind](https://img.shields.io/badge/Styled%20with-Tailwind-38bdf8?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com)
-[![Powered by TypeScript](https://img.shields.io/badge/Powered%20by-TypeScript-007ACC?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org)
-[![FastAPI backend](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi)](https://fastapi.tiangolo.com/)
-[![SQLite powered](https://img.shields.io/badge/Database-SQLite-003B57?style=for-the-badge&logo=sqlite)](https://www.sqlite.org)
-[![UI with Shadcn](https://img.shields.io/badge/UI-Shadcn-8B5CF6?style=for-the-badge)](https://ui.shadcn.com/)
+## What The Website Includes
 
-## What This Is
-
-A resort platform that blends polished marketing pages with a complete booking flow and admin operations. The goal is to deliver a premium resort experience on a modern Next.js + FastAPI stack.
-
-## Highlights
-
-- Curated accommodations and activities
-- Booking flow with guest details and payments
-- Admin dashboards for managing inventory and bookings
-- Secure authentication and role-based access
-- Responsive UI built with Shadcn/ui
+- Public pages for homepage, accommodations, activities, map, contact, and services
+- Booking flow with room and activity selection, guest details, and payments
+- Authentication and role-based access (customer, manager, admin)
+- Admin area for managing listings, bookings, and operational data
 
 ## Tech Stack
 
-- Next.js (App Router)
-- React + TypeScript
-- Tailwind CSS
-- FastAPI + SQLAlchemy
-- SQLite
-- Shadcn/ui
+- Frontend: Next.js (App Router), React, TypeScript, Tailwind CSS, Shadcn/ui
+- Backend: FastAPI, SQLAlchemy
+- Database: SQLite
 
-## Quick Start
+## Run The Website Locally
 
-### Frontend (Next.js)
+### 1) Frontend
+
+From `resort-new`:
 
 ```bash
-# Install frontend dependencies
 npm install
-
-# Run the frontend
 npm run dev
 ```
 
-### Backend (FastAPI + SQLite)
+Frontend runs on: http://localhost:3000
+
+### 2) Backend
+
+From `resort-new/backend`:
 
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Create virtual environment
 python -m venv venv
-.\venv\Scripts\activate  # Windows
-
-# Install backend dependencies
+.\venv\Scripts\activate
 pip install -r requirements.txt
-
-# Run the backend server
 python main.py
 ```
 
-### API Documentation
+Backend runs on: http://localhost:8001
 
-Once the backend is running, you can access the API documentation at:
+### API Docs
+
 - Swagger UI: http://localhost:8001/docs
 - ReDoc: http://localhost:8001/redoc
 
-## User Roles
+## Seed Database Setup
 
-- **Customers (`CUSTOMER`)**
-  - Book stays and activities
-  - View booking history
-  - Manage profile
+The seed script creates a complete sample dataset for development, including users, hotels, rooms, activities, bookings, and payments.
 
-- **Managers (`MANAGER`)**
-  - Manage inventory and bookings
-  - View reports and activity metrics
+From `resort-new/backend`:
 
-- **Admins (`ADMIN`)**
-  - Full system access
-  - User and configuration management
+```bash
+python -m venv venv
+.\venv\Scripts\activate
+pip install -r requirements.txt
+python seed.py
+```
 
-## Default Credentials (Demo Mode)
+Notes:
 
-| Role     | Email                  | Password   |
-| :------- | :--------------------- | :--------- |
-| ADMIN    | admin@example.com      | `Password123!` |
-| Manager  | manager@example.com    | `Password123!` |
-| Guest    | guest@example.com      | `Password123!` |
+- This uses `backend/resort.db` (SQLite).
+- Running `seed.py` resets existing app data first, then inserts fresh sample data.
+- Use this only in development.
 
-## Demo Mode
+## Seeded Login Credentials
 
-Demo mode is controlled by `backend/instance/settings.json`.
+These credentials are defined in `backend/seed.py`.
 
-- `allow_demo_users: true` seeds demo users and a small demo catalog (hotels/rooms/activities).
-- `allow_demo_users: false` disables demo users and demo catalog.
+| Role | Email | Password |
+| :--- | :---- | :------- |
+| Demo Customer | demo.user@example.com | `Riv3r!Stone#2026` |
+| Admin | admin.user@example.com | `Gl0w!Maple@7261` |
+| Manager | manager.user@example.com | `C0balt!Harbor#5512` |
+| Customer | maya.rivera@example.com | `Saffr0n!Lagoon#8402` |
+| Customer | noah.bennett@example.com | `C0ral!Drift#5731` |
+| Customer | ava.chen@example.com | `Palm!Voyage#4628` |
 
-### Leaving demo mode
+## Roles
 
-1. Set `allow_demo_users` to `false` in `backend/instance/settings.json`.
-2. If you want a clean reset, delete the SQLite database file you are using and restart the backend.
-
-### Bootstrap admin (non-demo)
-
-If demo mode is disabled and the database has no users, the backend creates a bootstrap admin.
-
-- You can set these in `backend/instance/settings.json`:
-  - `bootstrap_admin_email`
-  - `bootstrap_admin_name`
-  - `bootstrap_admin_password`
-
-If `bootstrap_admin_password` is omitted, a password is generated and written to `backend/instance/bootstrap_admin_credentials.txt`.
-
-## Core Entities
-
-- **Users**: Guests and staff accounts
-- **Hotels**: Resort properties
-- **Rooms**: Accommodation inventory
-- **Activities**: Experience offerings
-- **Bookings**: Guest reservations
-- **Payments**: Booking payments
-- **Ferries**: Transfer schedules (optional)
-
-## Development Notes
-
-- Frontend uses Next.js App Router
-- Backend exposes REST APIs under /api/v1
-- Auth uses JWT and user_session cookie for protected routes
-- Admin access is role-restricted
+- CUSTOMER: browse, book, and manage personal bookings
+- MANAGER: manage inventory and booking operations
+- ADMIN: full access to administration features

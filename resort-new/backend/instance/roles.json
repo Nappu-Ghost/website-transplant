@@ -46,6 +46,31 @@
         "activities",
         "map-editor"
       ]
+    },
+    {
+      "id": "receptionist",
+      "label": "Receptionist",
+      "isSystem": false,
+      "adminAccess": true,
+      "allPages": false,
+      "pages": [
+        "bookings",
+        "users",
+        "activities"
+      ]
+    },
+    {
+      "id": "guest-house-operator",
+      "label": "Guest House Operator",
+      "isSystem": false,
+      "adminAccess": true,
+      "allPages": false,
+      "pages": [
+        "hotels",
+        "accommodations",
+        "map-editor",
+        "bookings"
+      ]
     }
   ]
 }
